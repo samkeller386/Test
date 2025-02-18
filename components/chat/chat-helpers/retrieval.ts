@@ -1,10 +1,9 @@
-import { ChatFile } from "@/types"
 import { Tables } from "@/supabase/types"
 
 export const handleRetrieval = async (
   userInput: string,
-  newMessageFiles: ChatFile[],
-  chatFiles: ChatFile[],
+  newMessageFiles: Tables<"files">[],
+  chatFiles: Tables<"files">[],
   sourceCount: number
 ) => {
   const response = await fetch("/api/retrieval/retrieve", {

@@ -25,7 +25,6 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
   const {
     setChatSettings,
     setChats,
-    setFiles,
     setSelectedWorkspace,
     setSelectedChat,
     setChatMessages,
@@ -97,7 +96,7 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
       ])
 
       setChats(chats)
-      setFiles(fileData.files)
+      setChatFiles(fileData.files)
     } catch (error) {
       console.error("Error fetching workspace data:", error)
       router.push("/")

@@ -61,7 +61,7 @@ export const Message: FC<MessageProps> = ({
     temporaryChatMessages,
     isTemporaryChat,
     chatImages,
-    files
+    chatFiles
   } = useContext(PentestGPTContext)
 
   const {
@@ -312,7 +312,7 @@ export const Message: FC<MessageProps> = ({
 
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   {fileItems.map((fileItem, index) => {
-                    const parentFile = files.find(
+                    const parentFile = chatFiles.find(
                       file => file.id === fileItem.file_id
                     )
 

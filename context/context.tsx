@@ -1,7 +1,6 @@
 import { ProcessedTeamMember } from "@/lib/team-utils"
 import { Tables } from "@/supabase/types"
 import {
-  ChatFile,
   ChatMessage,
   ChatSettings,
   ContentType,
@@ -37,8 +36,6 @@ interface PentestGPTContextType {
   // ITEMS STORE
   chats: Tables<"chats">[]
   setChats: Dispatch<SetStateAction<Tables<"chats">[]>>
-  files: Tables<"files">[]
-  setFiles: Dispatch<SetStateAction<Tables<"files">[]>>
   // workspaces: Tables<"workspaces">[]
   // setWorkspaces: Dispatch<SetStateAction<Tables<"workspaces">[]>>
 
@@ -63,12 +60,12 @@ interface PentestGPTContextType {
   setAbortController: Dispatch<SetStateAction<AbortController | null>>
 
   // ATTACHMENTS STORE
-  chatFiles: ChatFile[]
-  setChatFiles: Dispatch<SetStateAction<ChatFile[]>>
+  chatFiles: Tables<"files">[]
+  setChatFiles: Dispatch<SetStateAction<Tables<"files">[]>>
   chatImages: MessageImage[]
   setChatImages: Dispatch<SetStateAction<MessageImage[]>>
-  newMessageFiles: ChatFile[]
-  setNewMessageFiles: Dispatch<SetStateAction<ChatFile[]>>
+  newMessageFiles: Tables<"files">[]
+  setNewMessageFiles: Dispatch<SetStateAction<Tables<"files">[]>>
   newMessageImages: MessageImage[]
   setNewMessageImages: Dispatch<SetStateAction<MessageImage[]>>
   showFilesDisplay: boolean
@@ -129,8 +126,6 @@ export const PentestGPTContext = createContext<PentestGPTContextType>({
   // ITEMS STORE
   chats: [],
   setChats: () => {},
-  files: [],
-  setFiles: () => {},
   // workspaces: [],
   // setWorkspaces: () => {},
 
@@ -186,9 +181,15 @@ export const PentestGPTContext = createContext<PentestGPTContextType>({
   allMessagesLoaded: false,
 
   // Fetch Chat and Messages
-  fetchChat: async (chatId: string, workspaceId: string) => {},
-  fetchMessages: async (chatId: string, workspaceId: string) => {},
-  loadMoreMessages: async (chatId: string) => {},
+  fetchChat: async (chatId: string, workspaceId: string) => {
+    console.log("fetchChat", chatId, workspaceId)
+  },
+  fetchMessages: async (chatId: string, workspaceId: string) => {
+    console.log("fetchMessages", chatId, workspaceId)
+  },
+  loadMoreMessages: async (chatId: string) => {
+    console.log("loadMoreMessages", chatId)
+  },
 
   // User Email
   userEmail: "",

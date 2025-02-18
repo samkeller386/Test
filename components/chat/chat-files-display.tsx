@@ -1,6 +1,6 @@
 import { PentestGPTContext } from "@/context/context"
 import { cn } from "@/lib/utils"
-import { ChatFile, MessageImage } from "@/types"
+import { MessageImage } from "@/types"
 import {
   IconCircleFilled,
   IconFileFilled,
@@ -21,7 +21,7 @@ import { ChatRetrievalSettings } from "./chat-retrieval-settings"
 import { dragHelper } from "@/components/chat/chat-helpers/drag"
 import dynamic from "next/dynamic"
 import { useUIContext } from "@/context/ui-context"
-
+import { Tables } from "@/supabase/types"
 const DynamicFilePreview = dynamic(() => import("../ui/file-preview"), {
   ssr: false
 })
@@ -43,7 +43,7 @@ export const ChatFilesDisplay: FC = () => {
 
   const { isMobile } = useUIContext()
 
-  const [selectedFile, setSelectedFile] = useState<ChatFile | null>(null)
+  const [selectedFile, setSelectedFile] = useState<Tables<"files"> | null>(null)
   const [selectedImage, setSelectedImage] = useState<MessageImage | null>(null)
   const [showPreview, setShowPreview] = useState(false)
 

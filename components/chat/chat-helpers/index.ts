@@ -5,7 +5,6 @@ import { createChatFiles } from "@/db/chat-files"
 import { createChat } from "@/db/chats"
 import { Tables } from "@/supabase/types"
 import {
-  ChatFile,
   ChatMessage,
   ChatPayload,
   ChatSettings,
@@ -233,11 +232,11 @@ export const handleCreateChat = async (
   profile: Tables<"profiles">,
   selectedWorkspace: Tables<"workspaces">,
   messageContent: string,
-  newMessageFiles: ChatFile[],
+  newMessageFiles: Tables<"files">[],
   finishReason: string,
   setSelectedChat: React.Dispatch<React.SetStateAction<Tables<"chats"> | null>>,
   setChats: React.Dispatch<React.SetStateAction<Tables<"chats">[]>>,
-  setChatFiles: React.Dispatch<React.SetStateAction<ChatFile[]>>
+  setChatFiles: React.Dispatch<React.SetStateAction<Tables<"files">[]>>
 ) => {
   // Create chat first with a temporary chat name
   const createdChat = await createChat({

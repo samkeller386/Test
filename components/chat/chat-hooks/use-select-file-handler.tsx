@@ -91,8 +91,8 @@ export const useSelectFileHandler = () => {
     setNewMessageImages,
     setNewMessageFiles,
     setShowFilesDisplay,
-    setFiles,
-    setUseRetrieval
+    setUseRetrieval,
+    setChatFiles
   } = useContext(PentestGPTContext)
 
   const [filesToAccept, setFilesToAccept] = useState(ACCEPTED_FILE_TYPES)
@@ -164,7 +164,16 @@ export const useSelectFileHandler = () => {
           id: loadingId,
           name: file.name,
           type: simplifiedType,
-          file
+          file,
+          created_at: "",
+          description: "",
+          file_path: "",
+          message_id: null,
+          sharing: "",
+          size: file.size,
+          tokens: 0,
+          updated_at: "",
+          user_id: profile.user_id
         }
       ])
 
@@ -197,18 +206,9 @@ export const useSelectFileHandler = () => {
         return
       }
 
-      setFiles(prev => [...prev, createdFile])
+      setChatFiles(prev => [...prev, createdFile])
       setNewMessageFiles(prev =>
-        prev.map(item =>
-          item.id === loadingId
-            ? {
-                id: createdFile.id,
-                name: createdFile.name,
-                type: createdFile.type,
-                file
-              }
-            : item
-        )
+        prev.map(item => (item.id === loadingId ? createdFile : item))
       )
       setUseRetrieval(true)
     } catch (error: any) {
