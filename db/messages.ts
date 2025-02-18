@@ -1,6 +1,5 @@
 import { supabase } from "@/lib/supabase/browser-client"
-import { TablesInsert, TablesUpdate } from "@/supabase/types"
-import { ChatFile } from "@/types"
+import { Tables, TablesInsert, TablesUpdate } from "@/supabase/types"
 
 export const getMessageById = async (messageId: string) => {
   const { data: message } = await supabase
@@ -57,7 +56,7 @@ export const createMessage = async (message: TablesInsert<"messages">) => {
 
 export const createMessages = async (
   messages: TablesInsert<"messages">[],
-  newChatFiles: ChatFile[]
+  newChatFiles: { id: string }[]
 ) => {
   const { data: createdMessages, error } = await supabase
     .from("messages")
@@ -119,8 +118,72 @@ export const deleteMessage = async (messageId: string) => {
 export async function deleteMessagesIncludingAndAfter(
   userId: string,
   chatId: string,
-  sequenceNumber: number
+  sequenceNumber: number,
+  retrieveFiles: boolean = false
 ) {
+  let files: Tables<"files">[] = []
+  if (retrieveFiles) {
+    // Here we check if the edited message has a file, if so we retrieve it
+    // and return it in the response and remove the association from the file and
+    // the message so it doesnt get cascade deleted
+
+    console.log(
+      "Fetching messages for chat:",
+      chatId,
+      "sequence:",
+      sequenceNumber
+    )
+    const { data: messagesData, error: messagesError } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("chat_id", chatId)
+      .eq("sequence_number", sequenceNumber)
+
+    if (messagesError) {
+      console.error("Error fetching messages:", messagesError)
+      throw new Error(messagesError.message)
+    }
+    console.log("Found messages:", messagesData)
+
+    console.log(
+      "Fetching files for messages:",
+      messagesData.map(m => m.id)
+    )
+    const { data: filesData, error: filesError } = await supabase
+      .from("files")
+      .select("*")
+      .in(
+        "message_id",
+        messagesData.map(message => message.id)
+      )
+
+    if (filesError) {
+      console.error("Error fetching files:", filesError)
+      throw new Error(filesError.message)
+    }
+    console.log("Found files:", filesData)
+
+    console.log(
+      "Updating files to remove message_id:",
+      filesData.map(f => f.id)
+    )
+    const { error: updateError } = await supabase
+      .from("files")
+      .update({ message_id: null })
+      .in(
+        "id",
+        filesData.map(file => file.id)
+      )
+
+    if (updateError) {
+      console.error("Error updating files:", updateError)
+      throw new Error(updateError.message)
+    }
+    console.log("Successfully updated files")
+
+    files = filesData
+  }
+
   const { error } = await supabase.rpc("delete_messages_including_and_after", {
     p_user_id: userId,
     p_chat_id: chatId,
@@ -129,12 +192,14 @@ export async function deleteMessagesIncludingAndAfter(
 
   if (error) {
     return {
+      files: files,
       success: false,
       error: "Failed to delete messages."
     }
   }
 
   return {
+    files: files,
     success: true,
     error: null
   }

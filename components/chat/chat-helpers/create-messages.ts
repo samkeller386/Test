@@ -1,18 +1,18 @@
-import { ChatMessage, MessageImage, PluginID, LLM, ChatFile } from "@/types"
-import { Tables, TablesInsert } from "@/supabase/types"
-import { Fragment } from "@/lib/tools/e2b/fragments/types"
-import { v4 as uuidv4 } from "uuid"
-import { lastSequenceNumber } from "@/lib/utils"
-import {
-  deleteMessagesIncludingAndAfter,
-  updateMessage,
-  deleteMessage,
-  createMessages
-} from "@/db/messages"
-import { fetchImageData } from "./image-handlers"
-import { uploadMessageImage } from "@/db/storage/message-images"
 import { createMessageFileItems } from "@/db/message-file-items"
+import {
+  createMessages,
+  deleteMessage,
+  deleteMessagesIncludingAndAfter,
+  updateMessage
+} from "@/db/messages"
+import { uploadMessageImage } from "@/db/storage/message-images"
+import { Fragment } from "@/lib/tools/e2b/fragments/types"
+import { lastSequenceNumber } from "@/lib/utils"
+import { Tables, TablesInsert } from "@/supabase/types"
+import { ChatMessage, LLM, MessageImage, PluginID } from "@/types"
 import { toast } from "sonner"
+import { v4 as uuidv4 } from "uuid"
+import { fetchImageData } from "./image-handlers"
 
 export const handleCreateMessages = async (
   chatMessages: ChatMessage[],
@@ -38,7 +38,7 @@ export const handleCreateMessages = async (
   setFragment?: (fragment: Fragment | null, chatMessage?: ChatMessage) => void,
   thinkingText?: string,
   thinkingElapsedSecs?: number | null,
-  newChatFiles?: ChatFile[]
+  newChatFiles?: { id: string }[]
 ) => {
   const isEdit = editSequenceNumber !== undefined
 
@@ -136,13 +136,21 @@ export const handleCreateMessages = async (
 
   let finalChatMessages: ChatMessage[] = []
 
+  console.log("isEdit", isEdit)
+  console.log("editSequenceNumber", editSequenceNumber)
+
   // If the user is editing a message, delete all messages after the edited message
   if (isEdit) {
-    const { error } = await deleteMessagesIncludingAndAfter(
+    const { files, error } = await deleteMessagesIncludingAndAfter(
       profile.user_id,
       currentChat.id,
-      editSequenceNumber
+      editSequenceNumber,
+      true
     )
+
+    newChatFiles = files.map(file => ({
+      id: file.id
+    }))
 
     if (error) {
       toast.error("Error deleting messages:", {
@@ -263,7 +271,7 @@ export const handleCreateMessages = async (
       ...(isEdit
         ? chatMessages.filter(
             chatMessage =>
-              chatMessage.message.sequence_number <= editSequenceNumber
+              chatMessage.message.sequence_number < editSequenceNumber
           )
         : chatMessages),
       {
