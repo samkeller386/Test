@@ -47,7 +47,6 @@ export const useChatHandler = () => {
     setChatImages,
     setChatFiles,
     setNewMessageFiles,
-    setShowFilesDisplay,
     newMessageFiles,
     useRetrieval,
     sourceCount,
@@ -120,7 +119,6 @@ export const useChatHandler = () => {
     setChatImages([])
     setNewMessageFiles([])
     setNewMessageImages([])
-    setShowFilesDisplay(false)
     setUseRetrieval(false)
 
     setToolInUse("none")
@@ -309,6 +307,8 @@ export const useChatHandler = () => {
           chatFiles,
           sourceCount
         )
+
+        setNewMessageFiles([])
       }
 
       const payload: ChatPayload = {

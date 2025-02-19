@@ -68,8 +68,6 @@ interface PentestGPTContextType {
   setNewMessageFiles: Dispatch<SetStateAction<Tables<"files">[]>>
   newMessageImages: MessageImage[]
   setNewMessageImages: Dispatch<SetStateAction<MessageImage[]>>
-  showFilesDisplay: boolean
-  setShowFilesDisplay: Dispatch<SetStateAction<boolean>>
 
   // RETRIEVAL STORE
   useRetrieval: boolean
@@ -158,8 +156,6 @@ export const PentestGPTContext = createContext<PentestGPTContextType>({
   setNewMessageFiles: () => {},
   newMessageImages: [],
   setNewMessageImages: () => {},
-  showFilesDisplay: false,
-  setShowFilesDisplay: () => {},
 
   // RETRIEVAL STORE
   useRetrieval: false,

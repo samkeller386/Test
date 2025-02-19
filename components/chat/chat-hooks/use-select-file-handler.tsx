@@ -90,7 +90,6 @@ export const useSelectFileHandler = () => {
     chatSettings,
     setNewMessageImages,
     setNewMessageFiles,
-    setShowFilesDisplay,
     setUseRetrieval,
     setChatFiles
   } = useContext(PentestGPTContext)
@@ -134,7 +133,6 @@ export const useSelectFileHandler = () => {
     if (!profile || !selectedWorkspace || !chatSettings) return
     if (!validateFile(file)) return
 
-    setShowFilesDisplay(true)
     const loadingId = "loading-" + crypto.randomUUID()
     const processor = getFileProcessor(file)
 

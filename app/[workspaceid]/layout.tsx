@@ -32,8 +32,7 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
     setChatFiles,
     setChatImages,
     setNewMessageFiles,
-    setNewMessageImages,
-    setShowFilesDisplay
+    setNewMessageImages
   } = useContext(PentestGPTContext)
 
   const { setIsGenerating, setFirstTokenReceived } = useUIContext()
@@ -72,7 +71,6 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
       setChatImages([])
       setNewMessageFiles([])
       setNewMessageImages([])
-      setShowFilesDisplay(false)
     }
 
     initializeWorkspace()

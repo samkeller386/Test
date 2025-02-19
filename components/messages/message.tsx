@@ -24,6 +24,7 @@ import { MessageFragment } from "./message-fragment"
 import { LoadingState } from "./loading-states"
 import dynamic from "next/dynamic"
 import { useUIContext } from "@/context/ui-context"
+import { FileItem } from "../chat/chat-files/file-item"
 
 const DynamicFilePreview = dynamic(() => import("../ui/file-preview"), {
   ssr: false
@@ -106,6 +107,8 @@ export const Message: FC<MessageProps> = ({
   const [sendReportQuery, setSendReportQuery] = useState(false)
 
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false)
+
+  const files = chatFiles.filter(file => file.message_id === message.id)
 
   const handleCopy = () => {
     if (navigator.clipboard) {
@@ -237,13 +240,24 @@ export const Message: FC<MessageProps> = ({
               )}
 
             {isEditing ? (
-              <TextareaAutosize
-                textareaRef={editInputRef as RefObject<HTMLTextAreaElement>}
-                className="text-md"
-                value={editedMessage}
-                onValueChange={setEditedMessage}
-                maxRows={isMobile ? 6 : 12}
-              />
+              <div className="flex h-auto w-full flex-col gap-2">
+                <div className="flex flex-wrap gap-2">
+                  {files.map((file, index) => (
+                    <FileItem
+                      key={index}
+                      file={file}
+                      showRemoveButton={false}
+                    />
+                  ))}
+                </div>
+
+                <TextareaAutosize
+                  textareaRef={editInputRef as RefObject<HTMLTextAreaElement>}
+                  className="text-md w-full"
+                  value={editedMessage}
+                  onValueChange={setEditedMessage}
+                />
+              </div>
             ) : (
               <div>
                 <div className={`flex-wrap gap-2`}>
@@ -274,6 +288,13 @@ export const Message: FC<MessageProps> = ({
                       />
                     )
                   })}
+                  {files.map((file, index) => (
+                    <FileItem
+                      key={index}
+                      file={file}
+                      showRemoveButton={false}
+                    />
+                  ))}
                 </div>
                 <MessageTypeResolver
                   previousMessage={previousMessage}
