@@ -56,7 +56,8 @@ export const createMessage = async (message: TablesInsert<"messages">) => {
 
 export const createMessages = async (
   messages: TablesInsert<"messages">[],
-  newChatFiles: { id: string }[]
+  newChatFiles: { id: string }[],
+  setChatFiles?: React.Dispatch<React.SetStateAction<Tables<"files">[]>>
 ) => {
   const { data: createdMessages, error } = await supabase
     .from("messages")
@@ -78,6 +79,16 @@ export const createMessages = async (
       .in("id", fileIds)
       .is("message_id", null)
       .select("*")
+
+    if (setChatFiles) {
+      setChatFiles(prev =>
+        prev.map(file =>
+          fileIds.includes(file.id)
+            ? { ...file, message_id: createdMessages[0].id }
+            : file
+        )
+      )
+    }
 
     if (filesError) {
       throw new Error(filesError.message)

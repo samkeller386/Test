@@ -13,6 +13,7 @@ import { ChatMessage, LLM, MessageImage, PluginID } from "@/types"
 import { toast } from "sonner"
 import { v4 as uuidv4 } from "uuid"
 import { fetchImageData } from "./image-handlers"
+import { createChatFiles } from "@/db/chat-files"
 
 export const handleCreateMessages = async (
   chatMessages: ChatMessage[],
@@ -38,9 +39,19 @@ export const handleCreateMessages = async (
   setFragment?: (fragment: Fragment | null, chatMessage?: ChatMessage) => void,
   thinkingText?: string,
   thinkingElapsedSecs?: number | null,
-  newChatFiles?: { id: string }[]
+  newChatFiles?: { id: string }[],
+  setChatFiles?: React.Dispatch<React.SetStateAction<Tables<"files">[]>>
 ) => {
   const isEdit = editSequenceNumber !== undefined
+
+  // Handle file creation
+  await createChatFiles(
+    newChatFiles?.map(file => ({
+      user_id: profile.user_id,
+      chat_id: currentChat?.id || "",
+      file_id: file.id
+    })) || []
+  )
 
   // If it's a temporary chat, don't create messages in the database
   if (isTemporary || !currentChat) {
@@ -204,7 +215,8 @@ export const handleCreateMessages = async (
   } else {
     const createdMessages = await createMessages(
       [finalUserMessage, finalAssistantMessage],
-      newChatFiles || []
+      newChatFiles || [],
+      setChatFiles
     )
 
     // Upload each image (stored in newMessageImages) for the user message to message_images bucket

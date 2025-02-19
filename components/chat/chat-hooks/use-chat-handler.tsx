@@ -8,7 +8,9 @@ import { useRouter } from "next/navigation"
 import { useContext, useEffect, useRef } from "react"
 import { LLM_LIST } from "../../../lib/models/llm/llm-list"
 
+import { useUIContext } from "@/context/ui-context"
 import { createMessageFeedback } from "@/db/message-feedback"
+import { Fragment } from "@/lib/tools/e2b/fragments/types"
 import {
   createTempMessages,
   generateChatTitle,
@@ -20,8 +22,6 @@ import {
   validateChatSettings
 } from "../chat-helpers"
 import { useFragments } from "./use-fragments"
-import { Fragment } from "@/lib/tools/e2b/fragments/types"
-import { useUIContext } from "@/context/ui-context"
 
 export const useChatHandler = () => {
   const router = useRouter()
@@ -308,6 +308,13 @@ export const useChatHandler = () => {
           sourceCount
         )
 
+        setChatFiles(prevFiles => [
+          ...prevFiles,
+          ...newMessageFiles.map(file => ({
+            ...file,
+            message_id: tempUserChatMessage.message.id
+          }))
+        ])
         setNewMessageFiles([])
       }
 
@@ -527,7 +534,8 @@ export const useChatHandler = () => {
           setFragment,
           thinkingText,
           thinkingElapsedSecs,
-          newMessageFiles
+          newMessageFiles,
+          setChatFiles
         )
       }
 
