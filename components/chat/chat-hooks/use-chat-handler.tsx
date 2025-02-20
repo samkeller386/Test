@@ -308,10 +308,11 @@ export const useChatHandler = () => {
           sourceCount
         )
 
-        setChatFiles(prevFiles => [
-          ...prevFiles,
+        setChatFiles([
+          ...chatFiles,
           ...newMessageFiles.map(file => ({
             ...file,
+            chat_id: selectedChat?.id,
             message_id: tempUserChatMessage.message.id
           }))
         ])
@@ -445,11 +446,9 @@ export const useChatHandler = () => {
             profile!,
             selectedWorkspace!,
             messageContent || "",
-            newMessageFiles,
             finishReason,
             setSelectedChat,
-            setChats,
-            setChatFiles
+            setChats
           )
 
           // Update URL without triggering a page reload or new history entry

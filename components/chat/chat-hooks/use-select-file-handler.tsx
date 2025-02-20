@@ -90,8 +90,7 @@ export const useSelectFileHandler = () => {
     chatSettings,
     setNewMessageImages,
     setNewMessageFiles,
-    setUseRetrieval,
-    setChatFiles
+    setUseRetrieval
   } = useContext(PentestGPTContext)
 
   const [filesToAccept, setFilesToAccept] = useState(ACCEPTED_FILE_TYPES)
@@ -185,16 +184,7 @@ export const useSelectFileHandler = () => {
         type: simplifiedType
       }
 
-      console.log("creating file", {
-        file,
-        fileData,
-        selectedWorkspaceId: selectedWorkspace.id
-      })
-      const createdFile = await createFileBasedOnExtension(
-        file,
-        fileData,
-        selectedWorkspace.id
-      )
+      const createdFile = await createFileBasedOnExtension(file, fileData)
 
       if (!createdFile) {
         toast.error(
@@ -204,7 +194,6 @@ export const useSelectFileHandler = () => {
         return
       }
 
-      setChatFiles(prev => [...prev, createdFile])
       setNewMessageFiles(prev =>
         prev.map(item => (item.id === loadingId ? createdFile : item))
       )
