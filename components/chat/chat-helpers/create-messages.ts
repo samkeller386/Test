@@ -1,4 +1,3 @@
-import { createChatFiles } from "@/db/chat-files"
 import { createMessageFileItems } from "@/db/message-file-items"
 import {
   createMessages,
@@ -99,15 +98,6 @@ export const handleCreateMessages = async (
     setMessages([...chatMessages, tempUserMessage, tempAssistantMessage])
     return
   }
-
-  // Handle chat file association
-  await createChatFiles(
-    newChatFiles?.map(file => ({
-      user_id: profile.user_id,
-      chat_id: currentChat?.id || "",
-      file_id: file.id
-    })) || []
-  )
 
   const finalUserMessage: TablesInsert<"messages"> = {
     chat_id: currentChat.id,
