@@ -8,22 +8,61 @@ import {
 } from "@tabler/icons-react"
 import { FC, useContext, useEffect, useState } from "react"
 import { PentestGPTContext } from "@/context/context"
-import { Tables } from "@/supabase/types"
 import { useChatHandler } from "../chat/chat-hooks/use-chat-handler"
 import { cn } from "@/lib/utils"
 import { Button } from "../ui/button"
+import { DateCategory, sortByDateCategory } from "@/lib/utils"
 
 interface SearchChatsDialogProps {
   isOpen: boolean
   onClose: () => void
 }
 
-type DateCategory =
-  | "Today"
-  | "Yesterday"
-  | "Previous 7 Days"
-  | "Previous 30 Days"
-  | "Older"
+interface SearchResult {
+  chat_id: string
+  title: string
+  created_at: string
+  updated_at: string
+  preview_message?: string
+}
+
+interface HighlightedTextProps {
+  text: string
+  searchTerms: string[]
+}
+
+const HighlightedText = ({ text, searchTerms }: HighlightedTextProps) => {
+  if (!searchTerms.length) return text
+
+  const regex = new RegExp(
+    `(${searchTerms
+      .filter(Boolean)
+      .map(term => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("|")})`,
+    "gi"
+  )
+
+  return (
+    <>
+      {text.split(regex).map((part, i) =>
+        regex.test(part) ? (
+          <span key={i} className="font-bold">
+            {part}
+          </span>
+        ) : (
+          part
+        )
+      )}
+    </>
+  )
+}
+
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric"
+  })
+}
 
 export const SearchChatsDialog: FC<SearchChatsDialogProps> = ({
   isOpen,
@@ -31,7 +70,7 @@ export const SearchChatsDialog: FC<SearchChatsDialogProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [searchResults, setSearchResults] = useState<Tables<"chats">[]>([])
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const { chats } = useContext(PentestGPTContext)
   const { handleSelectChat, handleNewChat } = useChatHandler()
 
@@ -44,28 +83,16 @@ export const SearchChatsDialog: FC<SearchChatsDialogProps> = ({
 
       setIsLoading(true)
       try {
-        // TODO: Implement API call to search chats
-        // Should search both chat names and messages
-        // Example API call:
-        // const results = await fetch('/api/chats/search', {
-        //   method: 'POST',
-        //   body: JSON.stringify({ query: searchTerm })
-        // })
-        // const data = await results.json()
-        // Expected response shape:
-        // {
-        //   chats: Array<{
-        //     ...chat,
-        //     matchingMessage?: string // The message content that matched the search
-        //   }>
-        // }
-        // setSearchResults(data.chats)
-
-        // Temporary: Show filtered chats
-        const filtered = chats.filter(chat =>
-          chat.name.toLowerCase().includes(searchTerm.toLowerCase())
+        const response = await fetch(
+          `/backend-api/chats/search?query=${searchTerm}`
         )
-        setSearchResults(filtered)
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || "Search failed")
+        }
+
+        setSearchResults(data.results)
       } catch (error) {
         console.error("Search error:", error)
         setSearchResults([])
@@ -76,7 +103,7 @@ export const SearchChatsDialog: FC<SearchChatsDialogProps> = ({
 
     const debounce = setTimeout(searchChats, 300)
     return () => clearTimeout(debounce)
-  }, [searchTerm, chats])
+  }, [searchTerm])
 
   // Reset search when dialog closes
   useEffect(() => {
@@ -86,46 +113,22 @@ export const SearchChatsDialog: FC<SearchChatsDialogProps> = ({
     }
   }, [isOpen])
 
-  const getSortedChats = (dateCategory: DateCategory) => {
-    // Only show search results when searching, otherwise show all chats
-    const chatsToSort = searchTerm ? searchResults : chats
-    const now = new Date()
-    const todayStart = new Date(now.setHours(0, 0, 0, 0))
-    const yesterdayStart = new Date(
-      new Date().setDate(todayStart.getDate() - 1)
-    )
-    const oneWeekAgoStart = new Date(
-      new Date().setDate(todayStart.getDate() - 7)
-    )
-    const thirtyDaysAgoStart = new Date(
-      new Date().setDate(todayStart.getDate() - 30)
-    )
+  const getSortedChats = (category: DateCategory) => {
+    const chatsToSort = searchTerm
+      ? searchResults
+      : chats.map(chat => ({
+          chat_id: chat.id,
+          title: chat.name,
+          created_at: chat.created_at,
+          updated_at: chat.updated_at,
+          preview_message: ""
+        }))
 
-    return chatsToSort
-      .filter(chat => {
-        const chatDate = new Date(chat.updated_at || chat.created_at)
-        switch (dateCategory) {
-          case "Today":
-            return chatDate >= todayStart
-          case "Yesterday":
-            return chatDate >= yesterdayStart && chatDate < todayStart
-          case "Previous 7 Days":
-            return chatDate >= oneWeekAgoStart && chatDate < yesterdayStart
-          case "Previous 30 Days":
-            return chatDate >= thirtyDaysAgoStart && chatDate < oneWeekAgoStart
-          case "Older":
-            return chatDate < thirtyDaysAgoStart
-        }
-      })
-      .sort(
-        (a, b) =>
-          new Date(b.updated_at || b.created_at).getTime() -
-          new Date(a.updated_at || a.created_at).getTime()
-      )
+    return sortByDateCategory(chatsToSort as SearchResult[], category)
   }
 
-  const handleChatClick = async (chat: Tables<"chats">) => {
-    await handleSelectChat(chat)
+  const handleChatClick = async (result: SearchResult) => {
+    await handleSelectChat({ chat_id: result.chat_id })
     onClose()
   }
 
@@ -204,23 +207,53 @@ export const SearchChatsDialog: FC<SearchChatsDialogProps> = ({
                         {category}
                       </div>
                       <div className="divide-y">
-                        {chats.map(chat => (
+                        {chats.map(result => (
                           <div
-                            key={chat.id}
-                            onClick={() => handleChatClick(chat)}
+                            key={result.chat_id}
+                            onClick={() =>
+                              handleChatClick(result as SearchResult)
+                            }
                             className={cn(
-                              "hover:bg-accent flex cursor-pointer flex-col rounded-lg px-4 py-3",
+                              "hover:bg-accent group flex cursor-pointer flex-col rounded-lg px-4 py-3",
                               "transition-colors duration-200"
                             )}
                           >
-                            <div className="flex items-center">
-                              <IconMessages
-                                size={24}
-                                className="text-muted-foreground mr-3.5 shrink-0"
-                              />
-                              <div className="text-sm font-medium">
-                                {chat.name}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <IconMessages
+                                  size={24}
+                                  className="text-muted-foreground mr-3.5 shrink-0"
+                                />
+                                <div className="flex flex-col">
+                                  <div className="text-sm font-medium">
+                                    <HighlightedText
+                                      text={result.title}
+                                      searchTerms={
+                                        searchTerm ? searchTerm.split(" ") : []
+                                      }
+                                    />
+                                  </div>
+                                  {result.preview_message && (
+                                    <div className="text-muted-foreground mt-1 line-clamp-2 text-xs">
+                                      <HighlightedText
+                                        text={result.preview_message}
+                                        searchTerms={
+                                          searchTerm
+                                            ? searchTerm.split(" ")
+                                            : []
+                                        }
+                                      />
+                                    </div>
+                                  )}
+                                </div>
                               </div>
+                              {searchTerm && (
+                                <div className="text-muted-foreground ml-4 text-xs opacity-0 transition-opacity group-hover:opacity-100">
+                                  {formatDate(
+                                    result.updated_at || result.created_at
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}
