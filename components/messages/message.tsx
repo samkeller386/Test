@@ -260,7 +260,15 @@ export const Message: FC<MessageProps> = ({
               </div>
             ) : (
               <div>
-                <div className={`flex-wrap gap-2`}>
+                <div className="mb-2 flex flex-col items-end gap-2">
+                  {files.map((file, index) => (
+                    <div key={index} className="min-w-[200px] max-w-[80%]">
+                      <ChatFileItem file={file} showRemoveButton={false} />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
                   {message.image_paths.map((path, index) => {
                     const item = chatImages.find(image => image.path === path)
                     const src = path.startsWith("data") ? path : item?.base64
@@ -281,21 +289,14 @@ export const Message: FC<MessageProps> = ({
                             url: path.startsWith("data") ? "" : item?.url || "",
                             file: null
                           })
-
                           setShowImagePreview(true)
                         }}
                         loading="lazy"
                       />
                     )
                   })}
-                  {files.map((file, index) => (
-                    <ChatFileItem
-                      key={index}
-                      file={file}
-                      showRemoveButton={false}
-                    />
-                  ))}
                 </div>
+
                 <MessageTypeResolver
                   previousMessage={previousMessage}
                   message={message}
