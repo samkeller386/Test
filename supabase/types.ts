@@ -34,52 +34,6 @@ export interface Database {
   }
   public: {
     Tables: {
-      chat_files: {
-        Row: {
-          chat_id: string
-          created_at: string
-          file_id: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          chat_id: string
-          created_at?: string
-          file_id: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          chat_id?: string
-          created_at?: string
-          file_id?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chat_files_chat_id_fkey"
-            columns: ["chat_id"]
-            isOneToOne: false
-            referencedRelation: "chats"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_files_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_files_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       chats: {
         Row: {
           created_at: string
@@ -370,54 +324,9 @@ export interface Database {
           }
         ]
       }
-      file_workspaces: {
-        Row: {
-          created_at: string
-          file_id: string
-          updated_at: string | null
-          user_id: string
-          workspace_id: string
-        }
-        Insert: {
-          created_at?: string
-          file_id: string
-          updated_at?: string | null
-          user_id: string
-          workspace_id: string
-        }
-        Update: {
-          created_at?: string
-          file_id?: string
-          updated_at?: string | null
-          user_id?: string
-          workspace_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "file_workspaces_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_workspaces_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_workspaces_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       files: {
         Row: {
+          chat_id: string | null
           created_at: string
           description: string
           file_path: string
@@ -432,6 +341,7 @@ export interface Database {
           user_id: string
         }
         Insert: {
+          chat_id?: string | null
           created_at?: string
           description: string
           file_path: string
@@ -446,6 +356,7 @@ export interface Database {
           user_id: string
         }
         Update: {
+          chat_id?: string | null
           created_at?: string
           description?: string
           file_path?: string
@@ -460,6 +371,13 @@ export interface Database {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "files_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "files_message_id_fkey"
             columns: ["message_id"]

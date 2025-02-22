@@ -312,7 +312,7 @@ export const useChatHandler = () => {
           ...chatFiles,
           ...newMessageFiles.map(file => ({
             ...file,
-            chat_id: selectedChat?.id,
+            chat_id: selectedChat?.id ?? null,
             message_id: tempUserChatMessage.message.id
           }))
         ])

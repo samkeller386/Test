@@ -165,12 +165,13 @@ export const useSelectFileHandler = () => {
           created_at: "",
           description: "",
           file_path: "",
-          message_id: null,
           sharing: "",
           size: file.size,
           tokens: 0,
           updated_at: "",
-          user_id: profile.user_id
+          user_id: profile.user_id,
+          message_id: null,
+          chat_id: null
         }
       ])
 
