@@ -28,7 +28,6 @@ export const useChatHandler = () => {
   const { dispatch: alertDispatch } = useAlertContext()
 
   const {
-    userInput,
     chatFiles,
     setUserInput,
     setNewMessageImages,
@@ -293,6 +292,7 @@ export const useChatHandler = () => {
       }
 
       let retrievedFileItems: Tables<"file_items">[] = []
+      let retrievedResults: string | undefined = undefined
 
       if (
         (newMessageFiles.length > 0 || chatFiles.length > 0) &&
@@ -301,12 +301,29 @@ export const useChatHandler = () => {
       ) {
         setToolInUse("retrieval")
 
-        retrievedFileItems = await handleRetrieval(
-          userInput,
+        const lastMessages = sentChatMessages.slice(-4, -1)
+        const userInputForRetrieval = lastMessages
+          .map(msg => {
+            const attachedFiles = chatFiles.filter(
+              file => file.message_id === msg.message.id
+            )
+            const filesStr =
+              attachedFiles.length > 0
+                ? `\nAttached files: ${attachedFiles.map(f => f.id).join(", ")}`
+                : ""
+            return `<${msg.message.role}>\n${msg.message.content}\n${filesStr}</${msg.message.role}>`
+          })
+          .join("\n\n")
+
+        const { chunks, result } = await handleRetrieval(
+          userInputForRetrieval,
           newMessageFiles,
           chatFiles,
           sourceCount
         )
+
+        retrievedFileItems = chunks
+        retrievedResults = result
 
         setChatFiles([
           ...chatFiles,
@@ -325,7 +342,8 @@ export const useChatHandler = () => {
           model: baseModel
         },
         chatMessages: sentChatMessages,
-        messageFileItems: retrievedFileItems
+        retrievedFileItems: retrievedFileItems,
+        retrievedResults: retrievedResults
       }
 
       let generatedText = ""

@@ -72,7 +72,7 @@ export const handleHostedChat = async (
     messages: formattedMessages,
     chatSettings: payload.chatSettings,
     isRetrieval:
-      payload.messageFileItems && payload.messageFileItems.length > 0,
+      payload.retrievedFileItems && payload.retrievedFileItems.length > 0,
     isContinuation,
     isRagEnabled,
     selectedPlugin,

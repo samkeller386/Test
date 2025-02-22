@@ -8,7 +8,8 @@ import dynamic from "next/dynamic"
 import Image from "next/image"
 import { FC, useContext, useState } from "react"
 import { WithTooltip } from "../ui/with-tooltip"
-import { FileItem } from "./chat-files/file-item"
+import { ChatFileItem } from "./chat-file-item"
+import { deleteFile } from "@/db/files"
 const DynamicFilePreview = dynamic(() => import("../ui/file-preview"), {
   ssr: false
 })
@@ -37,6 +38,14 @@ export const ChatFilesDisplay: FC = () => {
         !chatImages.some(chatImage => chatImage.messageId === image.messageId)
     )
   ]
+
+  const handleRemoveFile = (fileId: string) => {
+    const fileToRemove = newMessageFiles.find(f => f.id === fileId)
+    if (fileToRemove) {
+      deleteFile(fileToRemove.id)
+      setNewMessageFiles(newMessageFiles.filter(f => f.id !== fileId))
+    }
+  }
 
   return (
     <div className="w-full">
@@ -126,16 +135,12 @@ export const ChatFilesDisplay: FC = () => {
               ))}
 
               {newMessageFiles.map(file => (
-                <FileItem
+                <ChatFileItem
                   key={file.id}
                   file={file}
                   isLoading={file.id.startsWith("loading")}
                   showRemoveButton={isMobile || isHovering}
-                  onRemove={fileId => {
-                    setNewMessageFiles(
-                      newMessageFiles.filter(f => f.id !== fileId)
-                    )
-                  }}
+                  onRemove={handleRemoveFile}
                   onClick={() => {
                     setSelectedFile(file)
                     setShowPreview(true)

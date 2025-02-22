@@ -1,7 +1,7 @@
 import { Tables } from "@/supabase/types"
 
 export const handleRetrieval = async (
-  userInput: string,
+  conversationHistory: string,
   newMessageFiles: Tables<"files">[],
   chatFiles: Tables<"files">[],
   sourceCount: number
@@ -9,8 +9,9 @@ export const handleRetrieval = async (
   const response = await fetch("/api/retrieval/retrieve", {
     method: "POST",
     body: JSON.stringify({
-      userInput,
-      fileIds: [...newMessageFiles, ...chatFiles].map(file => file.id),
+      conversationHistory,
+      newMessageFiles: newMessageFiles.map(file => file.id),
+      chatFiles: chatFiles.map(file => file.id),
       sourceCount
     })
   })
@@ -19,9 +20,10 @@ export const handleRetrieval = async (
     console.error("Error retrieving:", response)
   }
 
-  const { results } = (await response.json()) as {
-    results: Tables<"file_items">[]
+  const { result, chunks } = (await response.json()) as {
+    result: string
+    chunks: Tables<"file_items">[]
   }
 
-  return results
+  return { result, chunks }
 }

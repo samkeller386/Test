@@ -11,7 +11,7 @@ import {
   IconX
 } from "@tabler/icons-react"
 import { FC } from "react"
-import { WithTooltip } from "../../ui/with-tooltip"
+import { WithTooltip } from "../ui/with-tooltip"
 
 interface FileItemProps {
   file: Tables<"files">
@@ -21,7 +21,7 @@ interface FileItemProps {
   onClick?: () => void
 }
 
-export const FileItem: FC<FileItemProps> = ({
+export const ChatFileItem: FC<FileItemProps> = ({
   file,
   isLoading,
   showRemoveButton,
