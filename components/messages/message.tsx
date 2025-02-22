@@ -262,9 +262,11 @@ export const Message: FC<MessageProps> = ({
               <div>
                 <div className="mb-2 flex flex-col items-end gap-2">
                   {files.map((file, index) => (
-                    <div key={index} className="min-w-[200px] max-w-[80%]">
-                      <ChatFileItem file={file} showRemoveButton={false} />
-                    </div>
+                    <ChatFileItem
+                      key={index}
+                      file={file}
+                      showRemoveButton={false}
+                    />
                   ))}
                 </div>
 
