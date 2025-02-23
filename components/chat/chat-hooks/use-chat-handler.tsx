@@ -24,6 +24,8 @@ import {
 import { useFragments } from "./use-fragments"
 import { supabase } from "../../../lib/supabase/browser-client"
 
+const MAX_FILE_CONTENT_TOKENS = 30000
+
 export const useChatHandler = () => {
   const router = useRouter()
   const { dispatch: alertDispatch } = useAlertContext()
@@ -228,10 +230,10 @@ export const useChatHandler = () => {
       sumOfTokens
     })
 
-    if (sumOfTokens > 30000) {
+    if (sumOfTokens > MAX_FILE_CONTENT_TOKENS) {
       if (
         sumOfNewMessageFilesTokens > 0 &&
-        sumOfNewMessageFilesTokens < 30000
+        sumOfNewMessageFilesTokens < MAX_FILE_CONTENT_TOKENS
       ) {
         console.log("Strategy: Fitting all new message files items")
         const { data: allNewMessageFileItems } = await supabase
