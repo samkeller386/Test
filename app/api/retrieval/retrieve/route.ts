@@ -8,8 +8,8 @@ import { z } from "zod"
 import { zodResponseFormat } from "openai/helpers/zod"
 
 const MINIMUM_SIMILARITY = 0
-const CHUNKS_PER_QUERY = 4
-const MAXIMUM_OUTPUT_CHUNKS = 8
+const CHUNKS_PER_QUERY = 8
+const MAXIMUM_OUTPUT_CHUNKS = 16
 
 type FileItems =
   Database["public"]["Functions"]["match_file_items_openai"]["Returns"]

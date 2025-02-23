@@ -184,6 +184,16 @@ export const handleCreateMessages = async (
       })
     )
 
+    await createMessageFileItems(
+      retrievedFileItems.map(fileItem => {
+        return {
+          user_id: profile.user_id,
+          message_id: createdMessages[0].id,
+          file_item_id: fileItem.id
+        }
+      })
+    )
+
     setChatImages(prevChatImages => [...prevChatImages, ...chatImagesWithUrls])
 
     finalChatMessages = [
