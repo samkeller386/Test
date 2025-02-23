@@ -197,6 +197,80 @@ export const useChatHandler = () => {
     )
   }
 
+  const handleRetrieveFileItems = async (
+    retrievedFileItemsData: Tables<"file_items">[] | null
+  ) => {
+    let retrievedFileItems = retrievedFileItemsData ?? []
+
+    const retrievedChatFiles = chatFiles.filter(file =>
+      retrievedFileItems.some(item => item.file_id === file.id)
+    )
+
+    const retrievedNewMessageFiles = newMessageFiles.filter(file =>
+      retrievedFileItems.some(item => item.file_id === file.id)
+    )
+
+    const sumOfNewMessageFilesTokens = retrievedNewMessageFiles.reduce(
+      (acc, file) => acc + file.tokens,
+      0
+    )
+
+    const sumOfChatFilesTokens = retrievedChatFiles.reduce(
+      (acc, file) => acc + file.tokens,
+      0
+    )
+
+    const sumOfTokens = sumOfNewMessageFilesTokens + sumOfChatFilesTokens
+
+    console.log("Token Sums: ", {
+      sumOfNewMessageFilesTokens,
+      sumOfChatFilesTokens,
+      sumOfTokens
+    })
+
+    if (sumOfTokens > 30000) {
+      if (
+        sumOfNewMessageFilesTokens > 0 &&
+        sumOfNewMessageFilesTokens < 30000
+      ) {
+        console.log("Strategy: Fitting all new message files items")
+        const { data: allNewMessageFileItems } = await supabase
+          .from("file_items")
+          .select("*")
+          .in(
+            "file_id",
+            retrievedNewMessageFiles.map(file => file.id)
+          )
+        retrievedFileItems.push(...(allNewMessageFileItems ?? []))
+      } else {
+        console.log("Strategy: Fitting only what the agent selected")
+      }
+    } else {
+      console.log("Strategy: Fitting all files items")
+      const { data: allNewMessageFileItems } = await supabase
+        .from("file_items")
+        .select("*")
+        .in("file_id", [
+          ...retrievedNewMessageFiles.map(file => file.id),
+          ...retrievedChatFiles.map(file => file.id)
+        ])
+      retrievedFileItems.push(...(allNewMessageFileItems ?? []))
+    }
+
+    // remove duplicates
+    retrievedFileItems = retrievedFileItems.filter(
+      (item, index, self) => index === self.findIndex(t => t.id === item.id)
+    )
+
+    // sort by file_id and sequence_number
+    return retrievedFileItems.sort((a, b) => {
+      if (a.file_id !== b.file_id) {
+        return a.file_id < b.file_id ? -1 : 1
+      }
+      return a.sequence_number - b.sequence_number
+    })
+  }
+
   const handleSendMessage = async (
     messageContent: string | null,
     chatMessages: ChatMessage[],
@@ -329,7 +403,9 @@ export const useChatHandler = () => {
           console.error(retrievedFileItemsError)
         }
 
-        retrievedFileItems = retrievedFileItemsData ?? []
+        retrievedFileItems = await handleRetrieveFileItems(
+          retrievedFileItemsData
+        )
 
         setChatFiles([
           ...chatFiles,

@@ -278,6 +278,7 @@ export interface Database {
           id: string
           name: string | null
           openai_embedding: string | null
+          sequence_number: number
           sharing: string
           tokens: number
           updated_at: string | null
@@ -290,6 +291,7 @@ export interface Database {
           id?: string
           name?: string | null
           openai_embedding?: string | null
+          sequence_number: number
           sharing?: string
           tokens: number
           updated_at?: string | null
@@ -302,6 +304,7 @@ export interface Database {
           id?: string
           name?: string | null
           openai_embedding?: string | null
+          sequence_number?: number
           sharing?: string
           tokens?: number
           updated_at?: string | null
