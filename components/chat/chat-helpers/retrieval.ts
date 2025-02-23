@@ -20,10 +20,9 @@ export const handleRetrieval = async (
     console.error("Error retrieving:", response)
   }
 
-  const { result, chunks } = (await response.json()) as {
-    result: string
-    chunks: Tables<"file_items">[]
+  const { chunks } = (await response.json()) as {
+    chunks: string[]
   }
 
-  return { result, chunks }
+  return { chunks }
 }

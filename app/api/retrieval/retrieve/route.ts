@@ -3,9 +3,13 @@ import { getServerProfile } from "@/lib/server/server-chat-helpers"
 import { Database, Tables } from "@/supabase/types"
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import OpenAI from "openai"
+import { ChatCompletionMessageParam } from "openai/resources/chat/completions.mjs"
+import { z } from "zod"
+import { zodResponseFormat } from "openai/helpers/zod"
 
 const MINIMUM_SIMILARITY = 0
 const CHUNKS_PER_QUERY = 4
+const MAXIMUM_OUTPUT_CHUNKS = 8
 
 type FileItems =
   Database["public"]["Functions"]["match_file_items_openai"]["Returns"]
@@ -125,7 +129,12 @@ const handleQueryFiles =
 
     chunks.push(...results.flat())
 
-    return JSON.stringify(results)
+    return `<results>\n${results
+      .flat()
+      .map(
+        result =>
+          `<result chunk_id="${result.id}">\n${result.content}\n</result>`
+      )}\n</results>`
   }
 
 const queryFilesTool = (
@@ -209,35 +218,68 @@ export async function POST(request: Request) {
 
     const chunks: FileItems = []
 
-    const runner = await openai.beta.chat.completions.runTools({
+    const messages: ChatCompletionMessageParam[] = [
+      {
+        role: "system",
+        content: `You are a helpful researcher that will select the most relevant chunks of text from the files to answer the question. \n
+          Here are the files you can answer questions about: <files>\n${userFiles
+            .map(file => `File ID: ${file.id} - Name: ${file.name}`)
+            .join("\n")}\n</files>`
+      }
+    ]
+
+    messages.push({
+      role: "user",
+      content: `This is the conversation history:\n\n${conversationHistory}`
+    })
+
+    if (newMessageFiles.length > 0) {
+      messages.push({
+        role: "user",
+        content: `The user attached specifically the following file to the last message: ${JSON.stringify(
+          newMessageFiles
+        )}`
+      })
+    }
+
+    messages.push({
+      role: "user",
+      content: `Take a time to think about the question and the files. Output a list of the most relevant chunk_id's from that will help you answer the question. If the question is not related to the files, return an empty array.`
+    })
+
+    const runner = openai.beta.chat.completions.runTools({
       model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are a helpful researcher that answers questions about files. \n
-          Here are the files you can answer questions about: ${JSON.stringify(userFiles)}`
-        },
-        {
-          role: "user",
-          content: `This is the conversation history:\n\n${conversationHistory}`
-        },
-        {
-          role: "user",
-          content: `The user attached specifically the following file to the last message: ${JSON.stringify(
-            newMessageFiles
-          )}`
-        }
-      ],
+      messages: messages,
       tools: [queryFilesTool(openai, supabaseAdmin, chunks)],
+      response_format: zodResponseFormat(
+        z.object({
+          reasoning: z
+            .string()
+            .describe(
+              "A brief and concise reasoning for the chunk_ids. This should be a single sentence."
+            ),
+          chunk_ids: z
+            .array(z.string())
+            .describe(
+              `A list of the most relevant chunk_ids. Maximum ${MAXIMUM_OUTPUT_CHUNKS} chunk_ids.`
+            )
+        }),
+        "chunkIds"
+      ),
       tool_choice: "auto"
     })
 
     const finalResponse = await runner.finalContent()
+    const parsedResponse = JSON.parse(finalResponse || '{"chunk_ids": []}') as {
+      reasoning: string
+      chunk_ids: string[]
+    }
+
+    console.log({ parsedResponse })
 
     return new Response(
       JSON.stringify({
-        result: finalResponse,
-        chunks: chunks
+        chunks: parsedResponse.chunk_ids
       }),
       {
         status: 200

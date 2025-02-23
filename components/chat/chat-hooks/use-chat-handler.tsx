@@ -22,6 +22,7 @@ import {
   validateChatSettings
 } from "../chat-helpers"
 import { useFragments } from "./use-fragments"
+import { supabase } from "../../../lib/supabase/browser-client"
 
 export const useChatHandler = () => {
   const router = useRouter()
@@ -292,7 +293,6 @@ export const useChatHandler = () => {
       }
 
       let retrievedFileItems: Tables<"file_items">[] = []
-      let retrievedResults: string | undefined = undefined
 
       if (
         (newMessageFiles.length > 0 || chatFiles.length > 0) &&
@@ -315,15 +315,21 @@ export const useChatHandler = () => {
           })
           .join("\n\n")
 
-        const { chunks, result } = await handleRetrieval(
+        const { chunks } = await handleRetrieval(
           userInputForRetrieval,
           newMessageFiles,
           chatFiles,
           sourceCount
         )
 
-        retrievedFileItems = chunks
-        retrievedResults = result
+        const { data: retrievedFileItemsData, error: retrievedFileItemsError } =
+          await supabase.from("file_items").select("*").in("id", chunks)
+
+        if (retrievedFileItemsError) {
+          console.error(retrievedFileItemsError)
+        }
+
+        retrievedFileItems = retrievedFileItemsData ?? []
 
         setChatFiles([
           ...chatFiles,
@@ -342,8 +348,7 @@ export const useChatHandler = () => {
           model: baseModel
         },
         chatMessages: sentChatMessages,
-        retrievedFileItems: retrievedFileItems,
-        retrievedResults: retrievedResults
+        retrievedFileItems: retrievedFileItems
       }
 
       let generatedText = ""

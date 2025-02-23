@@ -23,8 +23,7 @@ export async function buildFinalMessages(
   chatImages: MessageImage[],
   shouldUseRAG?: boolean
 ): Promise<BuiltChatMessage[]> {
-  const { chatSettings, chatMessages, retrievedFileItems, retrievedResults } =
-    payload
+  const { chatSettings, chatMessages, retrievedFileItems } = payload
 
   let CHUNK_SIZE = 12000
   if (chatSettings.model === GPT4o.modelId) {
@@ -165,7 +164,22 @@ export async function buildFinalMessages(
   if (retrievedFileItems.length > 0) {
     finalMessages[finalMessages.length - 2] = {
       ...finalMessages[finalMessages.length - 2],
-      content: endent`The research on the files attached to the conversation resulted in the following information: ${retrievedResults}`
+      content: endent`Assist with the user's query: '${finalMessages[finalMessages.length - 2].content}' using uploaded files. 
+      Each <doc> tag contains a section of a file. The id attribute is for internal reference only - do not expose these IDs to users.
+      When discussing files, use only their names (shown in the name attribute) to reference them.
+      
+      \n\n${buildRetrievalText(retrievedFileItems)}\n\n
+
+      Guidelines for your response:
+      - If uncertain, ask the user for clarification.
+      - If the context is unreadable or of poor quality, inform the user and provide the best possible answer.
+      - If the answer isn't present in the context but you possess the knowledge, explain this to the user and provide the answer using your own understanding.
+      - Draw insights directly from file content to provide specific guidance
+      - Always reference files by their names, never by their IDs
+      - Ensure answers are actionable, focusing on practical relevance
+      - Highlight or address any ambiguities found in the content
+      - When referencing file content, use the filename for clarity (e.g., "In config.json, I found...")
+      - State clearly if information related to the query is not available`
     }
   }
 
