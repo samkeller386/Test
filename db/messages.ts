@@ -139,12 +139,12 @@ export async function deleteMessagesIncludingAndAfter(
     // and return it in the response and remove the association from the file and
     // the message so it doesnt get cascade deleted
 
-    console.log(
-      "Fetching messages for chat:",
-      chatId,
-      "sequence:",
-      sequenceNumber
-    )
+    // console.log(
+    //   "Fetching messages for chat:",
+    //   chatId,
+    //   "sequence:",
+    //   sequenceNumber
+    // )
     const { data: messagesData, error: messagesError } = await supabase
       .from("messages")
       .select("*")
@@ -155,12 +155,12 @@ export async function deleteMessagesIncludingAndAfter(
       console.error("Error fetching messages:", messagesError)
       throw new Error(messagesError.message)
     }
-    console.log("Found messages:", messagesData)
+    // console.log("Found messages:", messagesData)
 
-    console.log(
-      "Fetching files for messages:",
-      messagesData.map(m => m.id)
-    )
+    // console.log(
+    //   "Fetching files for messages:",
+    //   messagesData.map(m => m.id)
+    // )
     const { data: filesData, error: filesError } = await supabase
       .from("files")
       .select("*")
@@ -173,12 +173,12 @@ export async function deleteMessagesIncludingAndAfter(
       console.error("Error fetching files:", filesError)
       throw new Error(filesError.message)
     }
-    console.log("Found files:", filesData)
+    // console.log("Found files:", filesData)
 
-    console.log(
-      "Updating files to remove message_id:",
-      filesData.map(f => f.id)
-    )
+    // console.log(
+    //   "Updating files to remove message_id:",
+    //   filesData.map(f => f.id)
+    // )
     const { error: updateError } = await supabase
       .from("files")
       .update({ message_id: null })
@@ -191,7 +191,7 @@ export async function deleteMessagesIncludingAndAfter(
       console.error("Error updating files:", updateError)
       throw new Error(updateError.message)
     }
-    console.log("Successfully updated files")
+    // console.log("Successfully updated files")
 
     files = filesData
   }

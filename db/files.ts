@@ -57,7 +57,7 @@ export const createFileBasedOnExtension = async (
 ) => {
   const fileExtension = file.name.split(".").pop()
 
-  console.log("fileExtension", fileExtension)
+  // console.log("fileExtension", fileExtension)
 
   if (fileExtension === "docx") {
     const arrayBuffer = await file.arrayBuffer()

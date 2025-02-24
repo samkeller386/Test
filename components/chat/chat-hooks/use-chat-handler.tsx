@@ -225,18 +225,18 @@ export const useChatHandler = () => {
 
     const sumOfTokens = sumOfNewMessageFilesTokens + sumOfChatFilesTokens
 
-    console.log("Token Sums: ", {
-      sumOfNewMessageFilesTokens,
-      sumOfChatFilesTokens,
-      sumOfTokens
-    })
+    // console.log("Token Sums: ", {
+    //   sumOfNewMessageFilesTokens,
+    //   sumOfChatFilesTokens,
+    //   sumOfTokens
+    // })
 
     if (sumOfTokens > MAX_FILE_CONTENT_TOKENS) {
       if (
         sumOfNewMessageFilesTokens > 0 &&
         sumOfNewMessageFilesTokens < MAX_FILE_CONTENT_TOKENS
       ) {
-        console.log("Strategy: Fitting all new message files items")
+        // console.log("Strategy: Fitting all new message files items")
         const { data: allNewMessageFileItems } = await supabase
           .from("file_items")
           .select("*")
@@ -246,10 +246,10 @@ export const useChatHandler = () => {
           )
         retrievedFileItems.push(...(allNewMessageFileItems ?? []))
       } else {
-        console.log("Strategy: Fitting only what the agent selected")
+        // console.log("Strategy: Fitting only what the agent selected")
       }
     } else {
-      console.log("Strategy: Fitting all files items")
+      // console.log("Strategy: Fitting all files items")
       const { data: allNewMessageFileItems } = await supabase
         .from("file_items")
         .select("*")
