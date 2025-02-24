@@ -137,9 +137,6 @@ export const handleCreateMessages = async (
 
   let finalChatMessages: ChatMessage[] = []
 
-  console.log("isEdit", isEdit)
-  console.log("editSequenceNumber", editSequenceNumber)
-
   // If the user is editing a message, delete all messages after the edited message
   if (isEdit) {
     const { files, error } = await deleteMessagesIncludingAndAfter(
@@ -218,8 +215,6 @@ export const handleCreateMessages = async (
 
     setMessages(finalChatMessages)
   } else {
-    console.log("********* newChatFiles", JSON.stringify(newChatFiles))
-
     const createdMessages = await createMessages(
       [finalUserMessage, finalAssistantMessage],
       newChatFiles || [],

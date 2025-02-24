@@ -105,7 +105,6 @@ const handleRetrieval = async (
 const handleQueryFiles =
   (openai: OpenAI, supabaseAdmin: SupabaseClient, chunks: FileItems) =>
   async (inputString: string) => {
-    console.log({ inputString })
     const request = JSON.parse(inputString) as {
       queries: {
         file_id: string
@@ -274,8 +273,6 @@ export async function POST(request: Request) {
       reasoning: string
       chunk_ids: string[]
     }
-
-    console.log({ parsedResponse })
 
     return new Response(
       JSON.stringify({

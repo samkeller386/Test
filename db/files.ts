@@ -3,6 +3,7 @@ import { TablesInsert, TablesUpdate } from "@/supabase/types"
 import mammoth from "mammoth"
 import { toast } from "sonner"
 import { uploadFile } from "./storage/files"
+import path from "path"
 
 export const getFileById = async (fileId: string) => {
   const { data: file, error } = await supabase
