@@ -23,6 +23,7 @@ import {
 } from "../chat-helpers"
 import { useFragments } from "./use-fragments"
 import { supabase } from "../../../lib/supabase/browser-client"
+import { getMessageFileItemsByMessageId } from "@/db/message-file-items"
 
 const MAX_FILE_CONTENT_TOKENS = 30000
 
@@ -199,7 +200,7 @@ export const useChatHandler = () => {
     )
   }
 
-  const handleRetrieveFileItems = async (
+  const rehydrateRetrievedFileItems = async (
     retrievedFileItemsData: Tables<"file_items">[] | null
   ) => {
     let retrievedFileItems = retrievedFileItemsData ?? []
@@ -271,6 +272,58 @@ export const useChatHandler = () => {
       }
       return a.sequence_number - b.sequence_number
     })
+  }
+
+  const retrievalLogic = async (
+    messages: ChatMessage[],
+    editedMessageFiles: Tables<"files">[] | null,
+    existingFiles: Tables<"files">[],
+    sourceCount: number
+  ) => {
+    const lastMessages = messages.slice(-4, -1)
+    const userInputForRetrieval = lastMessages
+      .map(msg => {
+        const attachedFiles = existingFiles.filter(
+          file => file.message_id === msg.message.id
+        )
+        const filesStr =
+          attachedFiles.length > 0
+            ? `\nAttached files: ${attachedFiles.map(f => f.id).join(", ")}`
+            : ""
+        return `<${msg.message.role}>\n${msg.message.content}\n${filesStr}</${msg.message.role}>`
+      })
+      .join("\n\n")
+
+    const { chunks } = await handleRetrieval(
+      userInputForRetrieval,
+      editedMessageFiles || newMessageFiles,
+      existingFiles,
+      sourceCount
+    )
+
+    const { data: retrievedFileItemsData, error: retrievedFileItemsError } =
+      await supabase.from("file_items").select("*").in("id", chunks)
+
+    if (retrievedFileItemsError) {
+      console.error(retrievedFileItemsError)
+      return []
+    }
+
+    const retrievedItems = await rehydrateRetrievedFileItems(
+      retrievedFileItemsData || []
+    )
+
+    setChatFiles([
+      ...existingFiles,
+      ...newMessageFiles.map(file => ({
+        ...file,
+        chat_id: selectedChat?.id ?? null,
+        message_id: messages[messages.length - 2].message.id
+      }))
+    ])
+    setNewMessageFiles([])
+
+    return retrievedItems
   }
 
   const handleSendMessage = async (
@@ -351,6 +404,36 @@ export const useChatHandler = () => {
         )
       }
 
+      let lastMessageRetrievedFileItems: Tables<"file_items">[] | null = null
+      let editedMessageFiles: Tables<"files">[] | null = null
+
+      if (isContinuation || isRegeneration) {
+        // If is continuation or regeneration, get the last message's file items so we don't have to run the retrieval logic
+        const messageFileItems = await getMessageFileItemsByMessageId(
+          sentChatMessages[sentChatMessages.length - 1].message.id
+        )
+
+        lastMessageRetrievedFileItems =
+          messageFileItems.file_items.sort((a, b) => {
+            // First sort by file_id
+            if (a.file_id < b.file_id) return -1
+            if (a.file_id > b.file_id) return 1
+
+            // Then sort by sequence_number if file_ids are equal
+            return a.sequence_number - b.sequence_number
+          }) ?? []
+      }
+
+      if (isEdit) {
+        // If is edit, get the edited message's file items so we can tell the agent which file is attached to the edited message
+        const editedChatMessage = chatMessages.find(
+          msg => msg.message.sequence_number === editSequenceNumber
+        )
+        editedMessageFiles = chatFiles.filter(
+          file => file.message_id === editedChatMessage?.message.id
+        )
+      }
+
       if (isRegeneration) {
         sentChatMessages.pop()
         sentChatMessages.push(tempAssistantChatMessage)
@@ -372,52 +455,21 @@ export const useChatHandler = () => {
 
       if (
         (newMessageFiles.length > 0 || chatFiles.length > 0) &&
-        useRetrieval &&
-        !isContinuation
+        useRetrieval
       ) {
         setToolInUse("retrieval")
 
-        const lastMessages = sentChatMessages.slice(-4, -1)
-        const userInputForRetrieval = lastMessages
-          .map(msg => {
-            const attachedFiles = chatFiles.filter(
-              file => file.message_id === msg.message.id
-            )
-            const filesStr =
-              attachedFiles.length > 0
-                ? `\nAttached files: ${attachedFiles.map(f => f.id).join(", ")}`
-                : ""
-            return `<${msg.message.role}>\n${msg.message.content}\n${filesStr}</${msg.message.role}>`
-          })
-          .join("\n\n")
-
-        const { chunks } = await handleRetrieval(
-          userInputForRetrieval,
-          newMessageFiles,
-          chatFiles,
-          sourceCount
-        )
-
-        const { data: retrievedFileItemsData, error: retrievedFileItemsError } =
-          await supabase.from("file_items").select("*").in("id", chunks)
-
-        if (retrievedFileItemsError) {
-          console.error(retrievedFileItemsError)
+        if (!isContinuation && !isRegeneration) {
+          retrievedFileItems = await retrievalLogic(
+            sentChatMessages,
+            editedMessageFiles,
+            chatFiles,
+            sourceCount
+          )
+        } else {
+          // Get the last message's retrieved file items
+          retrievedFileItems = lastMessageRetrievedFileItems ?? []
         }
-
-        retrievedFileItems = await handleRetrieveFileItems(
-          retrievedFileItemsData
-        )
-
-        setChatFiles([
-          ...chatFiles,
-          ...newMessageFiles.map(file => ({
-            ...file,
-            chat_id: selectedChat?.id ?? null,
-            message_id: tempUserChatMessage.message.id
-          }))
-        ])
-        setNewMessageFiles([])
       }
 
       const payload: ChatPayload = {
