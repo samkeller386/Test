@@ -459,7 +459,7 @@ export const useChatHandler = () => {
       ) {
         setToolInUse("retrieval")
 
-        if (!isContinuation && !isRegeneration) {
+        if (!isContinuation) {
           retrievedFileItems = await retrievalLogic(
             sentChatMessages,
             editedMessageFiles,
