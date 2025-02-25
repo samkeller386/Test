@@ -67,17 +67,6 @@ export async function buildFinalMessages(
       ...chatMessage
     }
 
-    if (chatMessage.fileItems.length > 0) {
-      const retrievalText = buildRetrievalText(chatMessage.fileItems)
-
-      returnMessage.message = {
-        ...returnMessage.message,
-        content:
-          `User Query: "${chatMessage.message.content}"\n\nFile Content:\n${retrievalText}` as string
-      }
-      returnMessage.fileItems = []
-    }
-
     if (
       chatMessage.message.fragment &&
       typeof chatMessage.message.fragment === "string"
