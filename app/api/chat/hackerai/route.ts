@@ -116,8 +116,6 @@ export async function POST(request: Request) {
       }
 
       if (shouldUncensor) {
-        config.isLargeModel &&
-          console.log("[Premium User] Uncensored mode activated")
         return handleAssistantMessages(messages)
       }
 

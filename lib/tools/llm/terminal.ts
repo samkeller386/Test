@@ -58,7 +58,6 @@ export async function executeTerminalTool({
       ? messages.slice(0, -1)
       : messages
 
-    console.log("cleanedMessages", cleanedMessages)
     const { textStream, finishReason } = streamText({
       model: openai("gpt-4o", { parallelToolCalls: false }),
       maxTokens: 2048,
