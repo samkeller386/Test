@@ -356,7 +356,6 @@ export function removeLastSureMessage(messages: any[]) {
 }
 
 function buildDocumentsText(fileItems: Tables<"file_items">[]) {
-  // Group file items by file_id
   const fileGroups: Record<
     string,
     { id: string; name: string; content: string[] }
@@ -378,10 +377,9 @@ function buildDocumentsText(fileItems: Tables<"file_items">[]) {
     {}
   )
 
-  // Format each file as a document
   const documents = Object.values(fileGroups)
-    .map((file: any, index: number) => {
-      return `<document index="${index + 1}">
+    .map((file: any) => {
+      return `<document id="${file.id}">
 <source>${file.name}</source>
 <document_content>${file.content.join("\n\n")}</document_content>
 </document>`
