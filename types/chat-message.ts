@@ -14,12 +14,23 @@ export interface ImageContent {
   }
 }
 
+export interface DocumentContent {
+  type: "document"
+  source: {
+    type: "base64"
+    media_type: "application/pdf"
+    data: string
+  }
+}
+
 export interface TextContent {
   type: "text"
   text: string
 }
 
+export type MessageContent = ImageContent | TextContent | DocumentContent
+
 export interface BuiltChatMessage {
   role: string
-  content: string | ImageContent[] | TextContent[]
+  content: string | MessageContent[]
 }

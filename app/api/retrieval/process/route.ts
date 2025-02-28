@@ -71,7 +71,7 @@ export async function POST(req: Request) {
         chunks = await processMarkdown(blob)
         break
       case "pdf":
-        chunks = await processPdf(blob)
+        chunks = await processPdf()
         break
       case "txt":
         chunks = await processTxt(blob)
@@ -82,26 +82,30 @@ export async function POST(req: Request) {
         break
     }
 
-    chunks = chunks.filter(chunk => chunk.content.trim() !== "")
+    if (fileExtension !== "pdf") {
+      chunks = chunks.filter(chunk => chunk.content.trim() !== "")
+    }
 
-    if (chunks.length === 0) {
+    if (chunks.length === 0 && fileExtension !== "pdf") {
       throw new Error("Empty file. Please check the file format and content.")
     }
 
     let embeddings: any = []
 
-    const openai = new OpenAI({
-      apiKey: llmConfig.openai.apiKey
-    })
+    if (fileExtension !== "pdf") {
+      const openai = new OpenAI({
+        apiKey: llmConfig.openai.apiKey
+      })
 
-    const response = await openai.embeddings.create({
-      model: "text-embedding-3-small",
-      input: chunks.map(chunk => chunk.content)
-    })
+      const response = await openai.embeddings.create({
+        model: "text-embedding-3-small",
+        input: chunks.map(chunk => chunk.content)
+      })
 
-    embeddings = response.data.map((item: any) => {
-      return item.embedding
-    })
+      embeddings = response.data.map((item: any) => {
+        return item.embedding
+      })
+    }
 
     const file_items = chunks.map((chunk, index) => ({
       file_id,
@@ -110,8 +114,10 @@ export async function POST(req: Request) {
       content: chunk.content,
       tokens: chunk.tokens,
       name: fileMetadata.name,
-      openai_embedding: embeddings[index]
+      openai_embedding: fileExtension === "pdf" ? null : embeddings[index]
     }))
+
+    console.log("file_items", file_items)
 
     await supabaseAdmin.from("file_items").upsert(file_items)
 

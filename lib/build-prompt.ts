@@ -2,7 +2,8 @@ import {
   BuiltChatMessage,
   ChatMessage,
   ChatPayload,
-  MessageImage
+  MessageImage,
+  MessageContent
 } from "@/types"
 import {
   CoreAssistantMessage,
@@ -23,6 +24,8 @@ export async function buildFinalMessages(
   shouldUseRAG?: boolean
 ): Promise<BuiltChatMessage[]> {
   const { chatSettings, chatMessages, retrievedFileItems } = payload
+  console.log("retrievedFileItems", retrievedFileItems)
+  console.log("chatMessages", chatMessages)
 
   let CHUNK_SIZE = 12000
   if (chatSettings.model === GPT4o.modelId) {
@@ -164,11 +167,96 @@ export async function buildFinalMessages(
   })
 
   if (retrievedFileItems.length > 0) {
-    const documentsText = buildDocumentsText(retrievedFileItems)
+    // Check if any of the retrieved files are PDFs
+    const hasPdfFiles = retrievedFileItems.some(
+      item => item.name && item.name.toLowerCase().endsWith(".pdf")
+    )
 
-    finalMessages[finalMessages.length - 2] = {
-      ...finalMessages[finalMessages.length - 2],
-      content: `${documentsText}\n\n${finalMessages[finalMessages.length - 2].content}`
+    if (hasPdfFiles) {
+      // For PDF files, we need to fetch the base64 content
+      const pdfItems = retrievedFileItems.filter(
+        item => item.name && item.name.toLowerCase().endsWith(".pdf")
+      )
+
+      // If we have PDF files, format the user message differently
+      if (pdfItems.length > 0) {
+        const userMessageIndex = finalMessages.length - 2
+        const userMessage = finalMessages[userMessageIndex]
+
+        // Create a new content array for the user message
+        const newContent: MessageContent[] = []
+
+        // Add PDF documents as document objects
+        for (const pdfItem of pdfItems) {
+          try {
+            // Fetch the PDF base64 content
+            const response = await fetch("/api/retrieval/pdf-base64", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ file_id: pdfItem.file_id })
+            })
+
+            if (!response.ok) {
+              throw new Error(`Failed to fetch PDF: ${response.statusText}`)
+            }
+
+            const { base64 } = await response.json()
+
+            newContent.push({
+              type: "document",
+              source: {
+                type: "base64",
+                media_type: "application/pdf",
+                data: base64
+              }
+            })
+          } catch (error) {
+            console.error("Error fetching PDF base64:", error)
+            // Add a text note about the error instead
+            newContent.push({
+              type: "text",
+              text: `[Error loading PDF: ${pdfItem.name}]`
+            })
+          }
+        }
+
+        // Add the original text content
+        newContent.push({
+          type: "text",
+          text:
+            typeof userMessage.content === "string"
+              ? userMessage.content
+              : Array.isArray(userMessage.content)
+                ? userMessage.content
+                    .map(c =>
+                      typeof c === "object" && c.type === "text" ? c.text : ""
+                    )
+                    .join("\n")
+                : ""
+        })
+
+        // Update the user message with the new content
+        finalMessages[userMessageIndex] = {
+          ...userMessage,
+          content: newContent
+        }
+      } else {
+        // For non-PDF files, use the existing document text approach
+        const documentsText = buildDocumentsText(retrievedFileItems)
+        finalMessages[finalMessages.length - 2] = {
+          ...finalMessages[finalMessages.length - 2],
+          content: `${documentsText}\n\n${finalMessages[finalMessages.length - 2].content}`
+        }
+      }
+    } else {
+      // For non-PDF files, use the existing document text approach
+      const documentsText = buildDocumentsText(retrievedFileItems)
+      finalMessages[finalMessages.length - 2] = {
+        ...finalMessages[finalMessages.length - 2],
+        content: `${documentsText}\n\n${finalMessages[finalMessages.length - 2].content}`
+      }
     }
   }
 
@@ -228,6 +316,12 @@ export const toVercelChatMessages = (
                       } else {
                         return null
                       }
+                    } else if (
+                      typeof content === "object" &&
+                      content.type === "document"
+                    ) {
+                      // Pass document content through as is
+                      return content
                     } else if (
                       typeof content === "object" &&
                       content.type === "text"
