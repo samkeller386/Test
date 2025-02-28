@@ -36,7 +36,7 @@ export const loadingStates = {
   },
   [PluginID.DEEP_RESEARCH]: {
     icon: <IconSearch size={20} />,
-    text: "Researching..."
+    text: "Researching... (takes 1-2 minutes)"
   },
   ["temporary-sandbox"]: {
     icon: <IconTerminal2 size={20} />,

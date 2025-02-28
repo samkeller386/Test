@@ -298,15 +298,17 @@ export const ToolOptions = ({
         }
       />
 
-      {/* Deep Search Toggle - Only for Premium Users and Non-Mobile */}
-      {isPremiumSubscription && !isMobile && (
+      {/* Deep research Toggle - Only for Premium Users and Non-Mobile */}
+      {isPremiumSubscription && (
         <WithTooltip
           delayDuration={TOOLTIP_DELAY}
           side="top"
           display={
             selectedPlugin !== PluginID.DEEP_RESEARCH && (
               <div className="flex flex-col">
-                <p className="font-medium">Deep Research</p>
+                <p className="font-medium">
+                  Get detailed insights on any topic
+                </p>
                 {isOtherPluginActive && (
                   <p className="text-xs text-gray-500">
                     Disable other plugins first
@@ -340,10 +342,14 @@ export const ToolOptions = ({
                 className={cn(
                   "whitespace-nowrap text-xs font-medium",
                   "transition-all duration-300",
-                  "max-w-[100px] pr-2"
+                  !isMobile && "max-w-[100px] pr-2",
+                  isMobile &&
+                    (selectedPlugin === PluginID.DEEP_RESEARCH
+                      ? "max-w-[100px] pr-2 opacity-100"
+                      : "max-w-0 opacity-0")
                 )}
               >
-                Deep Search
+                Deep research
               </div>
             </div>
           }

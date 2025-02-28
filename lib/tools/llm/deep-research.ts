@@ -43,10 +43,12 @@ async function processStream({
 }) {
   let thinkingStartTime = null
   let enteredThinking = false
+  let sentFirstTextDelta = false
+  const sourceUrls: string[] = []
 
   const result = streamText({
     model: perplexity("sonar-deep-research"),
-    maxTokens: 4096,
+    maxTokens: 8192,
     system: buildSystemPrompt(
       llmConfig.systemPrompts.pentestGPTWebSearch,
       profile.profile_context
@@ -55,8 +57,26 @@ async function processStream({
   })
 
   for await (const part of result.fullStream) {
+    // Collect source URLs
+    if (
+      part.type === "source" &&
+      part.source?.sourceType === "url" &&
+      part.source?.url
+    ) {
+      sourceUrls.push(part.source.url)
+      continue
+    }
+
     if (part.type === "text-delta") {
       const text = part.textDelta
+
+      // Send collected URLs after first text-delta
+      if (!sentFirstTextDelta && text.trim() !== "") {
+        sentFirstTextDelta = true
+        if (sourceUrls.length > 0) {
+          dataStream.writeData({ citations: sourceUrls })
+        }
+      }
 
       if (text.includes("<think>")) {
         enteredThinking = true
@@ -126,11 +146,5 @@ async function processStream({
         })
       }
     }
-  }
-  // Send citations from metadata when available
-  const metadata = await result.providerMetadata
-  const citations = metadata?.perplexity?.citations as string[] | undefined
-  if (citations?.length) {
-    dataStream.writeData({ citations })
   }
 }
