@@ -8,7 +8,9 @@ import { useRouter } from "next/navigation"
 import { useContext, useEffect, useRef } from "react"
 import { LLM_LIST } from "../../../lib/models/llm/llm-list"
 
+import { useUIContext } from "@/context/ui-context"
 import { createMessageFeedback } from "@/db/message-feedback"
+import { Fragment } from "@/lib/tools/e2b/fragments/types"
 import {
   createTempMessages,
   generateChatTitle,
@@ -16,19 +18,17 @@ import {
   handleCreateMessages,
   handleHostedChat,
   handleHostedPluginsChat,
-  handleRetrieval,
   validateChatSettings
 } from "../chat-helpers"
 import { useFragments } from "./use-fragments"
-import { Fragment } from "@/lib/tools/e2b/fragments/types"
-import { useUIContext } from "@/context/ui-context"
+import { getMessageFileItemsByMessageId } from "@/db/message-file-items"
+import { useRetrievalLogic } from "./retrieval-logic"
 
 export const useChatHandler = () => {
   const router = useRouter()
   const { dispatch: alertDispatch } = useAlertContext()
 
   const {
-    userInput,
     chatFiles,
     setUserInput,
     setNewMessageImages,
@@ -47,7 +47,6 @@ export const useChatHandler = () => {
     setChatImages,
     setChatFiles,
     setNewMessageFiles,
-    setShowFilesDisplay,
     newMessageFiles,
     useRetrieval,
     sourceCount,
@@ -62,8 +61,6 @@ export const useChatHandler = () => {
     setIsGenerating,
     setFirstTokenReceived,
     setToolInUse,
-    setIsAtPickerOpen,
-    isAtPickerOpen,
     isGenerating,
     setIsReadyToChat,
     setSelectedPlugin
@@ -75,17 +72,13 @@ export const useChatHandler = () => {
 
   const isGeneratingRef = useRef(isGenerating)
 
+  const { retrievalLogic } = useRetrievalLogic()
+
   useEffect(() => {
     isGeneratingRef.current = isGenerating
   }, [isGenerating])
 
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    if (!isAtPickerOpen) {
-      chatInputRef.current?.focus()
-    }
-  }, [isAtPickerOpen])
 
   // Initialize chat settings on component mount
   useEffect(() => {
@@ -133,8 +126,6 @@ export const useChatHandler = () => {
     setChatImages([])
     setNewMessageFiles([])
     setNewMessageImages([])
-    setShowFilesDisplay(false)
-    setIsAtPickerOpen(false)
     setUseRetrieval(false)
 
     setToolInUse("none")
@@ -242,7 +233,6 @@ export const useChatHandler = () => {
         setFirstTokenReceived(true)
       }
       setIsGenerating(true)
-      setIsAtPickerOpen(false)
       setNewMessageImages([])
 
       const newAbortController = new AbortController()
@@ -292,6 +282,36 @@ export const useChatHandler = () => {
         )
       }
 
+      let lastMessageRetrievedFileItems: Tables<"file_items">[] | null = null
+      let editedMessageFiles: Tables<"files">[] | null = null
+
+      if (isContinuation || isRegeneration) {
+        // If is continuation or regeneration, get the last message's file items so we don't have to run the retrieval logic
+        const messageFileItems = await getMessageFileItemsByMessageId(
+          sentChatMessages[sentChatMessages.length - 1].message.id
+        )
+
+        lastMessageRetrievedFileItems =
+          messageFileItems.file_items.sort((a, b) => {
+            // First sort by file_id
+            if (a.file_id < b.file_id) return -1
+            if (a.file_id > b.file_id) return 1
+
+            // Then sort by sequence_number if file_ids are equal
+            return a.sequence_number - b.sequence_number
+          }) ?? []
+      }
+
+      if (isEdit) {
+        // If is edit, get the edited message's file items so we can tell the agent which file is attached to the edited message
+        const editedChatMessage = chatMessages.find(
+          msg => msg.message.sequence_number === editSequenceNumber
+        )
+        editedMessageFiles = chatFiles.filter(
+          file => file.message_id === editedChatMessage?.message.id
+        )
+      }
+
       if (isRegeneration) {
         sentChatMessages.pop()
         sentChatMessages.push(tempAssistantChatMessage)
@@ -313,17 +333,21 @@ export const useChatHandler = () => {
 
       if (
         (newMessageFiles.length > 0 || chatFiles.length > 0) &&
-        useRetrieval &&
-        !isContinuation
+        useRetrieval
       ) {
         setToolInUse("retrieval")
 
-        retrievedFileItems = await handleRetrieval(
-          userInput,
-          newMessageFiles,
-          chatFiles,
-          sourceCount
-        )
+        if (!isContinuation) {
+          retrievedFileItems = await retrievalLogic(
+            sentChatMessages,
+            editedMessageFiles,
+            chatFiles,
+            sourceCount
+          )
+        } else {
+          // Get the last message's retrieved file items
+          retrievedFileItems = lastMessageRetrievedFileItems ?? []
+        }
       }
 
       const payload: ChatPayload = {
@@ -332,7 +356,7 @@ export const useChatHandler = () => {
           model: baseModel
         },
         chatMessages: sentChatMessages,
-        messageFileItems: retrievedFileItems
+        retrievedFileItems: retrievedFileItems
       }
 
       let generatedText = ""
@@ -353,7 +377,8 @@ export const useChatHandler = () => {
         selectedPlugin !== PluginID.TERMINAL &&
         selectedPlugin !== PluginID.ARTIFACTS &&
         selectedPlugin !== PluginID.REASONING &&
-        selectedPlugin !== PluginID.REASONING_WEB_SEARCH
+        selectedPlugin !== PluginID.REASONING_WEB_SEARCH &&
+        selectedPlugin !== PluginID.DEEP_RESEARCH
       ) {
         const {
           fullText,
@@ -453,11 +478,9 @@ export const useChatHandler = () => {
             profile!,
             selectedWorkspace!,
             messageContent || "",
-            newMessageFiles,
             finishReason,
             setSelectedChat,
-            setChats,
-            setChatFiles
+            setChats
           )
 
           // Update URL without triggering a page reload or new history entry
@@ -541,7 +564,9 @@ export const useChatHandler = () => {
           fragment,
           setFragment,
           thinkingText,
-          thinkingElapsedSecs
+          thinkingElapsedSecs,
+          newMessageFiles,
+          setChatFiles
         )
       }
 

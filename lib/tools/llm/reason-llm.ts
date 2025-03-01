@@ -57,10 +57,9 @@ async function processStream({
 
   const result = streamText({
     model: reasoningProvider(llmConfig.models.reasoning as string),
-    temperature: 0.5,
     maxTokens: 2048,
     system: buildSystemPrompt(
-      llmConfig.systemPrompts.pentestGPTChat,
+      llmConfig.systemPrompts.pentestGPTReasoning,
       profile.profile_context
     ),
     messages: toVercelChatMessages(messages)

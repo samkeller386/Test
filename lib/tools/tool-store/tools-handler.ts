@@ -43,10 +43,7 @@ export async function commandGeneratorHandler({
   isTerminalContinuation,
   isPremium
 }: CommandGeneratorHandlerOptions) {
-  const customPrompt = getToolsWithAnswerPrompt(
-    process.env.SECRET_PENTESTGPT_SYSTEM_PROMPT || "",
-    pluginID
-  )
+  const customPrompt = getToolsWithAnswerPrompt(pluginID)
   updateSystemMessage(messages, customPrompt, profile_context)
   filterEmptyAssistantMessages(messages)
   replaceWordsInLastUserMessage(messages)
@@ -68,7 +65,6 @@ export async function commandGeneratorHandler({
 
         const { textStream, finishReason } = streamText({
           model: provider(model, { parallelToolCalls: false }),
-          temperature: 0.5,
           maxTokens: 2048,
           messages: toVercelChatMessages(messages, true),
           tools: {
@@ -89,7 +85,6 @@ export async function commandGeneratorHandler({
                   )
               }),
               execute: async ({ command, files = [] }) => {
-                console.log("files", files)
                 const expectedCommands: Partial<Record<PluginID, string>> = {
                   [PluginID.SQLI_EXPLOITER]: "sqlmap",
                   [PluginID.SSL_SCANNER]: "testssl.sh",

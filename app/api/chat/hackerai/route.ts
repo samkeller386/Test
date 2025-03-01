@@ -13,7 +13,7 @@ import llmConfig from "@/lib/models/llm/llm-config"
 import { checkRatelimitOnApi } from "@/lib/server/ratelimiter"
 import { createOpenAI as createOpenRouterAI } from "@ai-sdk/openai"
 import { createMistral } from "@ai-sdk/mistral"
-import { smoothStream, streamText } from "ai"
+import { streamText } from "ai"
 import { getModerationResult } from "@/lib/server/moderation"
 // import { createToolSchemas } from "@/lib/tools/llm/toolSchemas"
 import { PluginID } from "@/types/plugins"
@@ -24,6 +24,7 @@ import { executeReasonLLMTool } from "@/lib/tools/llm/reason-llm"
 import { executeReasoningWebSearchTool } from "@/lib/tools/llm/reasoning-web-search"
 import { geolocation } from "@vercel/functions"
 import { processRag } from "@/lib/rag/rag-processor"
+import { executeDeepResearchTool } from "@/lib/tools/llm/deep-research"
 
 export const runtime: ServerRuntime = "edge"
 export const preferredRegion = [
@@ -110,14 +111,12 @@ export async function POST(request: Request) {
     }
 
     const handleMessages = (shouldUncensor: boolean) => {
-      if (includeImages) {
+      if (!config.isLargeModel && includeImages) {
         selectedModel = "pixtral-large-2411"
         return filterEmptyAssistantMessages(messages)
       }
 
       if (shouldUncensor) {
-        config.isLargeModel &&
-          console.log("[Premium User] Uncensored mode activated")
         return handleAssistantMessages(messages)
       }
 
@@ -126,6 +125,7 @@ export async function POST(request: Request) {
 
     if (
       llmConfig.openai.apiKey &&
+      !config.isLargeModel &&
       !includeImages &&
       !isContinuation &&
       selectedPlugin !== PluginID.WEB_SEARCH &&
@@ -177,6 +177,17 @@ export async function POST(request: Request) {
             }
           })
         })
+
+      case PluginID.DEEP_RESEARCH:
+        return createStreamResponse(async dataStream => {
+          await executeDeepResearchTool({
+            config: {
+              messages,
+              profile,
+              dataStream
+            }
+          })
+        })
     }
 
     const provider = createProvider(selectedModel, config)
@@ -207,11 +218,9 @@ export async function POST(request: Request) {
           ),
           system: systemPrompt,
           messages: toVercelChatMessages(validatedMessages, includeImages),
-          temperature: 0.5,
           maxTokens: 2048,
-          abortSignal: request.signal,
-          // ...(!shouldUseRAG && !shouldUncensorResponse && config.isPentestGPTPro ? { tools } : null),
-          experimental_transform: smoothStream()
+          abortSignal: request.signal
+          // ...(!shouldUseRAG && !shouldUncensorResponse && config.isPentestGPTPro ? { tools } : null)
         })
 
         result.mergeIntoDataStream(dataStream)
@@ -255,9 +264,11 @@ async function getProviderConfig(
     selectedPlugin === PluginID.REASONING ||
       selectedPlugin === PluginID.REASONING_WEB_SEARCH
       ? "reasoning"
-      : isLargeModel
-        ? "pentestgpt-pro"
-        : "pentestgpt"
+      : selectedPlugin === PluginID.DEEP_RESEARCH
+        ? "deep-research"
+        : isLargeModel
+          ? "pentestgpt-pro"
+          : "pentestgpt"
   )
 
   return {

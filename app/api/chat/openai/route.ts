@@ -8,7 +8,7 @@ import llmConfig from "@/lib/models/llm/llm-config"
 import { checkRatelimitOnApi } from "@/lib/server/ratelimiter"
 import { getAIProfile } from "@/lib/server/server-chat-helpers"
 import { openai } from "@ai-sdk/openai"
-import { smoothStream, streamText } from "ai"
+import { streamText } from "ai"
 import { ServerRuntime } from "next"
 import { createToolSchemas } from "@/lib/tools/llm/toolSchemas"
 import { PluginID } from "@/types/plugins"
@@ -18,6 +18,7 @@ import { executeTerminalTool } from "@/lib/tools/llm/terminal"
 import { executeReasonLLMTool } from "@/lib/tools/llm/reason-llm"
 import { executeReasoningWebSearchTool } from "@/lib/tools/llm/reasoning-web-search"
 import { processRag } from "@/lib/rag/rag-processor"
+import { executeDeepResearchTool } from "@/lib/tools/llm/deep-research"
 
 export const runtime: ServerRuntime = "edge"
 export const preferredRegion = [
@@ -58,7 +59,9 @@ export async function POST(request: Request) {
       selectedPlugin === PluginID.REASONING ||
         selectedPlugin === PluginID.REASONING_WEB_SEARCH
         ? "reasoning"
-        : "gpt-4"
+        : selectedPlugin === PluginID.DEEP_RESEARCH
+          ? "deep-research"
+          : "gpt-4"
     )
     if (rateLimitCheckResult !== null) {
       return rateLimitCheckResult.response
@@ -120,6 +123,13 @@ export async function POST(request: Request) {
             config: { messages, profile, dataStream, isLargeModel: true }
           })
         })
+
+      case PluginID.DEEP_RESEARCH:
+        return createStreamResponse(async dataStream => {
+          await executeDeepResearchTool({
+            config: { messages, profile, dataStream }
+          })
+        })
     }
 
     return createStreamResponse(dataStream => {
@@ -137,11 +147,9 @@ export async function POST(request: Request) {
         model: openai("gpt-4o", { parallelToolCalls: false }),
         system: systemPrompt,
         messages: toVercelChatMessages(messages, true),
-        temperature: 0.5,
         maxTokens: 2048,
         abortSignal: request.signal,
-        tools: getSelectedSchemas(["browser", "webSearch", "terminal"]),
-        experimental_transform: smoothStream()
+        tools: getSelectedSchemas(["browser", "webSearch", "terminal"])
       })
 
       result.mergeIntoDataStream(dataStream)
