@@ -194,7 +194,7 @@ export async function POST(request: Request) {
     }
 
     const subscriptionInfo = await getSubscriptionInfo(profile.user_id)
-    if (!config.isLargeModel && !subscriptionInfo.isPremium) {
+    if (!config.isLargeModel && !subscriptionInfo.isPremium && region !== "bom1") {
       selectedModel = "anthropic/claude-3.7-sonnet"
     }
 
