@@ -189,13 +189,17 @@ export async function POST(request: Request) {
         })
     }
 
-    if (config.isLargeModel && messages.length <= 1) {
+    if (config.isLargeModel && messages.length <= 3) {
       selectedModel = "claude-3-7-sonnet-20250219"
     }
 
     const subscriptionInfo = await getSubscriptionInfo(profile.user_id)
-    if (!config.isLargeModel && !subscriptionInfo.isPremium && region !== "bom1") {
-      selectedModel = "anthropic/claude-3.7-sonnet"
+    if (
+      !config.isLargeModel &&
+      !subscriptionInfo.isPremium &&
+      region !== "bom1"
+    ) {
+      selectedModel = "mistral-large-2411"
     }
 
     const provider = createProvider(selectedModel, config)
@@ -212,8 +216,15 @@ export async function POST(request: Request) {
 
         const result = streamText({
           model: provider(selectedModel) as LanguageModelV1,
-          system: systemPrompt,
-          messages: toVercelChatMessages(validatedMessages, includeImages),
+          system:
+            selectedModel == "claude-3-7-sonnet-20250219"
+              ? undefined
+              : systemPrompt,
+          messages: toVercelChatMessages(
+            validatedMessages,
+            includeImages,
+            systemPrompt
+          ),
           maxTokens: 2048,
           abortSignal: request.signal
         })
