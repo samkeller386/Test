@@ -1,7 +1,7 @@
 import { buildSystemPrompt } from "@/lib/ai/prompts"
 import { toVercelChatMessages } from "@/lib/build-prompt"
 import llmConfig from "@/lib/models/llm/llm-config"
-import { anthropic } from "@ai-sdk/anthropic"
+import { openai } from "@ai-sdk/openai"
 import { streamText, tool } from "ai"
 import { z } from "zod"
 import { executeTerminalCommand } from "./terminal-executor"
@@ -59,7 +59,7 @@ export async function executeTerminalTool({
       : messages
 
     const { textStream, finishReason } = streamText({
-      model: anthropic("claude-3-7-sonnet-20250219"),
+      model: openai("gpt-4o", { parallelToolCalls: false }),
       maxTokens: 2048,
       system: buildSystemPrompt(
         llmConfig.systemPrompts.pentestGPTTerminal,
