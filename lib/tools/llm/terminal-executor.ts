@@ -1,4 +1,4 @@
-import { OutputMessage, Sandbox } from "@e2b/code-interpreter"
+import { Sandbox } from "@e2b/code-interpreter"
 import { CustomExecutionError } from "../tool-store/tools-terminal"
 
 const MAX_EXECUTION_TIME = 10 * 60 * 1000
@@ -31,16 +31,15 @@ export const executeTerminalCommand = async ({
         }
 
         let isOutputStarted = false
-        const execution = await sandbox.runCode(command, {
-          language: "bash",
+        const execution = await sandbox.commands.run(command, {
           timeoutMs: MAX_EXECUTION_TIME,
-          onStdout: (data: OutputMessage) => {
+          onStdout: (data: string) => {
             hasTerminalOutput = true
             if (!isOutputStarted) {
               controller.enqueue(ENCODER.encode("\n```stdout\n"))
               isOutputStarted = true
             }
-            controller.enqueue(ENCODER.encode(data.line))
+            controller.enqueue(ENCODER.encode(data))
           }
         })
 

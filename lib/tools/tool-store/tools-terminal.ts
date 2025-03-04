@@ -1,5 +1,5 @@
 import { PluginID } from "@/types/plugins"
-import { OutputMessage, Sandbox } from "@e2b/code-interpreter"
+import { Sandbox } from "@e2b/code-interpreter"
 
 const MAX_EXECUTION_TIME = 10 * 60 * 1000
 const ENCODER = new TextEncoder()
@@ -28,17 +28,16 @@ export const terminalExecutor = async ({
 
       try {
         let isOutputStarted = false
-        const execution = await sandbox.runCode(command, {
-          language: "bash",
+        const execution = await sandbox.commands.run(command, {
           timeoutMs: MAX_EXECUTION_TIME,
-          onStdout: (data: OutputMessage) => {
-            if (shouldProcessOutput(data.line, pluginID)) {
+          onStdout: (data: string) => {
+            if (shouldProcessOutput(data, pluginID)) {
               hasTerminalOutput = true
               if (!isOutputStarted) {
                 controller.enqueue(ENCODER.encode("\n```stdout\n"))
                 isOutputStarted = true
               }
-              controller.enqueue(ENCODER.encode(data.line))
+              controller.enqueue(ENCODER.encode(data))
             }
           }
         })
