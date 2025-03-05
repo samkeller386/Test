@@ -90,19 +90,24 @@ export const useChatHandler = () => {
     }
   }, [selectedChat, setChatSettings])
 
-  const handleSelectChat = async (chat: Tables<"chats">) => {
+  const handleSelectChat = async (
+    chat: Tables<"chats"> | { chat_id: string }
+  ) => {
     if (!selectedWorkspace) return
     await handleStopMessage()
     setIsReadyToChat(false)
 
-    if (chat.model) {
+    // Handle both full chat object and search result
+    const chatId = "id" in chat ? chat.id : chat.chat_id
+
+    if ("model" in chat && chat.model) {
       setChatSettings(prevSettings => ({
         ...prevSettings,
         model: chat.model as LLMID
       }))
     }
 
-    return router.push(`/${selectedWorkspace.id}/c/${chat.id}`)
+    return router.push(`/${selectedWorkspace.id}/c/${chatId}`)
   }
 
   const handleNewChat = async () => {
@@ -372,7 +377,8 @@ export const useChatHandler = () => {
         selectedPlugin !== PluginID.TERMINAL &&
         selectedPlugin !== PluginID.ARTIFACTS &&
         selectedPlugin !== PluginID.REASONING &&
-        selectedPlugin !== PluginID.REASONING_WEB_SEARCH
+        selectedPlugin !== PluginID.REASONING_WEB_SEARCH &&
+        selectedPlugin !== PluginID.DEEP_RESEARCH
       ) {
         const {
           fullText,

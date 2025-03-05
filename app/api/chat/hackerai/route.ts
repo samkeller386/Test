@@ -13,9 +13,9 @@ import llmConfig from "@/lib/models/llm/llm-config"
 import { checkRatelimitOnApi } from "@/lib/server/ratelimiter"
 import { createOpenAI as createOpenRouterAI } from "@ai-sdk/openai"
 import { createMistral } from "@ai-sdk/mistral"
-import { streamText } from "ai"
+import { createAnthropic } from "@ai-sdk/anthropic"
+import { LanguageModelV1, streamText } from "ai"
 import { getModerationResult } from "@/lib/server/moderation"
-// import { createToolSchemas } from "@/lib/tools/llm/toolSchemas"
 import { PluginID } from "@/types/plugins"
 import { executeWebSearchTool } from "@/lib/tools/llm/web-search"
 import { createStreamResponse } from "@/lib/ai-helper"
@@ -24,6 +24,7 @@ import { executeReasonLLMTool } from "@/lib/tools/llm/reason-llm"
 import { executeReasoningWebSearchTool } from "@/lib/tools/llm/reasoning-web-search"
 import { geolocation } from "@vercel/functions"
 import { processRag } from "@/lib/rag/rag-processor"
+import { executeDeepResearchTool } from "@/lib/tools/llm/deep-research"
 
 export const runtime: ServerRuntime = "edge"
 export const preferredRegion = [
@@ -64,7 +65,6 @@ export async function POST(request: Request) {
       selectedPlugin
     )
 
-    // Early validation
     if (!config.selectedModel) {
       throw new Error("Selected model is undefined")
     }
@@ -116,6 +116,7 @@ export async function POST(request: Request) {
       }
 
       if (shouldUncensor) {
+        config.isLargeModel && (selectedModel = "mistral-large-latest")
         return handleAssistantMessages(messages)
       }
 
@@ -129,7 +130,8 @@ export async function POST(request: Request) {
       selectedPlugin !== PluginID.WEB_SEARCH &&
       selectedPlugin !== PluginID.REASONING &&
       selectedPlugin !== PluginID.REASONING_WEB_SEARCH &&
-      region !== "bom1"
+      region !== "bom1" &&
+      region !== "cpt1"
     ) {
       const { shouldUncensorResponse: moderationResult } =
         await getModerationResult(
@@ -143,7 +145,6 @@ export async function POST(request: Request) {
 
     handleMessages(shouldUncensorResponse)
 
-    // Handle web search plugin
     switch (selectedPlugin) {
       case PluginID.WEB_SEARCH:
         return createStreamResponse(async dataStream => {
@@ -175,6 +176,17 @@ export async function POST(request: Request) {
             }
           })
         })
+
+      case PluginID.DEEP_RESEARCH:
+        return createStreamResponse(async dataStream => {
+          await executeDeepResearchTool({
+            config: {
+              messages,
+              profile,
+              dataStream
+            }
+          })
+        })
     }
 
     const provider = createProvider(selectedModel, config)
@@ -189,25 +201,21 @@ export async function POST(request: Request) {
       return createStreamResponse(dataStream => {
         dataStream.writeData({ ragUsed, ragId })
 
-        // const tools = config.isPentestGPTPro
-        //   ? createToolSchemas({
-        //       chatSettings,
-        //       messages: cleanedMessages,
-        //       profile,
-        //       dataStream
-        //     }).getSelectedSchemas(["webSearch", "browser"])
-        //   : undefined
-
         const result = streamText({
-          model: provider(
-            selectedModel || "",
-            config.isLargeModel ? { parallelToolCalls: false } : {}
+          model: provider(selectedModel) as LanguageModelV1,
+          system:
+            selectedModel == "claude-3-7-sonnet-20250219"
+              ? undefined
+              : systemPrompt,
+          messages: toVercelChatMessages(
+            validatedMessages,
+            includeImages,
+            selectedModel == "claude-3-7-sonnet-20250219"
+              ? systemPrompt
+              : undefined
           ),
-          system: systemPrompt,
-          messages: toVercelChatMessages(validatedMessages, includeImages),
           maxTokens: 2048,
           abortSignal: request.signal
-          // ...(!shouldUseRAG && !shouldUncensorResponse && config.isPentestGPTPro ? { tools } : null)
         })
 
         result.mergeIntoDataStream(dataStream)
@@ -251,9 +259,11 @@ async function getProviderConfig(
     selectedPlugin === PluginID.REASONING ||
       selectedPlugin === PluginID.REASONING_WEB_SEARCH
       ? "reasoning"
-      : isLargeModel
-        ? "pentestgpt-pro"
-        : "pentestgpt"
+      : selectedPlugin === PluginID.DEEP_RESEARCH
+        ? "deep-research"
+        : isLargeModel
+          ? "pentestgpt-pro"
+          : "pentestgpt"
   )
 
   return {
@@ -273,6 +283,9 @@ function createProvider(selectedModel: string, config: any) {
     selectedModel.startsWith("codestral")
   ) {
     return createMistral()
+  }
+  if (selectedModel.startsWith("claude-")) {
+    return createAnthropic()
   }
   return createOpenRouterAI({
     baseURL: config.providerBaseUrl,

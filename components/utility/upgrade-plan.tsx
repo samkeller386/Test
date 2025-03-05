@@ -113,7 +113,7 @@ export const UpgradePlan: FC = () => {
   }
 
   const planPrices = {
-    pro: { monthly: "$25", yearly: "$20" },
+    pro: { monthly: "$20", yearly: "$15" },
     team: { monthly: "$40", yearly: "$32" }
   }
 
@@ -188,10 +188,11 @@ export const UpgradePlan: FC = () => {
           >
             <PlanStatement>Early access to new features</PlanStatement>
             <PlanStatement>
-              Access to PGPT-Large, PentestGPT-4o, PGPT-Small
+              Access to PGPT-Large, GPT-4o, PGPT-Small
             </PlanStatement>
             <PlanStatement>
-              Access to file uploads, vision, web search and browsing
+              Access to file uploads, vision, web search, browsing and deep
+              research
             </PlanStatement>
             <PlanStatement>Access to advanced plugins</PlanStatement>
             <PlanStatement>Access to terminal</PlanStatement>

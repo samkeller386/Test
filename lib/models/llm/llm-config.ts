@@ -1,7 +1,4 @@
-import {
-  TERMINAL_OUTPUT_ANALYSIS_INSTRUCTIONS,
-  TERMINAL_TOOL_INSTRUCTIONS
-} from "@/lib/backend-config"
+import { TERMINAL_TOOL_INSTRUCTIONS } from "@/lib/backend-config"
 import { getPentestGPTInfo, systemPromptEnding } from "./llm-prompting"
 
 const options: Intl.DateTimeFormatOptions = {
@@ -38,8 +35,8 @@ const llmConfig = {
     smallModel: `${getPentestGPTInfo(true, false, "October 2023", "PGPT-Small")}\n${systemPromptEnding}`,
     // For PGPT-Large
     largeModel: `${getPentestGPTInfo(true, false, "October 2023", "PGPT-Large")}${systemPromptEnding}`,
-    // For PentestGPT-4o
-    gpt4o: `${getPentestGPTInfo(true, true, "October 2024", "PentestGPT-4o")}\n${systemPromptEnding}`,
+    // For GPT-4o
+    gpt4o: `${getPentestGPTInfo(true, true, "October 2024", "GPT-4o")}\n${systemPromptEnding}`,
     // For browser tool
     pentestGPTBrowser: `${getPentestGPTInfo(true, true)}\n${systemPromptEnding}`,
     // For webSearch tool
@@ -47,15 +44,14 @@ const llmConfig = {
     // For reasoning tool
     pentestGPTReasoning: `${getPentestGPTInfo(true)}\n${systemPromptEnding}`,
     // For terminal tool
-    pentestGPTTerminal: `${getPentestGPTInfo()}\n${TERMINAL_TOOL_INSTRUCTIONS}\n${TERMINAL_OUTPUT_ANALYSIS_INSTRUCTIONS}\n${systemPromptEnding}`,
+    pentestGPTTerminal: `${getPentestGPTInfo()}\n${TERMINAL_TOOL_INSTRUCTIONS}\n${systemPromptEnding}`,
     // For fragment tool
-    pentestGPTFragment: `${getPentestGPTInfo(true, false, "October 2024", "PentestGPT-4o")}}`
+    pentestGPTFragment: `${getPentestGPTInfo(true, false, "October 2024", "GPT-4o")}}`
   },
   models: {
     small: process.env.OPENROUTER_PENTESTGPT_DEFAULT_MODEL,
     standalone_question: process.env.OPENROUTER_STANDALONE_QUESTION_MODEL,
-    large: process.env.OPENROUTER_PENTESTGPT_PRO_MODEL,
-    reasoning: process.env.REASONING_MODEL
+    large: process.env.OPENROUTER_PENTESTGPT_PRO_MODEL
   },
   hackerRAG: {
     enabled:
