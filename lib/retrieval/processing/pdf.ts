@@ -1,30 +1,41 @@
 import { FileItemChunk } from "@/types"
-// import { encode } from "gpt-tokenizer"
-// import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf"
-// import { RecursiveCharacterTextSplitter } from "langchain/text_splitter"
-// import { CHUNK_OVERLAP, CHUNK_SIZE } from "."
+import { encode } from "gpt-tokenizer"
+import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf"
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter"
+import { CHUNK_OVERLAP, CHUNK_SIZE } from "."
 
-export const processPdf = async (): Promise<FileItemChunk[]> => {
-  // const loader = new PDFLoader(pdf)
-  // const docs = await loader.load()
-  // const completeText = docs.map(doc => doc.pageContent).join(" ")
+export const processPdf = async (pdf: Blob): Promise<FileItemChunk[]> => {
+  const loader = new PDFLoader(pdf)
+  const docs = await loader.load()
+  const completeText = docs.map(doc => doc.pageContent).join(" ")
 
-  // const splitter = new RecursiveCharacterTextSplitter({
-  //   chunkSize: CHUNK_SIZE,
-  //   chunkOverlap: CHUNK_OVERLAP
-  // })
-  // const splitDocs = await splitter.createDocuments([completeText])
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize: CHUNK_SIZE,
+    chunkOverlap: CHUNK_OVERLAP
+  })
+  const splitDocs = await splitter.createDocuments([completeText])
 
-  // const chunks: FileItemChunk[] = []
+  if (splitDocs.length > 16) {
+    return [
+      {
+        content: "",
+        tokens: 0,
+        isEmptyPdfChunk: true
+      }
+    ]
+  }
 
-  // for (let i = 0; i < splitDocs.length; i++) {
-  //   const doc = splitDocs[i]
+  const chunks: FileItemChunk[] = []
 
-  //   chunks.push({
-  //     content: doc.pageContent,
-  //     tokens: encode(doc.pageContent).length
-  //   })
-  // }
+  for (let i = 0; i < splitDocs.length; i++) {
+    const doc = splitDocs[i]
 
-  return [{ content: "", tokens: 0 }]
+    chunks.push({
+      content: doc.pageContent,
+      tokens: encode(doc.pageContent).length,
+      isEmptyPdfChunk: false
+    })
+  }
+
+  return chunks
 }

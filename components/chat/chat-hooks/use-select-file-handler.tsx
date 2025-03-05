@@ -189,7 +189,7 @@ export const useSelectFileHandler = () => {
 
       if (!createdFile) {
         toast.error(
-          "You reached the maximum amount of files! Please delete some in the files tab."
+          "File limit reached. Please delete some chats containing files."
         )
         setNewMessageFiles(prev => prev.filter(f => f.id !== loadingId))
         return

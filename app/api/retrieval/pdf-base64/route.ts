@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     if (fileError) {
       throw new Error(`Failed to retrieve file: ${fileError.message}`)
     }
-    console.log("file", file)
+
     // Convert to base64
     const fileBuffer = await file.arrayBuffer()
     const base64String = Buffer.from(fileBuffer).toString("base64")

@@ -1,4 +1,5 @@
 import { Tables } from "@/supabase/types"
+import { FilePart } from "ai"
 
 export interface ChatMessage {
   message: Tables<"messages">
@@ -14,21 +15,12 @@ export interface ImageContent {
   }
 }
 
-export interface DocumentContent {
-  type: "document"
-  source: {
-    type: "base64"
-    media_type: "application/pdf"
-    data: string
-  }
-}
-
 export interface TextContent {
   type: "text"
   text: string
 }
 
-export type MessageContent = ImageContent | TextContent | DocumentContent
+export type MessageContent = ImageContent | TextContent | FilePart
 
 export interface BuiltChatMessage {
   role: string

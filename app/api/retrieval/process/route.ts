@@ -71,7 +71,7 @@ export async function POST(req: Request) {
         chunks = await processMarkdown(blob)
         break
       case "pdf":
-        chunks = await processPdf()
+        chunks = await processPdf(blob)
         break
       case "txt":
         chunks = await processTxt(blob)
@@ -90,9 +90,16 @@ export async function POST(req: Request) {
       throw new Error("Empty file. Please check the file format and content.")
     }
 
+    if (chunks.length >= 16) {
+      throw new Error("File is too large.")
+    }
+
     let embeddings: any = []
 
-    if (fileExtension !== "pdf") {
+    // Check if we have content to embed (not an empty PDF chunk)
+    const hasContentToEmbed = chunks.length > 0 && !chunks[0].isEmptyPdfChunk
+
+    if (hasContentToEmbed) {
       const openai = new OpenAI({
         apiKey: llmConfig.openai.apiKey
       })
@@ -114,10 +121,8 @@ export async function POST(req: Request) {
       content: chunk.content,
       tokens: chunk.tokens,
       name: fileMetadata.name,
-      openai_embedding: fileExtension === "pdf" ? null : embeddings[index]
+      openai_embedding: hasContentToEmbed ? embeddings[index] : null
     }))
-
-    console.log("file_items", file_items)
 
     await supabaseAdmin.from("file_items").upsert(file_items)
 
