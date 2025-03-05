@@ -124,7 +124,7 @@ export const useSelectFileHandler = () => {
     )
     const MB_TO_BYTES = (mb: number) => mb * 1024 * 1024
     const SIZE_LIMIT = MB_TO_BYTES(sizeLimitMB)
-    
+
     if (file.size > SIZE_LIMIT) {
       toast.error(`File must be less than ${sizeLimitMB}MB`)
       return false
