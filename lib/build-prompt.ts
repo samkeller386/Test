@@ -2,8 +2,7 @@ import {
   BuiltChatMessage,
   ChatMessage,
   ChatPayload,
-  MessageImage,
-  MessageContent
+  MessageImage
 } from "@/types"
 import { Tables } from "@/supabase/types"
 import { countTokens } from "gpt-tokenizer"
@@ -59,25 +58,12 @@ export async function buildFinalMessages(
       chatMessage.fileItems.length > 0 &&
       chatMessage.message.role === "user"
     ) {
-      // For LargeModel, skip PDFs in initial processing since they'll be handled later
-      const filesToProcess =
-        chatSettings.model === LargeModel.modelId
-          ? chatMessage.fileItems.filter(
-              item => !item.name?.toLowerCase().endsWith(".pdf")
-            )
-          : chatMessage.fileItems
+      // Create a structured document format for file content
+      const documentsText = buildDocumentsText(chatMessage.fileItems)
 
-      if (filesToProcess.length > 0) {
-        const documentsText = buildDocumentsText(filesToProcess)
-        returnMessage.message = {
-          ...returnMessage.message,
-          content: `${documentsText}\n\n${chatMessage.message.content}`
-        }
-      } else {
-        returnMessage.message = {
-          ...returnMessage.message,
-          content: chatMessage.message.content
-        }
+      returnMessage.message = {
+        ...returnMessage.message,
+        content: `${documentsText}\n\n${chatMessage.message.content}`
       }
       returnMessage.fileItems = []
     }
@@ -165,108 +151,13 @@ export async function buildFinalMessages(
     }
   })
 
-  const isPdfFile = (item: { name?: string | null }) =>
-    item.name?.toLowerCase().endsWith(".pdf") ?? false
-
-  const hasAttachedFiles =
-    retrievedFileItems.length > 0 ||
-    chatMessages.some(msg => msg.fileItems?.length > 0)
-
-  if (!hasAttachedFiles) {
-    return finalMessages
-  }
-
   if (retrievedFileItems.length > 0) {
-    // For LargeModel, skip document building for PDFs
-    const nonPdfFiles =
-      chatSettings.model === LargeModel.modelId
-        ? retrievedFileItems.filter(
-            item => !item.name?.toLowerCase().endsWith(".pdf")
-          )
-        : retrievedFileItems
+    const documentsText = buildDocumentsText(retrievedFileItems)
 
-    if (nonPdfFiles.length > 0) {
-      const documentsText = buildDocumentsText(nonPdfFiles)
-      finalMessages[finalMessages.length - 2] = {
-        ...finalMessages[finalMessages.length - 2],
-        content: `${documentsText}\n\n${finalMessages[finalMessages.length - 2].content}`
-      }
+    finalMessages[finalMessages.length - 2] = {
+      ...finalMessages[finalMessages.length - 2],
+      content: `${documentsText}\n\n${finalMessages[finalMessages.length - 2].content}`
     }
-  }
-
-  // Gather all PDF files from both sources
-  const pdfFilesFromRetrieved = retrievedFileItems.filter(isPdfFile)
-  const pdfFilesFromMessages = chatMessages.flatMap(
-    msg => msg.fileItems?.filter(isPdfFile) ?? []
-  )
-
-  // Deduplicate PDF files based on file_id
-  const uniquePdfFiles = Array.from(
-    new Map(
-      [...pdfFilesFromRetrieved, ...pdfFilesFromMessages].map(file => [
-        file.file_id,
-        file
-      ])
-    ).values()
-  )
-
-  if (
-    chatSettings.model !== LargeModel.modelId ||
-    uniquePdfFiles.length === 0
-  ) {
-    return finalMessages
-  }
-
-  // Handle PDF files
-  const userMessageIndex = finalMessages.length - 2
-  const userMessage = finalMessages[userMessageIndex]
-  const newContent: MessageContent[] = []
-
-  // Process unique PDF files
-  for (const pdfFile of uniquePdfFiles) {
-    try {
-      const response = await fetch("/api/retrieval/pdf-base64", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file_id: pdfFile.file_id })
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch PDF: ${response.statusText}`)
-      }
-
-      const { base64 } = await response.json()
-      newContent.push({
-        type: "file",
-        data: base64,
-        mimeType: "application/pdf"
-      })
-    } catch (error) {
-      console.error("Error fetching PDF base64:", error)
-      newContent.push({
-        type: "text",
-        text: `[Error loading PDF: ${pdfFile.name}]`
-      })
-    }
-  }
-
-  // Add original message content
-  const originalText =
-    typeof userMessage.content === "string"
-      ? userMessage.content
-      : Array.isArray(userMessage.content)
-        ? userMessage.content
-            .filter(c => typeof c === "object" && c.type === "text")
-            .map(c => (c as { text: string }).text)
-            .join("\n")
-        : ""
-
-  newContent.push({ type: "text", text: originalText })
-
-  // Update the user message
-  finalMessages[userMessageIndex] = {
-    ...userMessage,
-    content: newContent
   }
 
   return finalMessages
