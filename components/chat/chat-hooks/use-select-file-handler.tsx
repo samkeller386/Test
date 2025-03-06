@@ -167,7 +167,6 @@ export const useSelectFileHandler = () => {
           type: simplifiedType,
           file,
           created_at: "",
-          description: "",
           file_path: "",
           sharing: "",
           size: file.size,
@@ -181,7 +180,6 @@ export const useSelectFileHandler = () => {
 
       const fileData = {
         user_id: profile.user_id,
-        description: "",
         file_path: "",
         name: file.name,
         size: file.size,
