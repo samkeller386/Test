@@ -202,7 +202,7 @@ export const useSelectFileHandler = () => {
       )
       setUseRetrieval(true)
     } catch (error: any) {
-      toast.error(`Failed to upload ${file.name}: ${error?.message}`, {
+      toast.error(`${error?.message}`, {
         duration: 10000
       })
       setNewMessageImages(prev => prev.filter(img => img.messageId !== "temp"))
