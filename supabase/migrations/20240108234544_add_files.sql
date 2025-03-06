@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS files (
     sharing TEXT NOT NULL DEFAULT 'private',
 
     -- REQUIRED
-    description TEXT NOT NULL CHECK (char_length(description) <= 500),
     file_path TEXT NOT NULL CHECK (char_length(file_path) <= 1000),
     name TEXT NOT NULL CHECK (char_length(name) <= 100),
     size INT NOT NULL,
