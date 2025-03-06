@@ -14,8 +14,7 @@ import { Fragment } from "./tools/e2b/fragments/types"
 
 export async function buildFinalMessages(
   payload: ChatPayload,
-  chatImages: MessageImage[],
-  shouldUseRAG?: boolean
+  chatImages: MessageImage[]
 ): Promise<BuiltChatMessage[]> {
   const { chatSettings, chatMessages, retrievedFileItems } = payload
 
@@ -23,14 +22,9 @@ export async function buildFinalMessages(
   if (chatSettings.model === GPT4o.modelId) {
     CHUNK_SIZE = 32000 - 4000 // -4000 for the system prompt, custom instructions, and more
   } else if (chatSettings.model === LargeModel.modelId) {
-    CHUNK_SIZE = 24000 - 4000 // -4000 for the system prompt, custom instructions, and more
+    CHUNK_SIZE = 22000 - 4000 // -4000 for the system prompt, custom instructions, and more
   } else if (chatSettings.model === SmallModel.modelId) {
     CHUNK_SIZE = 12000 - 4000 // -4000 for the system prompt, custom instructions, and more
-  }
-
-  // Adjusting the chunk size for RAG
-  if (shouldUseRAG) {
-    CHUNK_SIZE = 12000
   }
 
   let remainingTokens = CHUNK_SIZE
@@ -65,12 +59,25 @@ export async function buildFinalMessages(
       chatMessage.fileItems.length > 0 &&
       chatMessage.message.role === "user"
     ) {
-      // Create a structured document format for file content
-      const documentsText = buildDocumentsText(chatMessage.fileItems)
+      // For LargeModel, skip PDFs in initial processing since they'll be handled later
+      const filesToProcess =
+        chatSettings.model === LargeModel.modelId
+          ? chatMessage.fileItems.filter(
+              item => !item.name?.toLowerCase().endsWith(".pdf")
+            )
+          : chatMessage.fileItems
 
-      returnMessage.message = {
-        ...returnMessage.message,
-        content: `${documentsText}\n\n${chatMessage.message.content}`
+      if (filesToProcess.length > 0) {
+        const documentsText = buildDocumentsText(filesToProcess)
+        returnMessage.message = {
+          ...returnMessage.message,
+          content: `${documentsText}\n\n${chatMessage.message.content}`
+        }
+      } else {
+        returnMessage.message = {
+          ...returnMessage.message,
+          content: chatMessage.message.content
+        }
       }
       returnMessage.fileItems = []
     }
@@ -167,6 +174,24 @@ export async function buildFinalMessages(
 
   if (!hasAttachedFiles) {
     return finalMessages
+  }
+
+  if (retrievedFileItems.length > 0) {
+    // For LargeModel, skip document building for PDFs
+    const nonPdfFiles =
+      chatSettings.model === LargeModel.modelId
+        ? retrievedFileItems.filter(
+            item => !item.name?.toLowerCase().endsWith(".pdf")
+          )
+        : retrievedFileItems
+
+    if (nonPdfFiles.length > 0) {
+      const documentsText = buildDocumentsText(nonPdfFiles)
+      finalMessages[finalMessages.length - 2] = {
+        ...finalMessages[finalMessages.length - 2],
+        content: `${documentsText}\n\n${finalMessages[finalMessages.length - 2].content}`
+      }
+    }
   }
 
   // Gather all PDF files from both sources
