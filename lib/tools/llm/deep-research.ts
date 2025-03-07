@@ -50,7 +50,7 @@ async function processStream({
     model: perplexity("sonar-deep-research"),
     maxTokens: 8192,
     system: buildSystemPrompt(
-      llmConfig.systemPrompts.pentestGPTWebSearch,
+      llmConfig.systemPrompts.reasoningWebSearch,
       profile.profile_context
     ),
     messages: toVercelChatMessages(messages)

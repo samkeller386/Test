@@ -59,7 +59,7 @@ async function processStream({
     model: perplexity(selectedModel),
     maxTokens: 2048,
     system: buildSystemPrompt(
-      llmConfig.systemPrompts.pentestGPTWebSearch,
+      llmConfig.systemPrompts.reasoningWebSearch,
       profile.profile_context
     ),
     messages: toVercelChatMessages(messages)
