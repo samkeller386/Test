@@ -159,7 +159,12 @@ export async function POST(request: Request) {
       case PluginID.REASONING:
         return createStreamResponse(async dataStream => {
           await executeReasonLLMTool({
-            config: { messages, profile, dataStream }
+            config: {
+              messages,
+              profile,
+              dataStream,
+              isLargeModel: config.isLargeModel
+            }
           })
         })
 
