@@ -123,7 +123,7 @@ function _getLimit(model: string, subscriptionInfo: SubscriptionInfo): number {
       return 100
     }
     return fragmentsLimit
-  } else if (model === "generateTitle") {
+  } else if (model === "generate-title") {
     if (subscriptionInfo.isPremium || subscriptionInfo.isTeam) {
       const chatNameLimit =
         Number(process.env.GENERATE_TITLE_LIMIT_PREMIUM) || 100
@@ -159,6 +159,7 @@ function _getLimit(model: string, subscriptionInfo: SubscriptionInfo): number {
   if (isNaN(limit) || limit < 0) {
     throw new Error("Invalid limit configuration")
   }
+  console.log("limit", limit)
   return limit
 }
 
