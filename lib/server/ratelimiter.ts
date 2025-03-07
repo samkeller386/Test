@@ -263,7 +263,7 @@ export function getRateLimitErrorMessage(
     message += `\n\n🔓 Want more? Upgrade to Pro or Team and unlock a world of features:
 - Higher usage limits
 - Access to PentestGPT-Large and GPT-4o
-- Access to file uploads, vision, web search and browsing
+- Access to file uploads, vision, deep research and web browsing
 - Access to advanced plugins
 - Access to terminal`
   }
