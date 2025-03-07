@@ -54,16 +54,14 @@ export async function POST(request: Request) {
     } = await request.json()
 
     const profile = await getAIProfile()
+    const rateLimitModel =
+      selectedPlugin && selectedPlugin !== PluginID.NONE
+        ? selectedPlugin
+        : "gpt-4"
+
     const rateLimitCheckResult = await checkRatelimitOnApi(
       profile.user_id,
-      selectedPlugin === PluginID.REASONING
-        ? "reasoning"
-        : selectedPlugin === PluginID.WEB_SEARCH ||
-            selectedPlugin === PluginID.REASONING_WEB_SEARCH
-          ? "web-search"
-          : selectedPlugin === PluginID.DEEP_RESEARCH
-            ? "deep-research"
-            : "gpt-4"
+      rateLimitModel
     )
     if (rateLimitCheckResult !== null) {
       return rateLimitCheckResult.response

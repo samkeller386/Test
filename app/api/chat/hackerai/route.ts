@@ -257,18 +257,17 @@ async function getProviderConfig(
   }
 
   const selectedModel = isLargeModel ? proModel : defaultModel
+
+  const rateLimitModel =
+    selectedPlugin && selectedPlugin !== PluginID.NONE
+      ? selectedPlugin
+      : isLargeModel
+        ? "pentestgpt-pro"
+        : "pentestgpt"
+
   const rateLimitCheckResult = await checkRatelimitOnApi(
     profile.user_id,
-    selectedPlugin === PluginID.REASONING
-      ? "reasoning"
-      : selectedPlugin === PluginID.WEB_SEARCH ||
-          selectedPlugin === PluginID.REASONING_WEB_SEARCH
-        ? "web-search"
-        : selectedPlugin === PluginID.DEEP_RESEARCH
-          ? "deep-research"
-          : isLargeModel
-            ? "pentestgpt-pro"
-            : "pentestgpt"
+    rateLimitModel
   )
 
   return {
