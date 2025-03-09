@@ -19,23 +19,19 @@ export async function middleware(request: NextRequest) {
           new URL('/login/verify', request.url))
       }
 
-      // Handle root path redirect to user's home workspace
       const redirectToChat = request.nextUrl.pathname === "/"
       
       if (redirectToChat) {
-        const { data: homeWorkspace, error } = await supabase
-          .from("workspaces")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("is_home", true)
-          .single()
-
-        if (!homeWorkspace) {
-          throw new Error(error?.message)
-        }
-
         return NextResponse.redirect(
-          new URL(`/${homeWorkspace.id}/c`, request.url)
+          new URL(`/c`, request.url)
+        )
+      }
+
+      // Check if the URL matches the pattern /[workspaceid]/c or /[workspaceid]/chat
+      const workspacePattern = /^\/[^\/]+\/(c|chat)$/;
+      if (workspacePattern.test(request.nextUrl.pathname)) {
+        return NextResponse.redirect(
+          new URL("/c", request.url)
         )
       }
     }
