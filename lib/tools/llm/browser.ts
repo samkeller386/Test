@@ -1,8 +1,8 @@
 import { buildSystemPrompt } from "@/lib/ai/prompts"
 import { toVercelChatMessages } from "@/lib/ai/message-utils"
 import llmConfig from "@/lib/models/llm/llm-config"
-import { createOpenAI } from "@ai-sdk/openai"
-import { streamText } from "ai"
+import { smoothStream, streamText } from "ai"
+import { myProvider } from "@/lib/ai/providers"
 interface BrowserToolConfig {
   chatSettings: any
   profile: any
@@ -158,8 +158,6 @@ export async function executeBrowserTool({
   }
 
   const { profile, messages, dataStream } = config
-  // const { selectedModel } = await getProviderConfig(chatSettings)
-  const selectedModel = "gpt-4o-mini"
 
   const lastUserMessage = getLastUserMessage(messages)
   let browserPrompt: string
@@ -177,12 +175,10 @@ export async function executeBrowserTool({
     browserPrompt = createMultiBrowserPrompt(browserResults, lastUserMessage)
   }
 
-  const openai = createOpenAI()
-
-  console.log("[BrowserTool] Executing browser tool with model:", selectedModel)
+  console.log("[BrowserTool] Executing browser tool")
 
   const { fullStream } = streamText({
-    model: openai(selectedModel),
+    model: myProvider.languageModel("chat-model-gpt-small"),
     system: buildSystemPrompt(
       llmConfig.systemPrompts.pentestGPTBrowser,
       profile.profile_context
@@ -191,7 +187,8 @@ export async function executeBrowserTool({
       ...toVercelChatMessages(messages.slice(0, -1)),
       { role: "user", content: browserPrompt }
     ],
-    maxTokens: 2048
+    maxTokens: 2048,
+    experimental_transform: smoothStream({ chunking: "word" })
   })
 
   for await (const delta of fullStream) {
