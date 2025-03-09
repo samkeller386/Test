@@ -27,11 +27,14 @@ export async function middleware(request: NextRequest) {
         )
       }
 
-      // Check if the URL matches the pattern /[workspaceid]/c or /[workspaceid]/chat
-      const workspacePattern = /^\/[^\/]+\/(c|chat)$/;
+      // Check if the URL matches either /[workspaceid]/c(hat) or /[workspaceid]/c(hat)/[chatid]
+      const workspacePattern = /^\/[^\/]+\/(c|chat)(\/[^\/]+)?$/;
       if (workspacePattern.test(request.nextUrl.pathname)) {
+        const pathParts = request.nextUrl.pathname.split('/');
+        // If chat ID exists, preserve it in the redirect
+        const chatId = pathParts.length === 4 ? pathParts[3] : '';
         return NextResponse.redirect(
-          new URL("/c", request.url)
+          new URL(chatId ? `/c/${chatId}` : '/c', request.url)
         )
       }
     }
