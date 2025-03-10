@@ -39,6 +39,7 @@
     "@headlessui/react": "^2.2.0",
     "@langchain/community": "^0.3.34",
     "@marsidev/react-turnstile": "^1.1.0",
+    "@mendable/firecrawl-js": "^1.19.0",
     "@openrouter/ai-sdk-provider": "^0.4.3",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
