@@ -8,7 +8,7 @@ export const myProvider = customProvider({
   languageModels: {
     "chat-model-small": mistral("mistral-small-latest"),
     "chat-model-large": mistral("mistral-large-latest"),
-    "chat-model-gpt-small": openai("gpt-4o-mini", { parallelToolCalls: false }),
+    "chat-model-gpt-small": openai("gpt-4o-mini"),
     "chat-model-gpt-large": openai("gpt-4o", { parallelToolCalls: false }),
     "chat-model-reasoning": openrouter("deepseek/deepseek-r1"),
     "deep-research": perplexity("sonar-deep-research"),
