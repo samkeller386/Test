@@ -34,7 +34,7 @@ const llmConfig = {
     // For PGPT-Small
     smallModel: `${getPentestGPTInfo(true, false, "October 2023", "PGPT-Small")}\n${systemPromptEnding}`,
     // For PGPT-Large
-    largeModel: `${getPentestGPTInfo(true, false, "October 2023", "PGPT-Large")}${systemPromptEnding}`,
+    largeModel: `${getPentestGPTInfo(true, true, "October 2023", "PGPT-Large")}${systemPromptEnding}`,
     // For GPT-4o
     gpt4o: `${getPentestGPTInfo(true, true, "October 2024", "GPT-4o")}\n${systemPromptEnding}`,
     // For browser tool

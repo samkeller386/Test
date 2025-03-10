@@ -22,6 +22,7 @@ import { executeReasoningWebSearchTool } from "@/lib/tools/llm/reasoning-web-sea
 import { processRag } from "@/lib/rag/rag-processor"
 import { executeDeepResearchTool } from "@/lib/tools/llm/deep-research"
 import { myProvider } from "@/lib/ai/providers"
+import { createToolSchemas } from "@/lib/tools/llm/toolSchemas"
 
 export const runtime: ServerRuntime = "edge"
 export const preferredRegion = [
@@ -194,12 +195,23 @@ export async function POST(request: Request) {
         execute: dataStream => {
           if (ragUsed) dataStream.writeData({ ragUsed, ragId })
 
+          const { getSelectedSchemas } = createToolSchemas({
+            chatSettings,
+            messages,
+            profile,
+            dataStream
+          })
+
           const result = streamText({
             model: myProvider.languageModel(selectedChatModel),
             system: systemPrompt,
             messages: toVercelChatMessages(validatedMessages, includeImages),
             maxTokens: 2048,
             abortSignal: request.signal,
+            tools:
+              config.isLargeModel && !ragUsed && !shouldUncensorResponse
+                ? getSelectedSchemas(["browser", "webSearch"])
+                : undefined,
             experimental_transform: smoothStream({ chunking: "word" })
           })
 
