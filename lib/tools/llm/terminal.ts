@@ -158,18 +158,24 @@ export async function executeTerminalTool({
           chunk.toolName === "idle" &&
           chunk.result === "Entered idle state"
         ) {
+          // Send finish reason immediately and then abort
+          dataStream.writeData({ finishReason: "stop" })
           abortController.abort("Idle state detected")
           shouldStop = true
         }
+      } else if (chunk.type === "tool-call") {
+        dataStream.writeData({
+          type: "tool-call",
+          content: chunk.toolName
+        })
       }
     }
 
-    // Get the original finish reason
-    const originalFinishReason = await finishReason
-
-    // Use "stop" if we got an idle tool, otherwise use the original reason
-    const finalFinishReason = shouldStop ? "stop" : originalFinishReason
-    dataStream.writeData({ finishReason: finalFinishReason })
+    // Only send finish reason if we haven't already sent it due to idle state
+    if (!shouldStop) {
+      const originalFinishReason = await finishReason
+      dataStream.writeData({ finishReason: originalFinishReason })
+    }
   } finally {
     // Pause sandbox at the end of the API request
     if (sandbox && persistentSandbox) {
