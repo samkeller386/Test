@@ -10,8 +10,8 @@ export enum AgentActionState {
  * Human-readable descriptions for each agent state
  */
 export const AgentActionStateLabels: Record<AgentActionState, string> = {
-  [AgentActionState.THINKING]: "Thinking...",
-  [AgentActionState.TERMINAL]: "Executing command..."
+  [AgentActionState.THINKING]: "Thinking",
+  [AgentActionState.TERMINAL]: "Using terminal"
 }
 
 /**

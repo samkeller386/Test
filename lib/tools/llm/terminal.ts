@@ -16,18 +16,40 @@ import {
 } from "../e2b/sandbox"
 import { uploadFilesToSandbox } from "@/lib/tools/e2b/file-handler"
 import { createAgentTools } from "./agent-tools"
-import { anthropic } from "@ai-sdk/anthropic"
 import { PENTESTGPT_AGENT_SYSTEM_PROMPT } from "./agent-prompts"
+import { getSubscriptionInfo } from "@/lib/server/subscription-utils"
+import { PluginID } from "@/types/plugins"
+import { isFreePlugin } from "../tool-store/tools-helper"
+import { getToolsWithAnswerPrompt } from "../tool-store/prompts/system-prompt"
+import { getTerminalTemplate } from "@/lib/tools/tool-store/tools-helper"
+import { myProvider } from "@/lib/ai/providers"
 
+// Constants
 const BASH_SANDBOX_TIMEOUT = 15 * 60 * 1000
 const PERSISTENT_SANDBOX_TEMPLATE = "persistent-sandbox"
 const TEMPORARY_SANDBOX_TEMPLATE = "temporary-sandbox"
+
+// Plugin command mapping
+const PLUGIN_COMMAND_MAP: Partial<Record<PluginID, string>> = {
+  [PluginID.SQLI_EXPLOITER]: "sqlmap",
+  [PluginID.SSL_SCANNER]: "testssl.sh",
+  [PluginID.DNS_SCANNER]: "dnsrecon",
+  [PluginID.PORT_SCANNER]: "naabu",
+  [PluginID.WAF_DETECTOR]: "wafw00f",
+  [PluginID.WHOIS_LOOKUP]: "whois",
+  [PluginID.SUBDOMAIN_FINDER]: "subfinder",
+  [PluginID.CVE_MAP]: "cvemap",
+  [PluginID.URL_FUZZER]: "ffuf",
+  [PluginID.WORDPRESS_SCANNER]: "wpscan",
+  [PluginID.XSS_EXPLOITER]: "dalfox"
+}
 
 interface TerminalToolConfig {
   messages: any[]
   profile: any
   dataStream: any
   isTerminalContinuation?: boolean
+  selectedPlugin?: PluginID
 }
 
 export async function executeTerminalTool({
@@ -35,12 +57,22 @@ export async function executeTerminalTool({
 }: {
   config: TerminalToolConfig
 }) {
-  const { messages, profile, dataStream, isTerminalContinuation } = config
+  const {
+    messages,
+    profile,
+    dataStream,
+    isTerminalContinuation,
+    selectedPlugin
+  } = config
   let sandbox: Sandbox | null = null
   let persistentSandbox = false
   const userID = profile.user_id
+  let systemPrompt = PENTESTGPT_AGENT_SYSTEM_PROMPT
+  let terminalTemplate = TEMPORARY_SANDBOX_TEMPLATE
+  let selectedChatModel = "chat-model-gpt-large"
 
   try {
+    // Check rate limit
     const rateLimitResult = await ratelimit(userID, "terminal")
     if (!rateLimitResult.allowed) {
       const waitTime = epochTimeToNaturalLanguage(
@@ -53,6 +85,23 @@ export async function executeTerminalTool({
       return "Rate limit exceeded"
     }
 
+    // Handle plugin-specific setup
+    if (selectedPlugin) {
+      const subscriptionInfo = await getSubscriptionInfo(userID)
+
+      if (!isFreePlugin(selectedPlugin) && !subscriptionInfo.isPremium) {
+        return new Response(
+          `Access Denied to ${selectedPlugin}: The plugin you are trying to use is exclusive to Pro and Team members. Please upgrade to access this plugin.`
+        )
+      }
+
+      if (!subscriptionInfo.isPremium)
+        selectedChatModel = "chat-model-gpt-small"
+
+      systemPrompt = getToolsWithAnswerPrompt(selectedPlugin)
+      terminalTemplate = getTerminalTemplate(selectedPlugin)
+    }
+
     // Continue assistant message from previous terminal call
     const cleanedMessages = isTerminalContinuation
       ? messages.slice(0, -1)
@@ -61,20 +110,24 @@ export async function executeTerminalTool({
     const abortController = new AbortController()
 
     const { fullStream, finishReason } = streamText({
-      model: anthropic("claude-3-7-sonnet-20250219"),
+      model: myProvider.languageModel(selectedChatModel),
       maxTokens: 2048,
-      system: PENTESTGPT_AGENT_SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: toVercelChatMessages(cleanedMessages, true),
       tools: {
         terminal: tool({
           description: "Execute commands in the sandbox environment.",
           parameters: z.object({
             command: z.string().describe("Command to execute"),
-            usePersistentSandbox: z
-              .boolean()
-              .describe(
-                "Use persistent sandbox (30-day storage) instead of temporary"
-              ),
+            ...(selectedPlugin
+              ? {}
+              : {
+                  usePersistentSandbox: z
+                    .boolean()
+                    .describe(
+                      "Use persistent sandbox (30-day storage) instead of temporary"
+                    )
+                }),
             files: z
               .array(
                 z.object({
@@ -87,19 +140,37 @@ export async function executeTerminalTool({
                 "Files to upload to sandbox before executing command (max 3 files)"
               )
           }),
-          execute: async ({ command, usePersistentSandbox, files = [] }) => {
+          execute: async args => {
+            const { command, files = [] } = args
+            // Handle usePersistentSandbox with type safety
+            const usePersistentSandbox = selectedPlugin
+              ? false
+              : Boolean(args.usePersistentSandbox)
+
+            // Validate plugin-specific commands
+            if (selectedPlugin) {
+              const expectedCommand = PLUGIN_COMMAND_MAP[selectedPlugin]
+              if (
+                expectedCommand &&
+                !command.trim().startsWith(expectedCommand)
+              ) {
+                return `Command must start with "${expectedCommand}" for this plugin`
+              }
+            }
+
+            // Set sandbox type
             persistentSandbox = usePersistentSandbox
 
             dataStream.writeData({
               type: "sandbox-type",
-              sandboxType: usePersistentSandbox
+              sandboxType: persistentSandbox
                 ? "persistent-sandbox"
                 : "temporary-sandbox"
             })
 
             // Create or connect to sandbox
             if (!sandbox) {
-              sandbox = usePersistentSandbox
+              sandbox = persistentSandbox
                 ? await createOrConnectPersistentTerminal(
                     userID,
                     PERSISTENT_SANDBOX_TEMPLATE,
@@ -107,7 +178,7 @@ export async function executeTerminalTool({
                   )
                 : await createOrConnectTemporaryTerminal(
                     userID,
-                    TEMPORARY_SANDBOX_TEMPLATE,
+                    terminalTemplate,
                     BASH_SANDBOX_TIMEOUT
                   )
             }
@@ -121,7 +192,7 @@ export async function executeTerminalTool({
             const terminalStream = await executeTerminalCommand({
               userID,
               command,
-              usePersistentSandbox,
+              usePersistentSandbox: persistentSandbox,
               sandbox
             })
 
@@ -133,6 +204,7 @@ export async function executeTerminalTool({
               })
               terminalOutput += chunk
             })
+
             return reduceTerminalOutput(terminalOutput)
           }
         }),
@@ -143,9 +215,8 @@ export async function executeTerminalTool({
       abortSignal: abortController.signal
     })
 
-    // Create a mutable variable to track if we should stop due to idle tool
+    // Handle stream
     let shouldStop = false
-
     for await (const chunk of fullStream) {
       if (chunk.type === "text-delta") {
         dataStream.writeData({
@@ -153,12 +224,11 @@ export async function executeTerminalTool({
           content: chunk.textDelta
         })
       } else if (chunk.type === "tool-result") {
-        // Check if it's an idle tool result
+        // Check for idle state
         if (
           chunk.toolName === "idle" &&
           chunk.result === "Entered idle state"
         ) {
-          // Send finish reason immediately and then abort
           dataStream.writeData({ finishReason: "stop" })
           abortController.abort("Idle state detected")
           shouldStop = true
@@ -171,7 +241,7 @@ export async function executeTerminalTool({
       }
     }
 
-    // Only send finish reason if we haven't already sent it due to idle state
+    // Send finish reason if not already sent
     if (!shouldStop) {
       const originalFinishReason = await finishReason
       dataStream.writeData({ finishReason: originalFinishReason })
@@ -179,8 +249,7 @@ export async function executeTerminalTool({
   } finally {
     // Pause sandbox at the end of the API request
     if (sandbox && persistentSandbox) {
-      const persistentSandbox = sandbox as Sandbox
-      await pauseSandbox(persistentSandbox)
+      await pauseSandbox(sandbox)
     }
   }
 

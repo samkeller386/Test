@@ -46,10 +46,10 @@ export const handleHostedChat = async (
   const { provider } = modelData
   let apiEndpoint = `/api/chat/${provider}`
 
-  if (isTerminalContinuation || selectedPlugin === PluginID.TERMINAL) {
+  // TODO: This way not work as expected because of free plugins
+  if (selectedPlugin === PluginID.TERMINAL) {
     apiEndpoint = "/api/chat/openai"
     setToolInUse(PluginID.TERMINAL)
-    selectedPlugin = PluginID.TERMINAL
   } else if (selectedPlugin === PluginID.ARTIFACTS) {
     apiEndpoint = "/api/chat/tools/fragments"
     setToolInUse(PluginID.ARTIFACTS)
@@ -73,9 +73,7 @@ export const handleHostedChat = async (
     isContinuation,
     isRagEnabled,
     selectedPlugin,
-    ...((provider === "openai" || isTerminalContinuation) && {
-      isTerminalContinuation
-    })
+    isTerminalContinuation
   }
 
   const chatResponse = await fetchChatResponse(
@@ -91,73 +89,6 @@ export const handleHostedChat = async (
     isRegeneration || isContinuation
       ? payload.chatMessages[
           payload.chatMessages.length - (isContinuation ? 2 : 1)
-        ]
-      : tempAssistantChatMessage
-
-  return processResponse(
-    chatResponse,
-    lastMessage,
-    newAbortController,
-    setFirstTokenReceived,
-    setChatMessages,
-    setToolInUse,
-    requestBody,
-    setIsGenerating,
-    alertDispatch,
-    selectedPlugin,
-    isContinuation,
-    setFragment,
-    setAgentState
-  )
-}
-
-export const handleHostedPluginsChat = async (
-  payload: ChatPayload,
-  modelData: LLM,
-  tempAssistantChatMessage: ChatMessage,
-  isRegeneration: boolean,
-  isTerminalContinuation: boolean,
-  newAbortController: AbortController,
-  newMessageImages: MessageImage[],
-  chatImages: MessageImage[],
-  setIsGenerating: Dispatch<SetStateAction<boolean>>,
-  setFirstTokenReceived: Dispatch<SetStateAction<boolean>>,
-  setChatMessages: Dispatch<SetStateAction<ChatMessage[]>>,
-  setToolInUse: Dispatch<SetStateAction<string>>,
-  alertDispatch: Dispatch<AlertAction>,
-  selectedPlugin: PluginID,
-  isContinuation: boolean,
-  setFragment: (fragment: Fragment | null, chatMessage?: ChatMessage) => void,
-  setAgentState: Dispatch<SetStateAction<AgentActionState | null>>
-) => {
-  const apiEndpoint = "/api/chat/plugins"
-
-  const formattedMessages = await buildFinalMessages(payload, chatImages)
-
-  const requestBody: any = {
-    messages: formattedMessages,
-    payload: payload,
-    selectedPlugin: selectedPlugin,
-    isTerminalContinuation: isTerminalContinuation
-  }
-
-  if (selectedPlugin && selectedPlugin !== PluginID.NONE) {
-    setToolInUse(selectedPlugin)
-  }
-
-  const chatResponse = await fetchChatResponse(
-    apiEndpoint,
-    requestBody,
-    newAbortController,
-    setIsGenerating,
-    setChatMessages,
-    alertDispatch
-  )
-
-  const lastMessage =
-    isRegeneration || isTerminalContinuation
-      ? payload.chatMessages[
-          payload.chatMessages.length - (isTerminalContinuation ? 2 : 1)
         ]
       : tempAssistantChatMessage
 

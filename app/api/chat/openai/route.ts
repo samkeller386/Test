@@ -19,6 +19,7 @@ import { executeReasoningWebSearchTool } from "@/lib/tools/llm/reasoning-web-sea
 import { processRag } from "@/lib/rag/rag-processor"
 import { executeDeepResearchTool } from "@/lib/tools/llm/deep-research"
 import { myProvider } from "@/lib/ai/providers"
+import { terminalPlugins } from "@/lib/ai/terminal-utils"
 
 export const runtime: ServerRuntime = "edge"
 export const preferredRegion = [
@@ -130,6 +131,21 @@ export async function POST(request: Request) {
             config: { messages, profile, dataStream }
           })
         })
+
+      default:
+        if (terminalPlugins.includes(selectedPlugin as PluginID)) {
+          return createStreamResponse(async dataStream => {
+            await executeTerminalTool({
+              config: {
+                messages,
+                profile,
+                dataStream,
+                isTerminalContinuation,
+                selectedPlugin: selectedPlugin as PluginID
+              }
+            })
+          })
+        }
     }
 
     return createDataStreamResponse({
