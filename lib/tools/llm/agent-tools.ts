@@ -38,6 +38,18 @@ export function createAgentTools(context: ToolContext) {
     }),
 
     /**
+     * Asks the user a question and waits for a response
+     * Used for requesting clarification, asking for confirmation,
+     * or gathering additional information
+     */
+    message_ask_user: tool({
+      description: `Ask user a question and wait for response. Use for requesting clarification, asking for confirmation, or gathering additional information.`,
+      parameters: z.object({
+        text: z.string().describe("Question text to present to user")
+      })
+    }),
+
+    /**
      * A special tool to indicate the agent has completed all tasks and is about to enter idle state
      */
     idle: tool({
