@@ -223,7 +223,10 @@ export async function executeTerminalTool({
           content: chunk.textDelta
         })
       } else if (chunk.type === "tool-call") {
-        if (chunk.toolName === "idle" || chunk.toolName === "message_ask_user") {
+        if (
+          chunk.toolName === "idle" ||
+          chunk.toolName === "message_ask_user"
+        ) {
           dataStream.writeData({ finishReason: "stop" })
           shouldStop = true
 
@@ -237,7 +240,7 @@ export async function executeTerminalTool({
 
         dataStream.writeData({
           type: "tool-call",
-          content: chunk.toolName,
+          content: chunk.toolName
         })
       }
     }
