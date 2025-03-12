@@ -109,8 +109,6 @@ export async function executeTerminalTool({
       ? messages.slice(0, -1)
       : messages
 
-    const abortController = new AbortController()
-
     const { fullStream, finishReason } = streamText({
       model: myProvider.languageModel(selectedChatModel),
       maxTokens: 2048,
@@ -213,8 +211,7 @@ export async function executeTerminalTool({
         ...createAgentTools({ dataStream })
       },
       maxSteps: 5,
-      toolChoice: "required",
-      abortSignal: abortController.signal
+      toolChoice: "required"
     })
 
     // Handle stream
@@ -225,17 +222,12 @@ export async function executeTerminalTool({
           type: "text-delta",
           content: chunk.textDelta
         })
-      } else if (chunk.type === "tool-result") {
-        // Check for idle state
-        if (
-          chunk.toolName === "idle" &&
-          chunk.result === "Entered idle state"
-        ) {
+      } else if (chunk.type === "tool-call") {
+        if (chunk.toolName === "idle") {
           dataStream.writeData({ finishReason: "stop" })
-          abortController.abort("Idle state detected")
           shouldStop = true
         }
-      } else if (chunk.type === "tool-call") {
+
         dataStream.writeData({
           type: "tool-call",
           content: chunk.toolName

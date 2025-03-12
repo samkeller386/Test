@@ -43,10 +43,8 @@ export function createAgentTools(context: ToolContext) {
     idle: tool({
       description:
         "A special tool to indicate you have completed all tasks and are about to enter idle state.",
-      parameters: z.object({}),
-      execute: async () => {
-        return "Entered idle state"
-      }
+      parameters: z.object({})
+      // no execute function - invoking it will terminate the agent
     })
   }
 }
