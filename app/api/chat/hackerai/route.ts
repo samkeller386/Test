@@ -274,7 +274,9 @@ async function getProviderConfig(
   const selectedModel = isLargeModel ? proModel : defaultModel
 
   const rateLimitModel =
-    selectedPlugin && selectedPlugin !== PluginID.NONE
+    selectedPlugin &&
+    selectedPlugin !== PluginID.NONE &&
+    !terminalPlugins.includes(selectedPlugin as PluginID)
       ? selectedPlugin
       : isLargeModel
         ? "pentestgpt-pro"

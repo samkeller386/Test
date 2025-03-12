@@ -90,9 +90,11 @@ export async function executeTerminalTool({
       const subscriptionInfo = await getSubscriptionInfo(userID)
 
       if (!isFreePlugin(selectedPlugin) && !subscriptionInfo.isPremium) {
-        return new Response(
-          `Access Denied to ${selectedPlugin}: The plugin you are trying to use is exclusive to Pro and Team members. Please upgrade to access this plugin.`
-        )
+        dataStream.writeData({
+          type: "error",
+          content: `Access Denied to ${selectedPlugin}: The plugin you are trying to use is exclusive to Pro and Team members. Please upgrade to access this plugin.`
+        })
+        return "Access Denied to plugin"
       }
 
       if (!subscriptionInfo.isPremium)

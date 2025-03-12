@@ -56,7 +56,9 @@ export async function POST(request: Request) {
 
     const profile = await getAIProfile()
     const rateLimitModel =
-      selectedPlugin && selectedPlugin !== PluginID.NONE
+      selectedPlugin &&
+      selectedPlugin !== PluginID.NONE &&
+      !terminalPlugins.includes(selectedPlugin as PluginID)
         ? selectedPlugin
         : "gpt-4"
 
