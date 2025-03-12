@@ -16,7 +16,7 @@ import {
 import { Dispatch, SetStateAction } from "react"
 import { toast } from "sonner"
 import { processResponse } from "./stream-processor"
-import { AgentActionState } from "@/components/messages/agent-state"
+import { AgentStatusState } from "@/components/messages/agent-status"
 
 export * from "./create-messages"
 export * from "./create-temp-messages"
@@ -41,7 +41,7 @@ export const handleHostedChat = async (
   alertDispatch: Dispatch<AlertAction>,
   selectedPlugin: PluginID,
   setFragment: (fragment: Fragment | null, chatMessage?: ChatMessage) => void,
-  setAgentState: Dispatch<SetStateAction<AgentActionState | null>>
+  setAgentStatus: Dispatch<SetStateAction<AgentStatusState | null>>
 ) => {
   const { provider } = modelData
   let apiEndpoint = `/api/chat/${provider}`
@@ -105,7 +105,7 @@ export const handleHostedChat = async (
     selectedPlugin,
     isContinuation,
     setFragment,
-    setAgentState
+    setAgentStatus
   )
 }
 

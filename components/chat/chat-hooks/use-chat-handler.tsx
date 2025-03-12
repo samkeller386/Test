@@ -62,7 +62,7 @@ export const useChatHandler = () => {
     isGenerating,
     setIsReadyToChat,
     setSelectedPlugin,
-    setAgentState
+    setAgentStatus
   } = useUIContext()
 
   let { selectedPlugin } = useUIContext()
@@ -125,7 +125,7 @@ export const useChatHandler = () => {
     setUseRetrieval(false)
 
     setToolInUse("none")
-    setAgentState(null)
+    setAgentStatus(null)
     setSelectedPlugin(PluginID.NONE)
 
     setFragment(null)
@@ -393,7 +393,7 @@ export const useChatHandler = () => {
         alertDispatch,
         selectedPlugin,
         setFragment,
-        setAgentState
+        setAgentStatus
       )
       generatedText = fullText
       thinkingText = thinkingTextFromResponse
@@ -525,12 +525,12 @@ export const useChatHandler = () => {
       setToolInUse("none")
       setIsGenerating(false)
       setFirstTokenReceived(false)
-      setAgentState(null)
+      setAgentStatus(null)
     } catch (error) {
       setToolInUse("none")
       setIsGenerating(false)
       setFirstTokenReceived(false)
-      setAgentState(null)
+      setAgentStatus(null)
     }
   }
 
