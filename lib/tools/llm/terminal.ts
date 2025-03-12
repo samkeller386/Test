@@ -1,20 +1,9 @@
 import { toVercelChatMessages } from "@/lib/ai/message-utils"
-import { streamText, tool } from "ai"
-import { z } from "zod"
-import { executeTerminalCommand } from "./terminal-executor"
-import {
-  streamTerminalOutput,
-  reduceTerminalOutput
-} from "@/lib/ai/terminal-utils"
+import { streamText } from "ai"
 import { ratelimit } from "@/lib/server/ratelimiter"
 import { epochTimeToNaturalLanguage } from "@/lib/utils"
 import { Sandbox } from "@e2b/code-interpreter"
-import {
-  createOrConnectPersistentTerminal,
-  createOrConnectTemporaryTerminal,
-  pauseSandbox
-} from "../e2b/sandbox"
-import { uploadFilesToSandbox } from "@/lib/tools/e2b/file-handler"
+import { pauseSandbox } from "../e2b/sandbox"
 import { createAgentTools } from "./agent-tools"
 import { PENTESTGPT_AGENT_SYSTEM_PROMPT } from "./agent-prompts"
 import { getSubscriptionInfo } from "@/lib/server/subscription-utils"
@@ -25,24 +14,7 @@ import { getTerminalTemplate } from "@/lib/tools/tool-store/tools-helper"
 import { myProvider } from "@/lib/ai/providers"
 
 // Constants
-const BASH_SANDBOX_TIMEOUT = 15 * 60 * 1000
-const PERSISTENT_SANDBOX_TEMPLATE = "persistent-sandbox"
 const TEMPORARY_SANDBOX_TEMPLATE = "temporary-sandbox"
-
-// Plugin command mapping
-const PLUGIN_COMMAND_MAP: Partial<Record<PluginID, string>> = {
-  [PluginID.SQLI_EXPLOITER]: "sqlmap",
-  [PluginID.SSL_SCANNER]: "testssl.sh",
-  [PluginID.DNS_SCANNER]: "dnsrecon",
-  [PluginID.PORT_SCANNER]: "naabu",
-  [PluginID.WAF_DETECTOR]: "wafw00f",
-  [PluginID.WHOIS_LOOKUP]: "whois",
-  [PluginID.SUBDOMAIN_FINDER]: "subfinder",
-  [PluginID.CVE_MAP]: "cvemap",
-  [PluginID.URL_FUZZER]: "ffuf",
-  [PluginID.WORDPRESS_SCANNER]: "wpscan",
-  [PluginID.XSS_EXPLOITER]: "dalfox"
-}
 
 interface TerminalToolConfig {
   messages: any[]
@@ -109,107 +81,30 @@ export async function executeTerminalTool({
       ? messages.slice(0, -1)
       : messages
 
+    // Functions to update sandbox and persistentSandbox from tools
+    const setSandbox = (newSandbox: Sandbox) => {
+      sandbox = newSandbox
+    }
+
+    const setPersistentSandbox = (isPersistent: boolean) => {
+      persistentSandbox = isPersistent
+    }
+
     const { fullStream, finishReason } = streamText({
       model: myProvider.languageModel(selectedChatModel),
       maxTokens: 2048,
       system: systemPrompt,
       messages: toVercelChatMessages(cleanedMessages, true),
-      tools: {
-        terminal: tool({
-          description: "Execute commands in the sandbox environment.",
-          parameters: z.object({
-            command: z.string().describe("Command to execute"),
-            ...(selectedPlugin
-              ? {}
-              : {
-                  usePersistentSandbox: z
-                    .boolean()
-                    .describe(
-                      "Use persistent sandbox (30-day storage) instead of temporary"
-                    )
-                }),
-            files: z
-              .array(
-                z.object({
-                  fileId: z.string().describe("ID of the file to upload")
-                })
-              )
-              .max(3)
-              .optional()
-              .describe(
-                "Files to upload to sandbox before executing command (max 3 files)"
-              )
-          }),
-          execute: async args => {
-            const { command, files = [] } = args
-            // Handle usePersistentSandbox with type safety
-            const usePersistentSandbox = selectedPlugin
-              ? false
-              : Boolean(args.usePersistentSandbox)
-
-            // Validate plugin-specific commands
-            if (selectedPlugin) {
-              const expectedCommand = PLUGIN_COMMAND_MAP[selectedPlugin]
-              if (
-                expectedCommand &&
-                !command.trim().startsWith(expectedCommand)
-              ) {
-                return `Command must start with "${expectedCommand}" for this plugin`
-              }
-            }
-
-            // Set sandbox type
-            persistentSandbox = usePersistentSandbox
-
-            dataStream.writeData({
-              type: "sandbox-type",
-              sandboxType: persistentSandbox
-                ? "persistent-sandbox"
-                : "temporary-sandbox"
-            })
-
-            // Create or connect to sandbox
-            if (!sandbox) {
-              sandbox = persistentSandbox
-                ? await createOrConnectPersistentTerminal(
-                    userID,
-                    PERSISTENT_SANDBOX_TEMPLATE,
-                    BASH_SANDBOX_TIMEOUT
-                  )
-                : await createOrConnectTemporaryTerminal(
-                    userID,
-                    terminalTemplate,
-                    BASH_SANDBOX_TIMEOUT
-                  )
-            }
-
-            // Upload requested files
-            if (files.length > 0) {
-              await uploadFilesToSandbox(files, sandbox, dataStream)
-            }
-
-            // Execute command
-            const terminalStream = await executeTerminalCommand({
-              userID,
-              command,
-              usePersistentSandbox: persistentSandbox,
-              sandbox
-            })
-
-            let terminalOutput = ""
-            await streamTerminalOutput(terminalStream, chunk => {
-              dataStream.writeData({
-                type: "text-delta",
-                content: chunk
-              })
-              terminalOutput += chunk
-            })
-
-            return reduceTerminalOutput(terminalOutput)
-          }
-        }),
-        ...createAgentTools({ dataStream })
-      },
+      tools: createAgentTools({
+        dataStream,
+        sandbox,
+        userID,
+        persistentSandbox,
+        selectedPlugin,
+        terminalTemplate,
+        setSandbox,
+        setPersistentSandbox
+      }),
       maxSteps: 5,
       toolChoice: "required"
     })

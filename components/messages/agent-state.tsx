@@ -3,7 +3,8 @@
  */
 export enum AgentActionState {
   THINKING = "message_notify_user",
-  TERMINAL = "terminal"
+  TERMINAL = "terminal",
+  FILE_WRITE = "file_write"
 }
 
 /**
@@ -11,7 +12,8 @@ export enum AgentActionState {
  */
 export const AgentActionStateLabels: Record<AgentActionState, string> = {
   [AgentActionState.THINKING]: "Thinking",
-  [AgentActionState.TERMINAL]: "Using terminal"
+  [AgentActionState.TERMINAL]: "Using terminal",
+  [AgentActionState.FILE_WRITE]: "Uploading files"
 }
 
 /**
@@ -28,6 +30,10 @@ const AgentStateColors: Record<
   [AgentActionState.TERMINAL]: {
     ping: "bg-amber-400",
     base: "bg-amber-500"
+  },
+  [AgentActionState.FILE_WRITE]: {
+    ping: "bg-green-400",
+    base: "bg-green-500"
   }
 }
 
