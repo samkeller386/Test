@@ -47,11 +47,6 @@ const llmConfig = {
     // For fragment tool
     pentestGPTFragment: `${getPentestGPTInfo(true, "October 2024", "GPT-4o")}}`
   },
-  models: {
-    small: process.env.OPENROUTER_PENTESTGPT_DEFAULT_MODEL,
-    standalone_question: process.env.OPENROUTER_STANDALONE_QUESTION_MODEL,
-    large: process.env.OPENROUTER_PENTESTGPT_PRO_MODEL
-  },
   hackerRAG: {
     enabled:
       (process.env.HACKER_RAG_ENABLED?.toLowerCase() || "false") === "true",
