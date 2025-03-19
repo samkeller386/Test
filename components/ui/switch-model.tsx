@@ -145,8 +145,8 @@ export const SwitchModel: FC<SwitchModelProps> = ({
 
               {[
                 { id: Agent.modelId, name: "PGPT-Agent" },
-                { id: LargeModel.modelId, name: "PGPT-Large" },
-                { id: SmallModel.modelId, name: "PGPT-Small" }
+                { id: LargeModel.modelId, name: "Large Model" },
+                { id: SmallModel.modelId, name: "Small Model" }
               ]
                 .filter(model => model.id !== currentModel)
                 .map(({ id, name }) => (
@@ -175,8 +175,8 @@ export const SwitchModel: FC<SwitchModelProps> = ({
 
               {[
                 { id: Agent.modelId, name: "PGPT-Agent" },
-                { id: LargeModel.modelId, name: "PGPT-Large" },
-                { id: SmallModel.modelId, name: "PGPT-Small" }
+                { id: LargeModel.modelId, name: "Large Model" },
+                { id: SmallModel.modelId, name: "Small Model" }
               ]
                 .filter(model => model.id === currentModel)
                 .map(({ id, name }) => (
