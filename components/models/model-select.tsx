@@ -86,8 +86,8 @@ export const ModelSelect: FC<ModelSelectProps> = ({
 
   const modelDescriptions: Record<string, string> = {
     [Agent.modelId]: "Smartest model with advanced tools",
-    [LargeModel.modelId]: "Great for complex tasks",
-    [SmallModel.modelId]: "Fast for most questions"
+    [LargeModel.modelId]: "Great for most questions",
+    [SmallModel.modelId]: "Faster for most questions"
   }
 
   return (
