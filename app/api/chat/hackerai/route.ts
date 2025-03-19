@@ -140,6 +140,14 @@ export async function POST(request: Request) {
 
     handleMessages(shouldUncensorResponse)
 
+    if (isTerminalContinuation) {
+      return createStreamResponse(async dataStream => {
+        await executeTerminalTool({
+          config: { messages, profile, dataStream, isTerminalContinuation }
+        })
+      })
+    }
+
     switch (selectedPlugin) {
       case PluginID.WEB_SEARCH:
         return createStreamResponse(async dataStream => {

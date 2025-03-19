@@ -97,6 +97,14 @@ export async function POST(request: Request) {
     filterEmptyAssistantMessages(messages)
     replaceWordsInLastUserMessage(messages)
 
+    if (isTerminalContinuation) {
+      return createStreamResponse(async dataStream => {
+        await executeTerminalTool({
+          config: { messages, profile, dataStream, isTerminalContinuation }
+        })
+      })
+    }
+
     // Handle special plugins
     switch (selectedPlugin) {
       case PluginID.WEB_SEARCH:
@@ -112,7 +120,7 @@ export async function POST(request: Request) {
           })
         })
 
-      case PluginID.TERMINAL || isTerminalContinuation:
+      case PluginID.TERMINAL:
         return createStreamResponse(async dataStream => {
           await executeTerminalTool({
             config: { messages, profile, dataStream, isTerminalContinuation }
@@ -169,7 +177,7 @@ export async function POST(request: Request) {
         })
 
         const result = streamText({
-          model: myProvider.languageModel("chat-model-extra"),
+          model: myProvider.languageModel("chat-model-agent"),
           system: systemPrompt,
           messages: toVercelChatMessages(messages, true),
           maxTokens: 2048,

@@ -30,11 +30,11 @@ const llmConfig = {
   systemPrompts: {
     // For question generator
     pentestgptCurrentDateOnly: `${initialSystemPrompt}\n${currentDateTime}`,
-    // For PGPT-Small
+    // For Small Model
     smallModel: `${getPentestGPTInfo(true, "October 2023", "Small Model")}\n${systemPromptEnding}`,
-    // For PGPT-Large
+    // For Large Model
     largeModel: `${getPentestGPTInfo(true, "October 2023", "Large Model")}${systemPromptEnding}`,
-    // For GPT-4o
+    // For PentestGPT Agent
     agent: `${getPentestGPTInfo(true, "October 2024", "PentestGPT Agent")}\n${systemPromptEnding}`,
     // For browser tool
     pentestGPTBrowser: `${getPentestGPTInfo(true)}\n${systemPromptEnding}`,

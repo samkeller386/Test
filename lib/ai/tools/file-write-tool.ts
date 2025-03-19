@@ -26,7 +26,7 @@ export const createFileWriteTool = (context: ToolContext) => {
 
   return tool({
     description:
-      "Upload files to the sandbox. Use for creating new files files.",
+      "Upload files to the sandbox.",
     parameters: z.object({
       files: z
         .array(
