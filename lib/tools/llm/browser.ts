@@ -1,7 +1,7 @@
 import { buildSystemPrompt } from "@/lib/ai/prompts"
 import { toVercelChatMessages } from "@/lib/ai/message-utils"
 import llmConfig from "@/lib/models/llm/llm-config"
-import { smoothStream, streamText } from "ai"
+import { streamText } from "ai"
 import { myProvider } from "@/lib/ai/providers"
 import FirecrawlApp, { ScrapeResponse } from "@mendable/firecrawl-js"
 
@@ -176,8 +176,7 @@ export async function executeBrowserTool({
       ...toVercelChatMessages(messages.slice(0, -1)),
       { role: "user", content: browserPrompt }
     ],
-    maxTokens: 2048,
-    experimental_transform: smoothStream({ chunking: "word" })
+    maxTokens: 2048
   })
 
   for await (const delta of fullStream) {

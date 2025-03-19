@@ -11,7 +11,7 @@ import {
 import { handleErrorResponse } from "@/lib/models/llm/api-error"
 import llmConfig from "@/lib/models/llm/llm-config"
 import { checkRatelimitOnApi } from "@/lib/server/ratelimiter"
-import { smoothStream, createDataStreamResponse, streamText } from "ai"
+import { createDataStreamResponse, streamText } from "ai"
 import { getModerationResult } from "@/lib/server/moderation"
 import { PluginID } from "@/types/plugins"
 import { executeWebSearchTool } from "@/lib/tools/llm/web-search"
@@ -231,8 +231,7 @@ export async function POST(request: Request) {
             tools:
               config.isLargeModel && !ragUsed && !shouldUncensorResponse
                 ? getSelectedSchemas(["browser", "webSearch"])
-                : undefined,
-            experimental_transform: smoothStream({ chunking: "word" })
+                : undefined
           })
 
           result.mergeIntoDataStream(dataStream)
