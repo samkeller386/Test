@@ -151,6 +151,8 @@ export async function executeBrowserTool({
   const lastUserMessage = getLastUserMessage(messages)
   let browserPrompt: string
 
+  dataStream.writeData({ type: "tool-call", content: "browser" })
+
   // Handle single URL or multiple URLs
   if (typeof open_url === "string") {
     const browserResult = await browsePage(open_url)
@@ -178,6 +180,9 @@ export async function executeBrowserTool({
     ],
     maxTokens: 2048
   })
+
+  dataStream.writeData({ type: "tool-call", content: "none" })
+  dataStream.writeData({ type: "text-delta", content: "\n\n" })
 
   for await (const delta of fullStream) {
     if (delta.type === "text-delta") {

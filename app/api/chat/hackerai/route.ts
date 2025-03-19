@@ -148,7 +148,8 @@ export async function POST(request: Request) {
               messages,
               profile,
               dataStream,
-              isLargeModel: config.isLargeModel
+              isLargeModel: config.isLargeModel,
+              directToolCall: true
             }
           })
         })

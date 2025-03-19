@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     }
 
     let systemPrompt = buildSystemPrompt(
-      llmConfig.systemPrompts.gpt4o,
+      llmConfig.systemPrompts.agent,
       profile.profile_context
     )
 
@@ -102,7 +102,13 @@ export async function POST(request: Request) {
       case PluginID.WEB_SEARCH:
         return createStreamResponse(async dataStream => {
           await executeWebSearchTool({
-            config: { messages, profile, dataStream, isLargeModel: true }
+            config: {
+              messages,
+              profile,
+              dataStream,
+              isLargeModel: true,
+              directToolCall: true
+            }
           })
         })
 
@@ -163,7 +169,7 @@ export async function POST(request: Request) {
         })
 
         const result = streamText({
-          model: myProvider.languageModel("chat-model-gpt-large"),
+          model: myProvider.languageModel("chat-model-extra"),
           system: systemPrompt,
           messages: toVercelChatMessages(messages, true),
           maxTokens: 2048,
