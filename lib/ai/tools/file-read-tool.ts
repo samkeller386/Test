@@ -28,8 +28,14 @@ export const createFileReadTool = (context: ToolContext) => {
       "Read file content from the sandbox. Use for checking file contents, analyzing logs, or reading configuration files.",
     parameters: z.object({
       file: z.string().describe("Absolute path of the file to read"),
-      start_line: z.number().optional().describe("(Optional) Starting line to read from, 0-based"),
-      end_line: z.number().optional().describe("(Optional) Ending line number (exclusive)")
+      start_line: z
+        .number()
+        .optional()
+        .describe("(Optional) Starting line to read from, 0-based"),
+      end_line: z
+        .number()
+        .optional()
+        .describe("(Optional) Ending line number (exclusive)")
     }),
     execute: async ({ file, start_line, end_line }) => {
       if (!sandbox) {
@@ -63,12 +69,12 @@ export const createFileReadTool = (context: ToolContext) => {
 
       try {
         let content = await sandbox.files.read(file)
-        
-        if (typeof start_line === 'number' || typeof end_line === 'number') {
-          const lines = content.split('\n')
+
+        if (typeof start_line === "number" || typeof end_line === "number") {
+          const lines = content.split("\n")
           const start = start_line || 0
           const end = end_line || lines.length
-          content = lines.slice(start, end).join('\n')
+          content = lines.slice(start, end).join("\n")
         }
 
         return content
