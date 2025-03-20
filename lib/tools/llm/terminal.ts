@@ -43,7 +43,7 @@ export async function executeTerminalTool({
   const userID = profile.user_id
   let systemPrompt = PENTESTGPT_AGENT_SYSTEM_PROMPT
   let terminalTemplate = TEMPORARY_SANDBOX_TEMPLATE
-  let selectedChatModel = "chat-model-agent"
+  let selectedChatModel = "chat-model-gpt-large"
 
   try {
     // Check rate limit

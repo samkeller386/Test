@@ -14,7 +14,9 @@ export const myProvider = customProvider({
     "chat-model-small": mistral("mistral-small-latest"),
     "chat-model-large": mistral("mistral-large-latest"),
     "chat-model-gpt-small": openai("gpt-4o-mini"),
-    "chat-model-gpt-large": openai("gpt-4o", { parallelToolCalls: false }),
+    "chat-model-gpt-large": openai("gpt-4o-2024-11-20", {
+      parallelToolCalls: false
+    }),
     "chat-model-agent": anthropic("claude-3-7-sonnet-20250219"),
     "chat-model-reasoning": wrapLanguageModel({
       model: perplexity("r1-1776"),
