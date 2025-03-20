@@ -43,7 +43,7 @@ export async function executeTerminalTool({
   const userID = profile.user_id
   let systemPrompt = PENTESTGPT_AGENT_SYSTEM_PROMPT
   let terminalTemplate = TEMPORARY_SANDBOX_TEMPLATE
-  const selectedChatModel = "chat-model-gpt-large"
+  let selectedChatModel = "chat-model-agent"
 
   try {
     // Check rate limit
@@ -71,8 +71,8 @@ export async function executeTerminalTool({
         return "Access Denied to plugin"
       }
 
-      // if (!subscriptionInfo.isPremium)
-      //   selectedChatModel = "chat-model-gpt-small"
+      if (!subscriptionInfo.isPremium)
+        selectedChatModel = "chat-model-gpt-large"
 
       systemPrompt = getToolsWithAnswerPrompt(selectedPlugin)
       terminalTemplate = getTerminalTemplate(selectedPlugin)
@@ -96,6 +96,11 @@ export async function executeTerminalTool({
       cleanedMessages.push({
         role: "assistant",
         content: previousMessage + "\n\n "
+      })
+    } else if (!selectedPlugin) {
+      dataStream.writeData({
+        type: "text-delta",
+        content: `\n\n`
       })
     }
 
