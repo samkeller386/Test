@@ -177,7 +177,7 @@ export async function POST(request: Request) {
         })
 
         const result = streamText({
-          model: myProvider.languageModel("chat-model-agent"),
+          model: myProvider.languageModel("chat-model-gpt-large"),
           messages: toVercelChatMessages(messages, true, systemPrompt),
           maxTokens: 2048,
           abortSignal: request.signal,

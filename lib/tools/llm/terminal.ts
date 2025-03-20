@@ -35,15 +35,15 @@ export async function executeTerminalTool({
     profile,
     dataStream,
     isTerminalContinuation,
-    selectedPlugin,
-    previousMessage
+    selectedPlugin
+    // previousMessage
   } = config
   let sandbox: Sandbox | null = null
   let persistentSandbox = false
   const userID = profile.user_id
   let systemPrompt = PENTESTGPT_AGENT_SYSTEM_PROMPT
   let terminalTemplate = TEMPORARY_SANDBOX_TEMPLATE
-  let selectedChatModel = "chat-model-gpt-large"
+  let selectedChatModel = "chat-model-agent"
 
   try {
     // Check rate limit
@@ -92,17 +92,12 @@ export async function executeTerminalTool({
       persistentSandbox = isPersistent
     }
 
-    if (previousMessage) {
-      cleanedMessages.push({
-        role: "assistant",
-        content: previousMessage + "\n\n "
-      })
-    } else if (!selectedPlugin) {
-      dataStream.writeData({
-        type: "text-delta",
-        content: `\n\n`
-      })
-    }
+    // if (previousMessage) {
+    //   cleanedMessages.push({
+    //     role: "assistant",
+    //     content: previousMessage + "\n\n "
+    //   })
+    // }
 
     const { fullStream, finishReason } = streamText({
       model: myProvider.languageModel(selectedChatModel),

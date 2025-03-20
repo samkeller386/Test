@@ -5,9 +5,7 @@ import {
 } from "ai"
 import { mistral } from "@ai-sdk/mistral"
 import { openai } from "@ai-sdk/openai"
-// import { openrouter } from "@openrouter/ai-sdk-provider"
 import { perplexity } from "@ai-sdk/perplexity"
-import { anthropic } from "@ai-sdk/anthropic"
 
 export const myProvider = customProvider({
   languageModels: {
@@ -17,7 +15,9 @@ export const myProvider = customProvider({
     "chat-model-gpt-large": openai("gpt-4o-2024-11-20", {
       parallelToolCalls: false
     }),
-    "chat-model-agent": anthropic("claude-3-7-sonnet-20250219"),
+    "chat-model-agent": openai("gpt-4o-2024-11-20", {
+      parallelToolCalls: false
+    }),
     "chat-model-reasoning": wrapLanguageModel({
       model: perplexity("r1-1776"),
       middleware: extractReasoningMiddleware({ tagName: "think" })
