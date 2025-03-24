@@ -77,7 +77,6 @@ export async function executeWebSearchTool({
     })
   })
 
-  // Add better error handling
   if (!response.ok) {
     throw new Error(`Perplexity API returned ${response.status}`)
   }

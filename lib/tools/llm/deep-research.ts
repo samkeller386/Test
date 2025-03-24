@@ -2,7 +2,7 @@ import { buildSystemPrompt } from "@/lib/ai/prompts"
 import { toVercelChatMessages } from "@/lib/ai/message-utils"
 import llmConfig from "@/lib/models/llm/llm-config"
 import { streamText } from "ai"
-import { createOpenRouter } from "@openrouter/ai-sdk-provider"
+import { myProvider } from "@/lib/ai/providers"
 
 interface DeepResearchConfig {
   messages: any[]
@@ -46,12 +46,8 @@ async function processStream({
   let sentFirstTextDelta = false
   const sourceUrls: string[] = []
 
-  const openrouter = createOpenRouter({
-    apiKey: llmConfig.openrouter.apiKey
-  })
-
   const result = streamText({
-    model: openrouter("perplexity/sonar-deep-research"),
+    model: myProvider.languageModel("deep-research"),
     maxTokens: 8192,
     system: buildSystemPrompt(
       llmConfig.systemPrompts.reasoningWebSearch,
