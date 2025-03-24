@@ -77,6 +77,13 @@ export async function executeWebSearchTool({
     })
   })
 
+  // Add better error handling
+  if (!response.ok) {
+    const errorText = await response
+      .text()
+      .catch(() => "No error details available")
+    throw new Error(`Perplexity API returned ${response.status}: ${errorText}`)
+  }
   const reader = response.body?.getReader()
   const decoder = new TextDecoder()
   let buffer = ""
