@@ -2,7 +2,7 @@ import { buildSystemPrompt } from "@/lib/ai/prompts"
 import { toVercelChatMessages } from "@/lib/ai/message-utils"
 import llmConfig from "@/lib/models/llm/llm-config"
 import { streamText } from "ai"
-import { myProvider } from "@/lib/ai/providers"
+import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 
 interface DeepResearchConfig {
   messages: any[]
@@ -46,8 +46,12 @@ async function processStream({
   let sentFirstTextDelta = false
   const sourceUrls: string[] = []
 
+  const openrouter = createOpenRouter({
+    apiKey: llmConfig.openrouter.apiKey
+  })
+
   const result = streamText({
-    model: myProvider.languageModel("deep-research"),
+    model: openrouter("perplexity/sonar-deep-research"),
     maxTokens: 8192,
     system: buildSystemPrompt(
       llmConfig.systemPrompts.reasoningWebSearch,
@@ -55,6 +59,11 @@ async function processStream({
     ),
     messages: toVercelChatMessages(messages)
   })
+
+  if (!result || !result.fullStream) {
+    console.error("No result from deep research")
+    throw new Error("No result from deep research")
+  }
 
   for await (const part of result.fullStream) {
     // Collect source URLs
