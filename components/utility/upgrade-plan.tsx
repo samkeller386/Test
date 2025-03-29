@@ -161,7 +161,7 @@ export const UpgradePlan: FC = () => {
                   transition-all duration-200 ease-in-out
                   ${
                     selected
-                      ? "bg-primary text-primary-foreground shadow"
+                      ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-muted-foreground hover:bg-secondary/20 hover:text-foreground"
                   }`
                 }

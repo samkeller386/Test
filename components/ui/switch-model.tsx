@@ -136,7 +136,7 @@ export const SwitchModel: FC<SwitchModelProps> = ({
               shouldOpenUpward ? "bottom-full mb-2" : "top-full mt-2"
             } ${
               shouldCenter ? "left-1/2 -translate-x-1/2" : "left-0"
-            } origin- min-w-[180px] whitespace-nowrap${shouldOpenUpward ? "bottom" : "top"} bg-secondary ring/5 rounded-md shadow-lg ring-1 ring-black focus:outline-none`}
+            } origin- min-w-[180px] whitespace-nowrap${shouldOpenUpward ? "bottom" : "top"} bg-secondary ring/5 rounded-md shadow-lg ring-1 ring-black focus:outline-hidden`}
           >
             <div className="p-1">
               <div className="text-muted-foreground p-2 text-sm">
