@@ -10,146 +10,144 @@ interface DeepResearchConfig {
   dataStream: any
 }
 
+async function getProviderConfig(profile: any) {
+  const systemPrompt = buildSystemPrompt(
+    llmConfig.systemPrompts.reasoningWebSearch,
+    profile.profile_context
+  )
+
+  return {
+    systemPrompt,
+    model: myProvider.languageModel("deep-research")
+  }
+}
+
 export async function executeDeepResearchTool({
   config
 }: {
   config: DeepResearchConfig
 }) {
-  const { messages, profile, dataStream } = config
-
   if (!process.env.PERPLEXITY_API_KEY) {
-    throw new Error("Perplexity API key is not set for reason LLM")
+    throw new Error("Perplexity API key is not set for deep research")
   }
 
-  console.log("Executing DeepResearch for user", profile.user_id)
+  const { messages, profile, dataStream } = config
+  const { systemPrompt, model } = await getProviderConfig(profile)
 
-  await processStream({
-    messages,
-    profile,
-    dataStream
-  })
+  try {
+    const { fullStream } = streamText({
+      model,
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        ...toVercelChatMessages(messages)
+      ],
+      maxTokens: 8192,
+      onError: (error: unknown) => {
+        console.error("[DeepResearch] Streaming Error:", {
+          error: error instanceof Error ? error.message : "Unknown error",
+          model
+        })
+        throw error
+      }
+    })
 
-  return "[DeepResearch] Execution completed"
-}
-
-async function processStream({
-  messages,
-  profile,
-  dataStream
-}: {
-  messages: any
-  profile: any
-  dataStream: any
-}) {
-  let thinkingStartTime = null
-  let enteredThinking = false
-  let sentFirstTextDelta = false
-  const sourceUrls: string[] = []
-
-  const result = streamText({
-    model: myProvider.languageModel("deep-research"),
-    maxTokens: 8192,
-    system: buildSystemPrompt(
-      llmConfig.systemPrompts.reasoningWebSearch,
-      profile.profile_context
-    ),
-    messages: toVercelChatMessages(messages)
-  })
-
-  if (!result || !result.fullStream) {
-    console.error("No result from deep research")
-    throw new Error("No result from deep research")
-  }
-
-  for await (const part of result.fullStream) {
-    // Collect source URLs
-    if (
-      part.type === "source" &&
-      part.source?.sourceType === "url" &&
-      part.source?.url
-    ) {
-      sourceUrls.push(part.source.url)
-      continue
+    if (!fullStream) {
+      throw new Error("No stream available from deep research")
     }
 
-    if (part.type === "text-delta") {
-      const text = part.textDelta
+    const citations: string[] = []
+    let hasFirstTextDelta = false
+    let thinkingStartTime: number | null = null
+    let isThinking = false
 
-      // Send collected URLs after first text-delta
-      if (!sentFirstTextDelta && text.trim() !== "") {
-        sentFirstTextDelta = true
-        if (sourceUrls.length > 0) {
-          dataStream.writeData({ citations: sourceUrls })
+    for await (const delta of fullStream) {
+      const { type } = delta
+
+      if (type === "source") {
+        const { source } = delta
+        if (source.sourceType === "url") {
+          citations.push(source.url)
         }
       }
 
-      if (text.includes("<think>")) {
-        enteredThinking = true
-        thinkingStartTime = Date.now()
-        // Send text before <think> if any
-        const beforeThink = text.split("<think>")[0]
-        if (beforeThink) {
-          dataStream.writeData({
-            type: "text-delta",
-            content: beforeThink
-          })
+      if (type === "text-delta") {
+        const { textDelta } = delta
+
+        if (!hasFirstTextDelta && textDelta.trim() !== "") {
+          dataStream.writeData({ citations })
+          hasFirstTextDelta = true
         }
-        // Send thinking content immediately
-        const thinkingContent = text.split("<think>")[1] || ""
-        if (thinkingContent) {
-          dataStream.writeData({
-            type: "reasoning",
-            content: thinkingContent
-          })
-        }
-        continue
-      }
 
-      if (enteredThinking) {
-        if (text.includes("</think>")) {
-          // Handle end of thinking block
-          enteredThinking = false
-          const thinkingElapsedSecs = thinkingStartTime
-            ? Math.round((Date.now() - thinkingStartTime) / 1000)
-            : null
-
-          // Send thinking content before </think>
-          const finalThinking = text.split("</think>")[0]
-          if (finalThinking) {
-            dataStream.writeData({
-              type: "reasoning",
-              content: finalThinking
-            })
-          }
-
-          // Send thinking time
-          dataStream.writeData({
-            type: "thinking-time",
-            elapsed_secs: thinkingElapsedSecs
-          })
-
-          // Send remaining text after </think> if any
-          const afterThink = text.split("</think>")[1]
-          if (afterThink) {
+        if (textDelta.includes("<think>")) {
+          isThinking = true
+          thinkingStartTime = Date.now()
+          
+          const [beforeThink, thinkingContent] = textDelta.split("<think>")
+          if (beforeThink) {
             dataStream.writeData({
               type: "text-delta",
-              content: afterThink
+              content: beforeThink
+            })
+          }
+          if (thinkingContent) {
+            dataStream.writeData({
+              type: "reasoning",
+              content: thinkingContent
+            })
+          }
+          continue
+        }
+
+        if (isThinking) {
+          if (textDelta.includes("</think>")) {
+            isThinking = false
+            const thinkingElapsedSecs = thinkingStartTime
+              ? Math.round((Date.now() - thinkingStartTime) / 1000)
+              : null
+
+            const [finalThinking, afterThink] = textDelta.split("</think>")
+            if (finalThinking) {
+              dataStream.writeData({
+                type: "reasoning",
+                content: finalThinking
+              })
+            }
+
+            dataStream.writeData({
+              type: "thinking-time",
+              elapsed_secs: thinkingElapsedSecs
+            })
+
+            if (afterThink) {
+              dataStream.writeData({
+                type: "text-delta",
+                content: afterThink
+              })
+            }
+          } else {
+            dataStream.writeData({
+              type: "reasoning",
+              content: textDelta
             })
           }
         } else {
-          // Send thinking content immediately
           dataStream.writeData({
-            type: "reasoning",
-            content: text
+            type: "text-delta",
+            content: textDelta
           })
         }
-      } else {
-        // Immediately send non-thinking text
-        dataStream.writeData({
-          type: "text-delta",
-          content: text
-        })
       }
     }
+
+    return "Deep research completed"
+  } catch (error) {
+    console.error("[DeepResearch] Error:", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      model
+    })
+    throw error
   }
 }
