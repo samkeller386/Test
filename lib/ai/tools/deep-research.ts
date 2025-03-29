@@ -54,10 +54,6 @@ export async function executeDeepResearchTool({
       }
     })
 
-    if (!fullStream) {
-      throw new Error("No stream available from deep research")
-    }
-
     const citations: string[] = []
     let hasFirstTextDelta = false
     let thinkingStartTime: number | null = null
@@ -84,7 +80,7 @@ export async function executeDeepResearchTool({
         if (textDelta.includes("<think>")) {
           isThinking = true
           thinkingStartTime = Date.now()
-          
+
           const [beforeThink, thinkingContent] = textDelta.split("<think>")
           if (beforeThink) {
             dataStream.writeData({

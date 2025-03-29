@@ -92,13 +92,6 @@ export async function executeTerminalAgent({
       persistentSandbox = isPersistent
     }
 
-    // if (previousMessage) {
-    //   cleanedMessages.push({
-    //     role: "assistant",
-    //     content: previousMessage + "\n\n "
-    //   })
-    // }
-
     const { fullStream, finishReason } = streamText({
       model: myProvider.languageModel(selectedChatModel),
       maxTokens: 2048,
