@@ -11,13 +11,6 @@ interface ReasonLLMConfig {
   isLargeModel: boolean
 }
 
-type Delta = {
-  type: "text-delta" | "reasoning" | "thinking-time"
-  textDelta?: string
-  content?: string
-  elapsed_secs?: number
-}
-
 async function getProviderConfig(profile: any) {
   const systemPrompt = buildSystemPrompt(
     llmConfig.systemPrompts.pentestGPTReasoning,
@@ -66,26 +59,22 @@ export async function executeReasonLLMTool({
     let isThinking = false
 
     for await (const delta of fullStream) {
-      const { type } = delta as Delta
-
-      if (type === "text-delta") {
-        const { textDelta } = delta as Delta
+      if (delta.type === "text-delta") {
         dataStream.writeData({
           type: "text-delta",
-          content: textDelta
+          content: delta.textDelta
         })
       }
 
-      if (type === "reasoning") {
+      if (delta.type === "reasoning") {
         if (!isThinking) {
           isThinking = true
           thinkingStartTime = Date.now()
         }
 
-        const { content } = delta as Delta
         dataStream.writeData({
           type: "reasoning",
-          content
+          content: delta.textDelta
         })
       }
     }

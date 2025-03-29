@@ -12,12 +12,6 @@ interface BrowserToolConfig {
   dataStream: any
 }
 
-type Delta = {
-  type: "text-delta" | "tool-call"
-  textDelta?: string
-  content?: string
-}
-
 async function getProviderConfig(profile: any) {
   const systemPrompt = buildSystemPrompt(
     llmConfig.systemPrompts.pentestGPTBrowser,
@@ -215,12 +209,10 @@ export async function executeBrowserTool({
     dataStream.writeData({ type: "text-delta", content: "\n\n" })
 
     for await (const delta of fullStream) {
-      const { type } = delta as Delta
-      if (type === "text-delta") {
-        const { textDelta } = delta as Delta
+      if (delta.type === "text-delta") {
         dataStream.writeData({
           type: "text-delta",
-          content: textDelta
+          content: delta.textDelta
         })
       }
     }
