@@ -37,7 +37,10 @@ export async function executeReasoningWebSearchTool({
   }
 
   const { messages, profile, dataStream, isLargeModel } = config
-  const { systemPrompt, selectedModel } = await getProviderConfig(isLargeModel, profile)
+  const { systemPrompt, selectedModel } = await getProviderConfig(
+    isLargeModel,
+    profile
+  )
 
   try {
     const { fullStream } = streamText({
@@ -85,7 +88,7 @@ export async function executeReasoningWebSearchTool({
         if (textDelta.includes("<think>")) {
           isThinking = true
           thinkingStartTime = Date.now()
-          
+
           const [beforeThink, thinkingContent] = textDelta.split("<think>")
           if (beforeThink) {
             dataStream.writeData({
