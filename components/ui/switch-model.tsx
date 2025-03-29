@@ -8,8 +8,8 @@ import React, {
 } from "react"
 import { IconChevronDown, IconRepeat, IconWorld } from "@tabler/icons-react"
 import { WithTooltip } from "./with-tooltip"
-import { Agent } from "@/lib/models/llm/openai-llm-list"
-import { SmallModel, LargeModel } from "@/lib/models/llm/hackerai-llm-list"
+import { Agent } from "@/lib/models/openai-llm-list"
+import { SmallModel, LargeModel } from "@/lib/models/hackerai-llm-list"
 import { LLMID } from "@/types"
 import {
   Menu,

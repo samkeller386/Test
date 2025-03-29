@@ -1,6 +1,6 @@
 import { buildSystemPrompt } from "@/lib/ai/prompts"
 import { toVercelChatMessages } from "@/lib/ai/message-utils"
-import llmConfig from "@/lib/models/llm/llm-config"
+import llmConfig from "@/lib/models/llm-config"
 import { streamText } from "ai"
 import { myProvider } from "@/lib/ai/providers"
 import FirecrawlApp, { ScrapeResponse } from "@mendable/firecrawl-js"
