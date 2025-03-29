@@ -106,7 +106,7 @@ export async function POST(request: Request) {
     let shouldUncensorResponse = false
 
     const handleMessages = (shouldUncensor: boolean) => {
-      if (includeImages) {
+      if (includeImages && !config.isLargeModel) {
         selectedChatModel = "vision-model"
         return filterEmptyAssistantMessages(messages)
       }
