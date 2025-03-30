@@ -7,7 +7,6 @@ import { ModelIcon } from "./model-icon"
 import { Button } from "../ui/button"
 import { LLM_LIST } from "@/lib/models/llm-list"
 import { LargeModel, SmallModel } from "@/lib/models/hackerai-llm-list"
-import { Agent } from "@/lib/models/openai-llm-list"
 
 interface ModelSelectProps {
   selectedModelId: LLMID
@@ -38,11 +37,7 @@ export const ModelSelect: FC<ModelSelectProps> = ({
   }
 
   // Define the specific order of models
-  const modelOrder: LLMID[] = [
-    Agent.modelId,
-    LargeModel.modelId,
-    SmallModel.modelId
-  ]
+  const modelOrder: LLMID[] = [LargeModel.modelId, SmallModel.modelId]
 
   // Sort the models based on the predefined order
   const sortedModels = LLM_LIST.sort((a, b) => {
@@ -72,7 +67,7 @@ export const ModelSelect: FC<ModelSelectProps> = ({
 
   const freeUserModels = [
     {
-      modelId: Agent.modelId,
+      modelId: LargeModel.modelId,
       modelName: "PentestGPT Pro",
       description: "Our smartest model & more",
       isUpgrade: true
@@ -85,7 +80,6 @@ export const ModelSelect: FC<ModelSelectProps> = ({
   ]
 
   const modelDescriptions: Record<string, string> = {
-    [Agent.modelId]: "Smartest model with advanced tools",
     [LargeModel.modelId]: "Great for most questions",
     [SmallModel.modelId]: "Faster for most questions"
   }
@@ -93,41 +87,42 @@ export const ModelSelect: FC<ModelSelectProps> = ({
   return (
     <div className="flex size-full flex-col">
       <div className="space-y-1 overflow-y-auto p-3">
-        {!isPremiumSubscription
-          ? freeUserModels.map(model => (
-              <div key={model.modelId}>
-                <div
-                  className="hover:bg-select flex cursor-pointer items-center justify-between space-x-2 rounded-md p-2"
-                  onClick={() =>
-                    model.isUpgrade
-                      ? handleUpgradeClick()
-                      : handleSelectModel(model.modelId)
-                  }
-                >
-                  <div className="flex items-center space-x-2">
-                    <ModelIcon modelId={model.modelId} size={28} />
-                    <div>
-                      <div className="text-sm font-medium">
-                        {model.modelName}
-                      </div>
-                      <div className="text-muted-foreground text-xs">
-                        {model.description}
-                      </div>
+        {!isPremiumSubscription ? (
+          freeUserModels.map(model => (
+            <div key={model.modelId}>
+              <div
+                className="hover:bg-select flex cursor-pointer items-center justify-between space-x-2 rounded-md p-2"
+                onClick={() =>
+                  model.isUpgrade
+                    ? handleUpgradeClick()
+                    : handleSelectModel(model.modelId)
+                }
+              >
+                <div className="flex items-center space-x-2">
+                  <ModelIcon modelId={model.modelId} size={28} />
+                  <div>
+                    <div className="text-sm font-medium">{model.modelName}</div>
+                    <div className="text-muted-foreground text-xs">
+                      {model.description}
                     </div>
                   </div>
-                  {model.isUpgrade ? (
-                    <Button variant="default" size="sm" className="h-7 text-xs">
-                      Upgrade
-                    </Button>
-                  ) : selectedModelId === model.modelId ? (
-                    <IconCircleCheck size={22} />
-                  ) : (
-                    <IconCircle size={22} className="text-muted-foreground" />
-                  )}
                 </div>
+                {model.isUpgrade ? (
+                  <Button variant="default" size="sm" className="h-7 text-xs">
+                    Upgrade
+                  </Button>
+                ) : selectedModelId === model.modelId ? (
+                  <IconCircleCheck size={22} />
+                ) : (
+                  <IconCircle size={22} className="text-muted-foreground" />
+                )}
               </div>
-            ))
-          : Object.entries(groupedSortedModels).map(([provider, models]) => {
+            </div>
+          ))
+        ) : (
+          <>
+            <div className="px-2 py-1 text-sm text-muted-foreground">Model</div>
+            {Object.entries(groupedSortedModels).map(([provider, models]) => {
               const filteredModels = models
 
               if (filteredModels.length === 0) return null
@@ -142,7 +137,6 @@ export const ModelSelect: FC<ModelSelectProps> = ({
                         onClick={() => handleSelectModel(model.modelId)}
                       >
                         <div className="flex min-w-0 flex-1 items-center space-x-3">
-                          <ModelIcon modelId={model.modelId} size={28} />
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-medium">
                               {model.modelName}
@@ -166,6 +160,8 @@ export const ModelSelect: FC<ModelSelectProps> = ({
                 </div>
               )
             })}
+          </>
+        )}
       </div>
     </div>
   )

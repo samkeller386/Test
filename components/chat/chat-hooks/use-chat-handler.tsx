@@ -7,6 +7,7 @@ import { PluginID } from "@/types/plugins"
 import { useRouter } from "next/navigation"
 import { useContext, useEffect, useRef } from "react"
 import { LLM_LIST } from "../../../lib/models/llm-list"
+import { convertOldModelToNew } from "@/lib/utils/model-conversion"
 
 import { useUIContext } from "@/context/ui-context"
 import { createMessageFeedback } from "@/db/message-feedback"
@@ -82,9 +83,10 @@ export const useChatHandler = () => {
   // Initialize chat settings on component mount
   useEffect(() => {
     if (selectedChat && selectedChat.model) {
+      const newModel = convertOldModelToNew(selectedChat.model)
       setChatSettings(prevSettings => ({
         ...prevSettings,
-        model: selectedChat.model as LLMID
+        model: newModel
       }))
     }
   }, [selectedChat, setChatSettings])
@@ -99,9 +101,10 @@ export const useChatHandler = () => {
     const chatId = "id" in chat ? chat.id : chat.chat_id
 
     if ("model" in chat && chat.model) {
+      const newModel = convertOldModelToNew(chat.model)
       setChatSettings(prevSettings => ({
         ...prevSettings,
-        model: chat.model as LLMID
+        model: newModel
       }))
     }
 

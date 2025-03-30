@@ -8,7 +8,6 @@ import React, {
 } from "react"
 import { IconChevronDown, IconRepeat, IconWorld } from "@tabler/icons-react"
 import { WithTooltip } from "./with-tooltip"
-import { Agent } from "@/lib/models/openai-llm-list"
 import { SmallModel, LargeModel } from "@/lib/models/hackerai-llm-list"
 import { LLMID } from "@/types"
 import {
@@ -28,8 +27,6 @@ interface SwitchModelProps {
 
 const getModelDisplayName = (modelId: string): string => {
   switch (modelId) {
-    case Agent.modelId:
-      return "agent"
     case SmallModel.modelId:
       return "small"
     case LargeModel.modelId:
@@ -144,7 +141,6 @@ export const SwitchModel: FC<SwitchModelProps> = ({
               </div>
 
               {[
-                { id: Agent.modelId, name: "PGPT-Agent" },
                 { id: LargeModel.modelId, name: "Large Model" },
                 { id: SmallModel.modelId, name: "Small Model" }
               ]
@@ -174,7 +170,6 @@ export const SwitchModel: FC<SwitchModelProps> = ({
               <div className="bg-muted-foreground/50 mx-2 my-1 h-px" />
 
               {[
-                { id: Agent.modelId, name: "PGPT-Agent" },
                 { id: LargeModel.modelId, name: "Large Model" },
                 { id: SmallModel.modelId, name: "Small Model" }
               ]

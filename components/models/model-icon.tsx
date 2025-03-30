@@ -1,10 +1,8 @@
 import { cn } from "@/lib/utils"
 import { LLMID } from "@/types"
 import { IconSparkles, IconBolt } from "@tabler/icons-react"
-import { Sparkles, Sparkle } from "lucide-react"
 import { useTheme } from "next-themes"
 import { FC, HTMLAttributes } from "react"
-import { Agent } from "@/lib/models/openai-llm-list"
 import { SmallModel, LargeModel } from "@/lib/models/hackerai-llm-list"
 
 interface ModelIconProps extends HTMLAttributes<HTMLDivElement> {
@@ -13,9 +11,8 @@ interface ModelIconProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export const iconMap = {
-  [Agent.modelId]: Sparkles,
   [SmallModel.modelId]: IconBolt,
-  [LargeModel.modelId]: Sparkle,
+  [LargeModel.modelId]: IconSparkles,
   default: IconSparkles
 }
 

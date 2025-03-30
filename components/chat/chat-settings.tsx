@@ -1,13 +1,14 @@
 import { PentestGPTContext } from "@/context/context"
 import { LLM_LIST } from "@/lib/models/llm-list"
 import { IconChevronDown, IconRefresh } from "@tabler/icons-react"
-import { FC, useContext, useRef, useState } from "react"
+import { FC, useContext, useRef, useState, useEffect } from "react"
 import { Button } from "../ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { ModelSelect } from "../models/model-select"
 import { WithTooltip } from "../ui/with-tooltip"
 import { ChatSecondaryButtons } from "./chat-secondary-buttons"
 import { useUIContext } from "@/context/ui-context"
+import { convertOldModelToNew } from "@/lib/utils/model-conversion"
 
 interface ChatSettingsProps {
   handleCleanChat?: () => void
@@ -26,6 +27,19 @@ export const ChatSettings: FC<ChatSettingsProps> = ({ handleCleanChat }) => {
 
   const [isOpen, setIsOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
+
+  // Convert old model to new model when component mounts or chatSettings changes
+  useEffect(() => {
+    if (chatSettings?.model) {
+      const newModel = convertOldModelToNew(chatSettings.model)
+      if (newModel !== chatSettings.model) {
+        setChatSettings(prevSettings => ({
+          ...prevSettings,
+          model: newModel
+        }))
+      }
+    }
+  }, [chatSettings?.model, setChatSettings])
 
   if (!chatSettings || !profile) return null
 

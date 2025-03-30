@@ -1,10 +1,6 @@
 import { ModelProvider } from "./models"
 
-export const VALID_MODEL_IDS = [
-  "gpt-4-turbo-preview",
-  "mistral-medium",
-  "mistral-large"
-] as const
+export const VALID_MODEL_IDS = ["mistral-medium", "mistral-large"] as const
 
 export type LLMID = (typeof VALID_MODEL_IDS)[number]
 
