@@ -28,8 +28,8 @@ export async function executeReasonLLMTool({
 }: {
   config: ReasonLLMConfig
 }) {
-  if (!process.env.PERPLEXITY_API_KEY) {
-    throw new Error("Perplexity API key is not set for reason LLM")
+  if (!process.env.OPENROUTER_API_KEY) {
+    throw new Error("OpenRouter API key is not set for reason LLM")
   }
 
   const { messages, profile, dataStream } = config
