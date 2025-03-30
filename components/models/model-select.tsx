@@ -85,9 +85,9 @@ export const ModelSelect: FC<ModelSelectProps> = ({
   ]
 
   const modelDescriptions: Record<string, string> = {
-    [Agent.modelId]: "Smartest model with advanced tools",
-    [LargeModel.modelId]: "Great for most questions",
-    [SmallModel.modelId]: "Faster for most questions"
+    [Agent.modelId]: "Censored, smartest model with tools",
+    [LargeModel.modelId]: "Uncensored, Great for most questions",
+    [SmallModel.modelId]: "Uncensored, Faster for most questions"
   }
 
   return (
@@ -127,45 +127,51 @@ export const ModelSelect: FC<ModelSelectProps> = ({
                 </div>
               </div>
             ))
-          : Object.entries(groupedSortedModels).map(([provider, models]) => {
-              const filteredModels = models
+          : (
+            <>
+              <div className="px-2 py-1 text-sm font-light text-muted-foreground">
+                Model
+              </div>
+              {Object.entries(groupedSortedModels).map(([provider, models]) => {
+                const filteredModels = models
 
-              if (filteredModels.length === 0) return null
+                if (filteredModels.length === 0) return null
 
-              return (
-                <div key={provider}>
-                  <div className="space-y-2">
-                    {filteredModels.map(model => (
-                      <div
-                        key={model.modelId}
-                        className="hover:bg-accent flex w-full cursor-pointer items-center space-x-3 truncate rounded p-2"
-                        onClick={() => handleSelectModel(model.modelId)}
-                      >
-                        <div className="flex min-w-0 flex-1 items-center space-x-3">
-                          <ModelIcon modelId={model.modelId} size={28} />
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-medium">
-                              {model.modelName}
-                            </div>
-                            <div className="text-muted-foreground truncate text-xs">
-                              {modelDescriptions[model.modelId] ||
-                                "Advanced AI model"}
+                return (
+                  <div key={provider}>
+                    <div className="space-y-2">
+                      {filteredModels.map(model => (
+                        <div
+                          key={model.modelId}
+                          className="hover:bg-accent flex w-full cursor-pointer items-center space-x-3 truncate rounded p-2"
+                          onClick={() => handleSelectModel(model.modelId)}
+                        >
+                          <div className="flex min-w-0 flex-1 items-center space-x-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-medium">
+                                {model.modelName}
+                              </div>
+                              <div className="text-muted-foreground truncate text-xs">
+                                {modelDescriptions[model.modelId] ||
+                                  "Advanced AI model"}
+                              </div>
                             </div>
                           </div>
+                          <div className="shrink-0">
+                            {selectedModelId === model.modelId ? (
+                              <IconCircleCheck size={22} />
+                            ) : (
+                              <IconCircle size={22} className="opacity-50" />
+                            )}
+                          </div>
                         </div>
-                        <div className="shrink-0">
-                          {selectedModelId === model.modelId ? (
-                            <IconCircleCheck size={22} />
-                          ) : (
-                            <IconCircle size={22} className="opacity-50" />
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </>
+          )}
       </div>
     </div>
   )
