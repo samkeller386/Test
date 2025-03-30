@@ -37,12 +37,12 @@ export async function getModerationResult(
       isLargeModel
     )
 
-    // console.log(
-    //   JSON.stringify(moderation, null, 2),
-    //   moderationLevel,
-    //   hazardCategories,
-    //   shouldUncensorResponse
-    // )
+    console.log(
+      JSON.stringify(moderation, null, 2),
+      moderationLevel,
+      hazardCategories,
+      shouldUncensorResponse
+    )
 
     return { shouldUncensorResponse }
   } catch (error: any) {
@@ -130,7 +130,7 @@ function determineShouldUncensorResponse(
   )
 
   const minModerationLevel = isLargeModel ? 0.4 : 0.4
-  const maxModerationLevel = isLargeModel ? 1.0 : 0.9
+  const maxModerationLevel = isLargeModel ? 1.0 : 1.0
   return (
     moderationLevel >= minModerationLevel &&
     moderationLevel <= maxModerationLevel &&
