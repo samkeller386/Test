@@ -108,14 +108,7 @@ export async function executeTerminalAgent({
         setPersistentSandbox
       }),
       maxSteps: 5,
-      toolChoice: "required",
-      onError: (error: unknown) => {
-        console.error("[TerminalAgent] Streaming Error:", {
-          error: error instanceof Error ? error.message : "Unknown error",
-          model: selectedChatModel
-        })
-        throw error
-      }
+      toolChoice: "required"
     })
 
     // Handle stream

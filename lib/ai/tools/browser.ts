@@ -195,14 +195,7 @@ export async function executeBrowserTool({
         ...toVercelChatMessages(messages.slice(0, -1)),
         { role: "user", content: browserPrompt }
       ],
-      maxTokens: 2048,
-      onError: (error: unknown) => {
-        console.error("[BrowserTool] Streaming Error:", {
-          error: error instanceof Error ? error.message : "Unknown error",
-          model
-        })
-        throw error
-      }
+      maxTokens: 2048
     })
 
     dataStream.writeData({ type: "tool-call", content: "none" })

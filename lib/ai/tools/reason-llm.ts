@@ -45,14 +45,7 @@ export async function executeReasonLLMTool({
         },
         ...toVercelChatMessages(messages)
       ],
-      maxTokens: 4096,
-      onError: (error: unknown) => {
-        console.error("[ReasonLLM] Streaming Error:", {
-          error: error instanceof Error ? error.message : "Unknown error",
-          model
-        })
-        throw error
-      }
+      maxTokens: 4096
     })
 
     let thinkingStartTime: number | null = null

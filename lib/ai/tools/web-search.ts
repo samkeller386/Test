@@ -61,14 +61,7 @@ export async function executeWebSearchTool({
         },
         ...toVercelChatMessages(messages)
       ],
-      maxTokens: 2048,
-      onError: (error: unknown) => {
-        console.error("[WebSearch] Streaming Error:", {
-          error: error instanceof Error ? error.message : "Unknown error",
-          model: selectedModel
-        })
-        throw error
-      }
+      maxTokens: 2048
     })
 
     const citations: string[] = []

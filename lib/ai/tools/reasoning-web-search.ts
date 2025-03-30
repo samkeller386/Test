@@ -52,14 +52,7 @@ export async function executeReasoningWebSearchTool({
         },
         ...toVercelChatMessages(messages)
       ],
-      maxTokens: 4096,
-      onError: (error: unknown) => {
-        console.error("[ReasoningWebSearch] Streaming Error:", {
-          error: error instanceof Error ? error.message : "Unknown error",
-          model: selectedModel
-        })
-        throw error
-      }
+      maxTokens: 4096
     })
 
     const citations: string[] = []

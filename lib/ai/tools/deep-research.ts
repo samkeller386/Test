@@ -44,14 +44,7 @@ export async function executeDeepResearchTool({
         },
         ...toVercelChatMessages(messages)
       ],
-      maxTokens: 8192,
-      onError: (error: unknown) => {
-        console.error("[DeepResearch] Streaming Error:", {
-          error: error instanceof Error ? error.message : "Unknown error",
-          model
-        })
-        throw error
-      }
+      maxTokens: 8192
     })
 
     const citations: string[] = []
