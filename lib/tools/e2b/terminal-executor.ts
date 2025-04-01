@@ -1,5 +1,4 @@
-import { OutputMessage, Sandbox } from "@e2b/code-interpreter"
-import { CustomExecutionError } from "../tool-store/tools-terminal"
+import { Sandbox } from "@e2b/code-interpreter"
 
 const MAX_EXECUTION_TIME = 10 * 60 * 1000
 const ENCODER = new TextEncoder()
@@ -31,16 +30,15 @@ export const executeTerminalCommand = async ({
         }
 
         let isOutputStarted = false
-        const execution = await sandbox.runCode(command, {
-          language: "bash",
+        const execution = await sandbox.commands.run(command, {
           timeoutMs: MAX_EXECUTION_TIME,
-          onStdout: (data: OutputMessage) => {
+          onStdout: (data: string) => {
             hasTerminalOutput = true
             if (!isOutputStarted) {
               controller.enqueue(ENCODER.encode("\n```stdout\n"))
               isOutputStarted = true
             }
-            controller.enqueue(ENCODER.encode(data.line))
+            controller.enqueue(ENCODER.encode(data))
           }
         })
 
@@ -126,4 +124,16 @@ function isConnectionError(error: Error): boolean {
     error.message.includes("504 Gateway Timeout") ||
     error.message.includes("502 Bad Gateway")
   )
+}
+
+class CustomExecutionError extends Error {
+  value: string
+  traceback: string
+
+  constructor(name: string, value: string, traceback: string) {
+    super(name)
+    this.name = name
+    this.value = value
+    this.traceback = traceback
+  }
 }
