@@ -98,16 +98,18 @@ export function LoginForm({
         </div>
 
         <div className="mt-2 flex justify-center">
-          <Turnstile
-            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-            onSuccess={(token) => {
-              setCaptchaToken(token);
-            }}
-            options={{
-              theme: 'auto',
-            }}
-            className="flex justify-center"
-          />
+          {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+            <Turnstile
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+              onSuccess={(token) => {
+                setCaptchaToken(token);
+              }}
+              options={{
+                theme: 'auto',
+              }}
+              className="flex justify-center"
+            />
+          )}
         </div>
 
         <input

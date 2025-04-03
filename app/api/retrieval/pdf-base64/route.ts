@@ -1,15 +1,10 @@
 import { getServerProfile } from '@/lib/server/server-chat-helpers';
-import type { Database } from '@/supabase/types';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAdminClient } from '@/lib/server/server-utils';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const supabaseAdmin = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-
+    const supabaseAdmin = createSupabaseAdminClient();
     const profile = await getServerProfile();
     const { file_id } = await req.json();
 

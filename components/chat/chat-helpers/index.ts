@@ -139,7 +139,9 @@ export const fetchChatResponse = async (
           ...(errorData.subscriptionType === 'free' && {
             action: {
               label: 'Upgrade Now',
-              onClick: () => (window.location.href = '/upgrade'),
+              onClick: () => {
+                window.location.href = '/upgrade';
+              },
             },
           }),
         },

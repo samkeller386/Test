@@ -5,9 +5,7 @@ import { type FC, useContext, useState } from 'react';
 import { Message } from '../messages/message';
 import type { ChatMessage } from '@/types';
 
-type ChatMessagesProps = {};
-
-export const ChatMessages: FC<ChatMessagesProps> = ({}) => {
+export const ChatMessages: FC = () => {
   const { chatMessages, temporaryChatMessages, isTemporaryChat } =
     useContext(PentestGPTContext);
 

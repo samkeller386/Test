@@ -87,9 +87,9 @@ export const ChatFilesDisplay: FC = () => {
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
             >
-              {messageImages.map((image, index) => (
+              {messageImages.map((image) => (
                 <div
-                  key={index}
+                  key={`${image.messageId}-${image.path}`}
                   className="relative flex h-[64px] cursor-pointer items-center space-x-4 rounded-xl hover:opacity-50"
                 >
                   <Image

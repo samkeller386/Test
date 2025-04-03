@@ -41,6 +41,7 @@ export default function FragmentPreview({
           </div>
         )}
         <iframe
+          title="Fragment Preview"
           key={iframeKey}
           src={url}
           className="size-full"

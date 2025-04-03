@@ -1,11 +1,12 @@
 import llmConfig from '@/lib/models/llm-config';
 import { getServerProfile } from '@/lib/server/server-chat-helpers';
 import type { Database, Tables } from '@/supabase/types';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions.mjs';
 import { z } from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { createSupabaseAdminClient } from '@/lib/server/server-utils';
 
 const MINIMUM_SIMILARITY = 0;
 const CHUNKS_PER_QUERY = 8;
@@ -188,10 +189,7 @@ export async function POST(request: Request) {
   const uniqueFileIds = [...new Set([...newMessageFiles, ...chatFiles])];
 
   try {
-    const supabaseAdmin = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
+    const supabaseAdmin = createSupabaseAdminClient();
 
     const profile = await getServerProfile();
 

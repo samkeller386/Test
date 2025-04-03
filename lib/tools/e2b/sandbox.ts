@@ -1,11 +1,8 @@
+import { createSupabaseAdminClient } from '@/lib/server/server-utils';
 import { Sandbox, type SandboxInfo } from '@e2b/code-interpreter';
-import { createClient } from '@supabase/supabase-js';
 import { waitUntil } from '@vercel/functions';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+const supabaseAdmin = createSupabaseAdminClient();
 
 /**
  * Creates or connects to a temporary sandbox instance

@@ -1,6 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/supabase/types';
 import type { Sandbox } from '@e2b/code-interpreter';
+import { createSupabaseAdminClient } from '@/lib/server/server-utils';
 
 interface FileUploadResult {
   success: boolean;
@@ -58,10 +57,7 @@ export async function uploadFileToSandbox(
 }
 
 async function getFileContentFromSupabase(fileId: string) {
-  const supabaseAdmin = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  const supabaseAdmin = createSupabaseAdminClient();
 
   // First get file metadata
   const { data: fileData, error: fileError } = await supabaseAdmin

@@ -93,7 +93,10 @@ export async function POST(req: NextRequest) {
         const reader = openaiResponse.body?.getReader();
 
         async function push() {
-          const { done, value } = await reader!.read();
+          const { done, value } = (await reader?.read()) ?? {
+            done: true,
+            value: null,
+          };
           if (done) {
             controller.close();
             return;

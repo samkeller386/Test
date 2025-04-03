@@ -28,9 +28,7 @@ const DynamicKeyboardShortcutsPopup = dynamic(
   { ssr: false },
 );
 
-type ChatHelpProps = {};
-
-export const ChatHelp: FC<ChatHelpProps> = () => {
+export const ChatHelp: FC = () => {
   const { userEmail } = useContext(PentestGPTContext);
   const { isFragmentBarOpen } = useFragments();
 
@@ -39,8 +37,9 @@ export const ChatHelp: FC<ChatHelpProps> = () => {
   const { copyToClipboard } = useCopyToClipboard({ timeout: 2000 });
 
   const socialLinks = [
-    { icon: IconBrandX, href: 'https://x.com/PentestGPT' },
+    { id: 'x', icon: IconBrandX, href: 'https://x.com/PentestGPT' },
     {
+      id: 'github',
       icon: IconBrandGithub,
       href: 'https://github.com/hackerai-tech/PentestGPT',
     },
@@ -63,16 +62,19 @@ export const ChatHelp: FC<ChatHelpProps> = () => {
 
   const menuItems = [
     {
+      id: 'copy-email',
       icon: IconCopy,
       text: truncateEmail(userEmail),
       onClick: handleCopyEmail,
     },
     {
+      id: 'help-faq',
       icon: IconExternalLink,
       text: 'Help & FAQ',
       href: 'https://help.hackerai.co/en/collections/10615918-pentestgpt',
     },
     {
+      id: 'keyboard-shortcuts',
       icon: IconKeyboard,
       text: 'Keyboard shortcuts',
       onClick: () => setIsKeyboardShortcutsOpen(true),
@@ -94,9 +96,9 @@ export const ChatHelp: FC<ChatHelpProps> = () => {
         >
           <DropdownMenuLabel className="mb-2 flex items-center justify-between">
             <div className="flex space-x-4">
-              {socialLinks.map(({ icon: Icon, href }, index) => (
+              {socialLinks.map(({ id, icon: Icon, href }) => (
                 <Link
-                  key={index}
+                  key={id}
                   className="cursor-pointer hover:opacity-50"
                   href={href}
                   target="_blank"
@@ -110,8 +112,8 @@ export const ChatHelp: FC<ChatHelpProps> = () => {
 
           <DropdownMenuSeparator className="my-2" />
 
-          {menuItems.map(({ icon: Icon, text, onClick, href }, index) => (
-            <DropdownMenuItem key={index} className="cursor-pointer py-1">
+          {menuItems.map(({ id, icon: Icon, text, onClick, href }) => (
+            <DropdownMenuItem key={id} className="cursor-pointer py-1">
               {href ? (
                 <Link
                   href={href}
