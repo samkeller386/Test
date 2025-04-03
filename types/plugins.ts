@@ -65,7 +65,7 @@ export const pluginUrls: PluginUrls = {
   // Pentest tools
   SSL_SCANNER: 'https://github.com/drwetter/testssl.sh/',
   DNS_SCANNER: 'https://github.com/darkoperator/dnsrecon',
-  PORT_SCANNER: 'https://github.com/projectdiscovery/naabu',
+  PORT_SCANNER: 'https://nmap.org',
   WAF_DETECTOR: 'https://github.com/EnableSecurity/wafw00f',
   WHOIS_LOOKUP: 'https://www.whois.com/whois/',
   SUBDOMAIN_FINDER: 'https://github.com/projectdiscovery/subfinder',

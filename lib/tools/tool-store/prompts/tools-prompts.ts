@@ -29,13 +29,23 @@ The user has selected the DNS Scanner plugin, which uses the dnsrecon tool in th
 `;
     case PluginID.PORT_SCANNER:
       return `
-The user has selected the Port Scanner plugin, which uses the naabu tool in the terminal. This tool performs fast port scanning to discover open ports on target systems. Remember:
-1. Focus on identifying open ports and potential services running on those ports.
-2. Provide naabu-specific options and explanations for efficient scanning.
-3. For deep scans, use '1000', and for quick/light scans, use '100'. Never use the '-p-' option; instead, use:
- - '-port' or '-p' for specific ports (e.g., '80,443,100-200')
- - '-top-ports' or '-tp' for top ports (e.g., 'full,100,1000').
-4. Naabu can scan multiple hosts at once using the '-host' option (e.g., '-host 192.168.1.1,192.168.1.2').
+The user has selected the Port Scanner plugin, which uses the nmap tool in the terminal. This tool performs comprehensive port scanning to discover open ports and services on target systems. Remember:
+1. Focus on identifying open ports, services, and potential vulnerabilities on target systems.
+2. Provide nmap-specific options and explanations for efficient scanning.
+3. For different scan types, use appropriate options like:
+   - Quick scan: '-F' (fast mode, scans fewer ports)
+   - Deep scan: '-p-' (all ports) or '-p 1-65535'
+   - Service detection: '-sV' (version detection)
+   - OS detection: '-O' (requires root privileges)
+4. Common nmap options:
+   - '-sS': SYN scan (requires root privileges)
+   - '-sT': TCP connect scan
+   - '-sU': UDP scan
+   - '-sV': Version detection
+   - '-sC': Default script scan
+   - '-A': Aggressive scan (includes OS detection, version detection, script scanning, and traceroute)
+   - '-T': Timing template (0-5, where 5 is fastest, default is 3)
+5. For multiple hosts, use CIDR notation or comma-separated IPs (e.g., '192.168.1.0/24' or '192.168.1.1,192.168.1.2')
 `;
     case PluginID.WAF_DETECTOR:
       return `

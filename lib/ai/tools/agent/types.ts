@@ -25,7 +25,7 @@ export const PLUGIN_COMMAND_MAP: Partial<Record<PluginID, string>> = {
   [PluginID.SQLI_EXPLOITER]: 'sqlmap',
   [PluginID.SSL_SCANNER]: 'testssl.sh',
   [PluginID.DNS_SCANNER]: 'dnsrecon',
-  [PluginID.PORT_SCANNER]: 'naabu',
+  [PluginID.PORT_SCANNER]: 'nmap',
   [PluginID.WAF_DETECTOR]: 'wafw00f',
   [PluginID.WHOIS_LOOKUP]: 'whois',
   [PluginID.SUBDOMAIN_FINDER]: 'subfinder',
