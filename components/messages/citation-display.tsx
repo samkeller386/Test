@@ -1,4 +1,4 @@
-import React, { FC, useMemo } from "react"
+import React, { FC, useMemo, useState } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import {
@@ -7,6 +7,11 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card"
+import { IconWorld } from "@tabler/icons-react"
+
+const getFaviconUrl = (domain: string) => {
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
+}
 
 interface CitationDisplayProps {
   citations: string[]
@@ -19,10 +24,11 @@ interface WebsiteCardProps {
 }
 
 const WebsiteCard: FC<WebsiteCardProps> = ({ url, domain }) => {
+  const [showFallback, setShowFallback] = useState(false)
   const faviconUrl = useMemo(() => {
     try {
       const urlObj = new URL(url)
-      return `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`
+      return getFaviconUrl(urlObj.hostname)
     } catch (e) {
       return ""
     }
@@ -37,17 +43,24 @@ const WebsiteCard: FC<WebsiteCardProps> = ({ url, domain }) => {
       tabIndex={0}
       aria-label={`Visit ${domain}`}
     >
-      <Card className="w-[300px] shrink-0 bg-background-foreground hover:bg-accent transition-colors">
+      <Card className="w-[250px] shrink-0 bg-background-foreground hover:bg-accent transition-colors">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <div className="relative size-4 overflow-hidden rounded-sm shrink-0">
-              <Image
-                src={faviconUrl}
-                alt={`${domain} icon`}
-                className="object-contain"
-                fill
-                sizes="16px"
-              />
+              {!showFallback ? (
+                <Image
+                  src={faviconUrl}
+                  alt={`${domain} icon`}
+                  className="object-contain"
+                  onError={() => setShowFallback(true)}
+                  fill
+                  sizes="16px"
+                />
+              ) : (
+                <div className="flex items-center justify-center w-full h-full bg-muted rounded-lg">
+                  <IconWorld className="size-4" />
+                </div>
+              )}
             </div>
             <CardTitle className="text-sm truncate">{url}</CardTitle>
           </div>
@@ -64,6 +77,8 @@ export const CitationDisplay: FC<CitationDisplayProps> = ({
   citations,
   className
 }) => {
+  const [fallbackIcons, setFallbackIcons] = useState<Record<string, boolean>>({})
+  
   const websiteCards = useMemo(() => {
     return citations
       .map(url => {
@@ -77,7 +92,7 @@ export const CitationDisplay: FC<CitationDisplayProps> = ({
           return null
         }
       })
-      .filter(Boolean)
+      .filter((card): card is { url: string; domain: string } => Boolean(card))
   }, [citations])
 
   if (citations.length === 0) return null
@@ -91,16 +106,23 @@ export const CitationDisplay: FC<CitationDisplayProps> = ({
         <div className="flex -space-x-1">
           {websiteCards.slice(0, 5).map((card, i) => (
             <div
-              key={i}
-              className="relative size-6 overflow-hidden rounded-sm ring-2 ring-background"
+              key={`favicon-${card.domain}-${i}`}
+              className="relative size-6 overflow-hidden rounded-sm"
             >
-              <Image
-                src={`https://www.google.com/s2/favicons?domain=${card?.domain}&sz=32`}
-                alt={`${card?.domain} icon`}
-                className="object-contain"
-                fill
-                sizes="24px"
-              />
+              {!fallbackIcons[card.domain] ? (
+                <Image
+                  src={getFaviconUrl(card.domain)}
+                  alt={`${card.domain} icon`}
+                  className="object-contain"
+                  onError={() => setFallbackIcons(prev => ({ ...prev, [card.domain]: true }))}
+                  fill
+                  sizes="24px"
+                />
+              ) : (
+                <div className="flex items-center justify-center w-full h-full">
+                  <IconWorld className="size-4" />
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -109,7 +131,11 @@ export const CitationDisplay: FC<CitationDisplayProps> = ({
         <div className="overflow-x-auto overflow-y-hidden no-scrollbar">
           <div className="flex w-max space-x-3">
             {websiteCards.map((card, i) => (
-              <WebsiteCard key={i} url={card!.url} domain={card!.domain} />
+              <WebsiteCard
+                key={`website-${card.domain}-${i}`}
+                url={card.url}
+                domain={card.domain}
+              />
             ))}
           </div>
         </div>
