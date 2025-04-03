@@ -111,16 +111,16 @@ export async function POST(request: Request) {
 
       if (shouldUncensor) {
         addAuthMessage(messages);
-        if (
-          !includeImages &&
-          selectedPlugin !== PluginID.WEB_SEARCH &&
-          selectedPlugin !== PluginID.REASONING &&
-          selectedPlugin !== PluginID.REASONING_WEB_SEARCH &&
-          selectedPlugin !== PluginID.DEEP_RESEARCH &&
-          !terminalPlugins.includes(selectedPlugin as PluginID)
-        ) {
-          return handleAssistantMessages(messages);
-        }
+        // if (
+        //   !includeImages &&
+        //   selectedPlugin !== PluginID.WEB_SEARCH &&
+        //   selectedPlugin !== PluginID.REASONING &&
+        //   selectedPlugin !== PluginID.REASONING_WEB_SEARCH &&
+        //   selectedPlugin !== PluginID.DEEP_RESEARCH &&
+        //   !terminalPlugins.includes(selectedPlugin as PluginID)
+        // ) {
+        //   return handleAssistantMessages(messages);
+        // }
       }
 
       return filterEmptyAssistantMessages(messages);
