@@ -223,12 +223,12 @@ export async function POST(request: Request) {
         execute: (dataStream) => {
           if (ragUsed) dataStream.writeData({ ragUsed, ragId });
 
-          const { getSelectedSchemas } = createToolSchemas({
-            chatSettings,
-            messages,
-            profile,
-            dataStream,
-          });
+          // const { getSelectedSchemas } = createToolSchemas({
+          //   chatSettings,
+          //   messages,
+          //   profile,
+          //   dataStream,
+          // });
 
           const result = streamText({
             model: myProvider.languageModel(selectedChatModel),
@@ -236,10 +236,21 @@ export async function POST(request: Request) {
             messages: toVercelChatMessages(validatedMessages, includeImages),
             maxTokens: 2048,
             abortSignal: request.signal,
-            tools:
-              config.isLargeModel && !ragUsed && !shouldUncensorResponse
-                ? getSelectedSchemas(['browser', 'webSearch'])
-                : undefined,
+            // tools:
+            //   config.isLargeModel && !ragUsed && !shouldUncensorResponse
+            //     ? getSelectedSchemas(['browser', 'webSearch'])
+            //     : undefined,
+            ...(config.isLargeModel
+              ? {
+                  providerOptions: {
+                    openrouter: {
+                      provider: {
+                        order: ['Parasail'],
+                      },
+                    },
+                  },
+                }
+              : {}),
           });
 
           result.mergeIntoDataStream(dataStream);
