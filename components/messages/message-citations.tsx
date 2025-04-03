@@ -1,6 +1,7 @@
 import React, { FC, useMemo } from "react"
 import { MessageMarkdown } from "./message-markdown"
 import { ReasoningMarkdown } from "./reasoning-markdown"
+import { CitationDisplay } from "./citation-display"
 
 interface MessageCitationsProps {
   content: string
@@ -26,9 +27,14 @@ export const MessageCitations: FC<MessageCitationsProps> = ({
     [content, citations]
   )
 
-  return reasoningWithCitations ? (
-    <ReasoningMarkdown content={processedContent} />
-  ) : (
-    <MessageMarkdown content={processedContent} isAssistant={isAssistant} />
+  return (
+    <div>
+      {reasoningWithCitations ? (
+        <ReasoningMarkdown content={processedContent} />
+      ) : (
+        <MessageMarkdown content={processedContent} isAssistant={isAssistant} />
+      )}
+      <CitationDisplay citations={citations} />
+    </div>
   )
 }
