@@ -42,34 +42,12 @@ export const availablePlugins: PluginSummary[] = [
     icon: "https://cdn-icons-png.flaticon.com/128/11751/11751689.png",
     invertInDarkMode: true,
     description:
-      "Enhances the model with curated PentestGPT knowledge, including popular guides, techniques, and tools",
+      "Enhances the model with curated PentestGPT knowledge, including popular guides, techniques, and tools (RAG)",
     githubRepoUrl: pluginUrls.PENTESTGPT,
     isInstalled: false,
-    isPremium: true,
+    isPremium: false,
     createdAt: "2024-07-26",
-    starters: [
-      // {
-      //   title: "What are Some Ways",
-      //   description: "to bypass payment process?",
-      //   chatMessage: "What are some ways to bypass payment process?"
-      // },
-      // {
-      //   title: "Explain the OWASP Top 10",
-      //   description: "and how to test for them",
-      //   chatMessage: "Explain the OWASP Top 10 and how to test for them."
-      // },
-      // {
-      //   title: "Describe Common Techniques",
-      //   description: "for exploiting server-side request forgery",
-      //   chatMessage:
-      //     "Describe common techniques for exploiting server-side request forgery."
-      // },
-      // {
-      //   title: "List Popular Vulnerabel",
-      //   description: "ports to exploit",
-      //   chatMessage: "List popular vulnerabel ports to exploit."
-      // }
-    ]
+    starters: []
   },
   {
     id: 2,
