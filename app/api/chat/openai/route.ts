@@ -8,7 +8,6 @@ import llmConfig from '@/lib/models/llm-config';
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
 import { getAIProfile } from '@/lib/server/server-chat-helpers';
 import { createDataStreamResponse, streamText } from 'ai';
-import type { ServerRuntime } from 'next';
 import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
 import { PluginID } from '@/types/plugins';
 import { executeWebSearchTool } from '@/lib/ai/tools/web-search';
@@ -22,7 +21,6 @@ import { myProvider } from '@/lib/ai/providers';
 import { terminalPlugins } from '@/lib/ai/terminal-utils';
 import { getModerationResult } from '@/lib/server/moderation';
 
-export const runtime: ServerRuntime = 'edge';
 export const preferredRegion = [
   'iad1',
   'arn1',

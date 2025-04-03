@@ -1,10 +1,8 @@
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
 import { getAIProfile } from '@/lib/server/server-chat-helpers';
 import { getSubscriptionInfo } from '@/lib/server/subscription-utils';
-import type { ServerRuntime } from 'next';
 import { type NextRequest, NextResponse } from 'next/server';
 
-export const runtime: ServerRuntime = 'edge';
 export const preferredRegion = [
   'iad1',
   'arn1',

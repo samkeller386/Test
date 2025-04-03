@@ -1,5 +1,4 @@
 import { getAIProfile } from '@/lib/server/server-chat-helpers';
-import type { ServerRuntime } from 'next';
 import { buildSystemPrompt } from '@/lib/ai/prompts';
 import {
   filterEmptyAssistantMessages,
@@ -27,7 +26,6 @@ import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
 import { executeTerminalAgent } from '@/lib/ai/tools/terminal-agent';
 import { terminalPlugins } from '@/lib/ai/terminal-utils';
 
-export const runtime: ServerRuntime = 'edge';
 export const preferredRegion = [
   'iad1',
   'arn1',
