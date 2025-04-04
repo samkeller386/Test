@@ -42,24 +42,19 @@ export const createTerminalTool = (context: ToolContext) => {
     description: 'Execute commands in the sandbox environment.',
     parameters: z.object({
       command: z.string().describe('Command to execute'),
-      /*...(selectedPlugin
+      ...(selectedPlugin
         ? {}
         : {
             usePersistentSandbox: z
               .boolean()
               .optional()
               .describe(
-                "Use persistent sandbox (30-day storage) instead of temporary"
-              )
-          })*/
+                'Use persistent sandbox (30-day storage) instead of temporary',
+              ),
+          }),
     }),
     execute: async (args) => {
-      const { command } = args;
-      // Handle usePersistentSandbox with type safety
-      const usePersistentSandbox = false;
-      /* selectedPlugin
-        ? false
-        : Boolean(args.usePersistentSandbox) */
+      const { command, usePersistentSandbox } = args;
 
       // Validate plugin-specific commands
       if (selectedPlugin) {
@@ -70,9 +65,8 @@ export const createTerminalTool = (context: ToolContext) => {
       }
 
       // Set sandbox type
-      persistentSandbox = usePersistentSandbox;
+      persistentSandbox = Boolean(usePersistentSandbox);
 
-      // Update the persistentSandbox value in the parent context if needed
       if (setPersistentSandbox) {
         setPersistentSandbox(persistentSandbox);
       }
