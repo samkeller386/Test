@@ -63,12 +63,12 @@ export const executeTerminalCommand = async ({
           },
           onStderr: (data: string) => {
             hasTerminalOutput = true;
-            if (currentBlock !== 'stderr') {
+            if (currentBlock !== 'stdout') {
               if (currentBlock) {
                 controller.enqueue(ENCODER.encode('\n```'));
               }
-              controller.enqueue(ENCODER.encode('\n```stderr\n'));
-              currentBlock = 'stderr';
+              controller.enqueue(ENCODER.encode('\n```stdout\n'));
+              currentBlock = 'stdout';
             }
             controller.enqueue(ENCODER.encode(data));
           },
