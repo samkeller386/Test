@@ -28,11 +28,10 @@ export const createTerminalTool = (context: ToolContext) => {
     dataStream,
     sandbox: initialSandbox,
     userID,
-    persistentSandbox: initialPersistentSandbox = false,
+    persistentSandbox: initialPersistentSandbox = true,
     selectedPlugin,
     terminalTemplate = TEMPORARY_SANDBOX_TEMPLATE,
     setSandbox,
-    setPersistentSandbox,
   } = context;
 
   let sandbox = initialSandbox;
@@ -45,16 +44,13 @@ export const createTerminalTool = (context: ToolContext) => {
       ...(selectedPlugin
         ? {}
         : {
-            usePersistentSandbox: z
+            useTemporarySandbox: z
               .boolean()
-              .optional()
-              .describe(
-                'Use persistent sandbox (30-day storage) instead of temporary',
-              ),
+              .describe('Use temporary sandbox (15-minute timeout).'),
           }),
     }),
     execute: async (args) => {
-      const { command, usePersistentSandbox } = args;
+      const { command, useTemporarySandbox } = args;
 
       // Validate plugin-specific commands
       if (selectedPlugin) {
@@ -65,10 +61,10 @@ export const createTerminalTool = (context: ToolContext) => {
       }
 
       // Set sandbox type
-      persistentSandbox = Boolean(usePersistentSandbox);
-
-      if (setPersistentSandbox) {
-        setPersistentSandbox(persistentSandbox);
+      if (selectedPlugin) {
+        persistentSandbox = false; // Always use temporary sandbox for plugins
+      } else {
+        persistentSandbox = !Boolean(useTemporarySandbox);
       }
 
       dataStream.writeData({
