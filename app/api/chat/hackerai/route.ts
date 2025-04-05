@@ -21,7 +21,7 @@ import { executeReasoningWebSearchTool } from '@/lib/ai/tools/reasoning-web-sear
 import { processRag } from '@/lib/rag/rag-processor';
 import { executeDeepResearchTool } from '@/lib/ai/tools/deep-research';
 import { myProvider } from '@/lib/ai/providers';
-import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
+// import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
 import { executeTerminalAgent } from '@/lib/ai/tools/terminal-agent';
 import { terminalPlugins } from '@/lib/ai/terminal-utils';
 import { geolocation } from '@vercel/functions';
@@ -106,9 +106,9 @@ export async function POST(request: Request) {
     let shouldUncensorResponse = false;
 
     const handleMessages = (shouldUncensor: boolean) => {
-      if (includeImages && config.isLargeModel) {
-        selectedChatModel = 'vision-model';
-      }
+      // if (includeImages && config.isLargeModel) {
+      //   selectedChatModel = 'vision-model';
+      // }
 
       if (shouldUncensor) {
         if (
@@ -237,12 +237,12 @@ export async function POST(request: Request) {
         execute: (dataStream) => {
           if (ragUsed) dataStream.writeData({ ragUsed, ragId });
 
-          const { getSelectedSchemas } = createToolSchemas({
-            chatSettings,
-            messages,
-            profile,
-            dataStream,
-          });
+          // const { getSelectedSchemas } = createToolSchemas({
+          //   chatSettings,
+          //   messages,
+          //   profile,
+          //   dataStream,
+          // });
 
           const result = streamText({
             model: myProvider.languageModel(selectedChatModel),
@@ -251,10 +251,10 @@ export async function POST(request: Request) {
             maxTokens: 2048,
             abortSignal: request.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),
-            tools:
-              config.isLargeModel && !ragUsed && !shouldUncensorResponse
-                ? getSelectedSchemas(['browser', 'webSearch'])
-                : undefined,
+            // tools:
+            //   config.isLargeModel && !ragUsed && !shouldUncensorResponse
+            //     ? getSelectedSchemas(['browser', 'webSearch'])
+            //     : undefined,
           });
 
           result.mergeIntoDataStream(dataStream);
