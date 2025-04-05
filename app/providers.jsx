@@ -7,7 +7,8 @@ import { useEffect } from 'react';
 export function PostHogProvider({ children }) {
   useEffect(() => {
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+      api_host: `${process.env.NEXT_PUBLIC_APP_URL}/ingest`,
+      ui_host: `${process.env.NEXT_PUBLIC_POSTHOG_HOST}`,
       capture_pageview: false, // Disable automatic pageview capture, as we capture manually
     });
   }, []);
