@@ -2,7 +2,7 @@ import { getAIProfile } from '@/lib/server/server-chat-helpers';
 import { buildSystemPrompt } from '@/lib/ai/prompts';
 import {
   filterEmptyAssistantMessages,
-  handleAssistantMessages,
+  // handleAssistantMessages,
   addAuthMessage,
   messagesIncludeImages,
   toVercelChatMessages,
@@ -22,9 +22,10 @@ import { executeReasoningWebSearchTool } from '@/lib/ai/tools/reasoning-web-sear
 import { processRag } from '@/lib/rag/rag-processor';
 import { executeDeepResearchTool } from '@/lib/ai/tools/deep-research';
 import { myProvider } from '@/lib/ai/providers';
-import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
+// import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
 import { executeTerminalAgent } from '@/lib/ai/tools/terminal-agent';
 import { terminalPlugins } from '@/lib/ai/terminal-utils';
+import PostHogClient from '@/app/posthog';
 
 export const preferredRegion = [
   'iad1',
@@ -217,6 +218,14 @@ export async function POST(request: Request) {
 
     // Remove invalid message exchanges
     const validatedMessages = validateMessages(cleanedMessages);
+
+    const posthog = PostHogClient();
+    if (posthog) {
+      posthog.capture({
+        distinctId: profile.user_id,
+        event: selectedChatModel,
+      });
+    }
 
     try {
       return createDataStreamResponse({

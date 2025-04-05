@@ -20,6 +20,7 @@ import { executeDeepResearchTool } from '@/lib/ai/tools/deep-research';
 import { myProvider } from '@/lib/ai/providers';
 import { terminalPlugins } from '@/lib/ai/terminal-utils';
 import { getModerationResult } from '@/lib/server/moderation';
+import PostHogClient from '@/app/posthog';
 
 export const preferredRegion = [
   'iad1',
@@ -186,6 +187,14 @@ export async function POST(request: Request) {
             });
           });
         }
+    }
+
+    const posthog = PostHogClient();
+    if (posthog) {
+      posthog.capture({
+        distinctId: profile.user_id,
+        event: 'chat-model-gpt-large',
+      });
     }
 
     return createDataStreamResponse({
