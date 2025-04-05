@@ -7,7 +7,7 @@ import {
 import llmConfig from '@/lib/models/llm-config';
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
 import { getAIProfile } from '@/lib/server/server-chat-helpers';
-import { createDataStreamResponse, streamText } from 'ai';
+import { createDataStreamResponse, smoothStream, streamText } from 'ai';
 import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
 import { PluginID } from '@/types/plugins';
 import { executeWebSearchTool } from '@/lib/ai/tools/web-search';
@@ -215,6 +215,7 @@ export async function POST(request: Request) {
           maxTokens: 2048,
           abortSignal: request.signal,
           tools: getSelectedSchemas(['browser', 'webSearch', 'terminal']),
+          experimental_transform: smoothStream({ chunking: 'word' }),
         });
 
         result.mergeIntoDataStream(dataStream);

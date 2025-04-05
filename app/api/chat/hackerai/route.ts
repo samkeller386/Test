@@ -10,7 +10,7 @@ import {
 import { handleErrorResponse } from '@/lib/models/api-error';
 import llmConfig from '@/lib/models/llm-config';
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
-import { createDataStreamResponse, streamText } from 'ai';
+import { createDataStreamResponse, smoothStream, streamText } from 'ai';
 import { getModerationResult } from '@/lib/server/moderation';
 import { PluginID } from '@/types/plugins';
 import { executeWebSearchTool } from '@/lib/ai/tools/web-search';
@@ -243,6 +243,7 @@ export async function POST(request: Request) {
             messages: toVercelChatMessages(validatedMessages, includeImages),
             maxTokens: 2048,
             abortSignal: request.signal,
+            experimental_transform: smoothStream({ chunking: 'word' }),
             // tools:
             //   config.isLargeModel && !ragUsed && !shouldUncensorResponse
             //     ? getSelectedSchemas(['browser', 'webSearch'])
