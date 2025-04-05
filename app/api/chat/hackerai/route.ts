@@ -24,6 +24,7 @@ import { myProvider } from '@/lib/ai/providers';
 // import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
 import { executeTerminalAgent } from '@/lib/ai/tools/terminal-agent';
 import { terminalPlugins } from '@/lib/ai/terminal-utils';
+import { geolocation } from '@vercel/functions';
 import PostHogClient from '@/app/posthog';
 
 export const preferredRegion = [
@@ -124,8 +125,14 @@ export async function POST(request: Request) {
 
       return filterEmptyAssistantMessages(messages);
     };
+    const { region } = geolocation(request);
 
-    if (llmConfig.openai.apiKey && !isContinuation) {
+    if (
+      llmConfig.openai.apiKey &&
+      !isContinuation &&
+      region !== 'bom1' &&
+      region !== 'cpt1'
+    ) {
       const { shouldUncensorResponse: moderationResult } =
         await getModerationResult(
           messages,
