@@ -98,7 +98,9 @@ export const createTerminalTool = (context: ToolContext) => {
       if (posthog) {
         posthog.capture({
           distinctId: userID,
-          event: 'terminal_executed',
+          event: selectedPlugin
+            ? `${selectedPlugin}_executed`
+            : 'terminal_executed',
           properties: {
             command: command,
             persistentSandbox: persistentSandbox,
