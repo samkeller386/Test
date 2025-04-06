@@ -15,9 +15,7 @@ const isValidFinishReason = (
   reason: string | null | undefined,
 ): reason is 'message_ask_user' | 'idle' | 'aborted' => {
   return (
-    reason === 'message_ask_user' || 
-    reason === 'idle' || 
-    reason === 'aborted'
+    reason === 'message_ask_user' || reason === 'idle' || reason === 'aborted'
   );
 };
 

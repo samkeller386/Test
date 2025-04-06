@@ -103,7 +103,13 @@ export async function POST(request: Request) {
     if (isTerminalContinuation) {
       return createStreamResponse(async (dataStream) => {
         await executeTerminalAgent({
-          config: { messages, profile, dataStream, isTerminalContinuation },
+          config: {
+            messages,
+            profile,
+            dataStream,
+            isTerminalContinuation,
+            abortSignal: request.signal,
+          },
         });
       });
     }
@@ -126,7 +132,13 @@ export async function POST(request: Request) {
       case PluginID.TERMINAL:
         return createStreamResponse(async (dataStream) => {
           await executeTerminalAgent({
-            config: { messages, profile, dataStream, isTerminalContinuation },
+            config: {
+              messages,
+              profile,
+              dataStream,
+              isTerminalContinuation,
+              abortSignal: request.signal,
+            },
           });
         });
 
@@ -161,6 +173,7 @@ export async function POST(request: Request) {
                 dataStream,
                 isTerminalContinuation,
                 selectedPlugin: selectedPlugin as PluginID,
+                abortSignal: request.signal,
               },
             });
           });
@@ -183,6 +196,7 @@ export async function POST(request: Request) {
           profile,
           dataStream,
           isTerminalContinuation,
+          abortSignal: request.signal,
         });
 
         const result = streamText({

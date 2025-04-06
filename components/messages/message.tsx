@@ -337,29 +337,33 @@ export const Message: FC<MessageProps> = ({
           <MessageStatus finish_reason={selectedChat?.finish_reason} />
         )}
 
-        {!isGenerating && isLast && !quickFeedback && !sendReportQuery && !isEditing && (
-          <div
-            className={`absolute bottom-1 ${message.role === 'user' ? 'right-5 sm:right-8' : 'left-5 sm:left-8'}`}
-          >
-            <MessageActions
-              onCopy={handleCopy}
-              onEdit={handleStartEdit}
-              isAssistant={message.role === 'assistant'}
-              isLast={isLast}
-              isHovering={isHovering}
-              isGoodResponse={feedback?.feedback === 'good'}
-              isBadResponse={feedback?.feedback === 'bad'}
-              messageHasImage={message.image_paths.length > 0}
-              onRegenerate={handleRegenerate}
-              onRegenerateSpecificModel={handleRegenerateSpecificModel}
-              onGoodResponse={handleGoodResponse}
-              onBadResponse={handleBadResponse}
-              messageContent={message.content || ''}
-              messageModel={message.model}
-              messageSequenceNumber={message.sequence_number}
-            />
-          </div>
-        )}
+        {!isGenerating &&
+          isLast &&
+          !quickFeedback &&
+          !sendReportQuery &&
+          !isEditing && (
+            <div
+              className={`absolute bottom-1 ${message.role === 'user' ? 'right-5 sm:right-8' : 'left-5 sm:left-8'}`}
+            >
+              <MessageActions
+                onCopy={handleCopy}
+                onEdit={handleStartEdit}
+                isAssistant={message.role === 'assistant'}
+                isLast={isLast}
+                isHovering={isHovering}
+                isGoodResponse={feedback?.feedback === 'good'}
+                isBadResponse={feedback?.feedback === 'bad'}
+                messageHasImage={message.image_paths.length > 0}
+                onRegenerate={handleRegenerate}
+                onRegenerateSpecificModel={handleRegenerateSpecificModel}
+                onGoodResponse={handleGoodResponse}
+                onBadResponse={handleBadResponse}
+                messageContent={message.content || ''}
+                messageModel={message.model}
+                messageSequenceNumber={message.sequence_number}
+              />
+            </div>
+          )}
 
         {quickFeedback && (
           <MessageQuickFeedback

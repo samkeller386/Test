@@ -21,6 +21,7 @@ interface TerminalToolConfig {
   isTerminalContinuation?: boolean;
   selectedPlugin?: PluginID;
   previousMessage?: string;
+  abortSignal?: AbortSignal;
 }
 
 export async function executeTerminalAgent({
@@ -107,6 +108,7 @@ export async function executeTerminalAgent({
       }),
       maxSteps: 10,
       toolChoice: 'required',
+      abortSignal: config.abortSignal,
     });
 
     // Handle stream
