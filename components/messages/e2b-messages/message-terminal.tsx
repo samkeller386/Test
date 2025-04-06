@@ -34,7 +34,7 @@ interface ContentBlock {
 }
 
 const MAX_VISIBLE_LINES = 20;
-const COMMAND_LENGTH_THRESHOLD = 50; // Threshold for when to switch to full terminal view
+const COMMAND_LENGTH_THRESHOLD = 40; // Threshold for when to switch to full terminal view
 
 const ShowMoreButton = ({
   isExpanded,
@@ -193,11 +193,22 @@ export const MessageTerminal: React.FC<MessageTerminalProps> = ({
             </div>
           </div>
           {!closedBlocks.has(index) && (
-            <div id={`terminal-content-${index}`} className="bg-background">
+            <div
+              id={`terminal-content-${index}`}
+              className="bg-foreground dark:bg-background
+            "
+            >
+              {showFullTerminalView && (
+                <div className="font-mono text-foreground/80">
+                  {renderContent(
+                    `\`\`\`stdout\nubuntu@sandbox:~$ ${block.command}\n\`\`\``,
+                  )}
+                </div>
+              )}
               {block.stdout && (
                 <div className="font-mono text-foreground/80">
                   {renderContent(
-                    `\`\`\`stdout\n${showFullTerminalView ? `ubuntu@sandbox:~$ ${block.command}\n` : ''}${shouldShowMore ? displayedContent : block.stdout}\n\`\`\``,
+                    `\`\`\`stdout\n${shouldShowMore ? displayedContent : block.stdout}\n\`\`\``,
                   )}
                   {shouldShowMore &&
                     block.stdout.split('\n').length > MAX_VISIBLE_LINES && (

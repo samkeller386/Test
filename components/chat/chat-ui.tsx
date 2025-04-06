@@ -5,7 +5,6 @@ import useHotkey from '@/lib/hooks/use-hotkey';
 import {
   IconInfoCircle,
   IconMessageOff,
-  IconPlayerTrackNext,
   IconRefresh,
 } from '@tabler/icons-react';
 import { useParams } from 'next/navigation';
@@ -31,6 +30,7 @@ import { GlobalDeleteChatDialog } from './global-delete-chat-dialog';
 import { Settings } from '../utility/settings';
 import { ShareChatButton } from './chat-share-button';
 import { useUIContext } from '@/context/ui-context';
+import { ChatContinueButton } from './chat-continue-button';
 
 type ChatUIProps = {};
 
@@ -257,24 +257,12 @@ export const ChatUI: FC<ChatUIProps> = ({}) => {
                 />
               </div>
 
-              {!isGenerating &&
-                (selectedChat?.finish_reason === 'length' ||
-                  selectedChat?.finish_reason === 'terminal-calls') && (
-                  <div className="flex w-full justify-center p-2">
-                    <Button
-                      onClick={
-                        selectedChat?.finish_reason === 'terminal-calls'
-                          ? handleSendTerminalContinuation
-                          : handleSendContinuation
-                      }
-                      variant="secondary"
-                      className="flex items-center space-x-1 px-4 py-2"
-                    >
-                      <IconPlayerTrackNext size={16} />
-                      <span>Continue generating</span>
-                    </Button>
-                  </div>
-                )}
+              <ChatContinueButton
+                isGenerating={isGenerating}
+                finishReason={selectedChat?.finish_reason}
+                onTerminalContinue={handleSendTerminalContinuation}
+                onContinue={handleSendContinuation}
+              />
             </div>
 
             <ChatInput />

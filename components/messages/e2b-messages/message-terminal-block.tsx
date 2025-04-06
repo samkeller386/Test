@@ -66,7 +66,7 @@ export const MessageTerminalBlock: FC<MessageTerminalBlockProps> = memo(
     }, [value]);
 
     return (
-      <div className="codeblock relative w-full dark:bg-background font-sans">
+      <div className="codeblock relative w-full bg-foreground dark:bg-background font-sans">
         <div
           className="whitespace-pre-wrap break-words p-4 font-mono text-sm text-white"
           style={{ background: 'transparent' }}
