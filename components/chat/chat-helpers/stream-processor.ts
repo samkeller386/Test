@@ -1,4 +1,3 @@
-import type { Fragment } from '@/lib/tools/e2b/fragments/types';
 import type { ChatMessage, DataPartValue } from '@/types';
 import type { AlertAction } from '@/context/alert-context';
 import { processDataStream } from 'ai';
@@ -20,7 +19,6 @@ export const processResponse = async (
   alertDispatch: Dispatch<AlertAction>,
   selectedPlugin: PluginID,
   isContinuation: boolean,
-  setFragment: (fragment: Fragment | null, chatMessage?: ChatMessage) => void,
   setAgentStatus: Dispatch<SetStateAction<AgentStatusState | null>>,
 ) => {
   if (!response.ok) {
@@ -70,7 +68,6 @@ export const processResponse = async (
     let toolExecuted = false;
     let citations: string[] = [];
     let shouldSkipFirstChunk = false;
-    let fragment: Fragment = {} as Fragment;
 
     try {
       await processDataStream({
@@ -245,39 +242,6 @@ export const processResponse = async (
               }
             }
 
-            // Fragment decoding for fragment API
-            if (firstValue.isFragment) {
-              const fragmentData = value[1] as Fragment;
-              fragment = {
-                ...fragment,
-                ...fragmentData,
-              };
-
-              if (fragment.commentary && fragment.commentary !== fullText) {
-                setFirstTokenReceived(true);
-                setToolInUse(PluginID.NONE);
-                fullText = fragment.commentary;
-                setChatMessages((prev) =>
-                  prev.map((chatMessage) =>
-                    chatMessage.message.id === lastChatMessage.message.id
-                      ? {
-                          ...chatMessage,
-                          message: {
-                            ...chatMessage.message,
-                            content: fragment.commentary,
-                            image_paths: [],
-                            fragment: fragment
-                              ? JSON.stringify(fragment)
-                              : null,
-                          },
-                        }
-                      : chatMessage,
-                  ),
-                );
-              }
-              setFragment(fragment, lastChatMessage);
-            }
-
             // Handle citations
             if (firstValue?.citations) {
               citations = firstValue.citations;
@@ -308,17 +272,12 @@ export const processResponse = async (
             browser: PluginID.BROWSER,
             terminal: PluginID.TERMINAL,
             webSearch: PluginID.WEB_SEARCH,
-            fragments: PluginID.ARTIFACTS,
           } as const;
 
           const plugin = toolMap[toolName as keyof typeof toolMap];
           if (plugin) {
             setToolInUse(plugin);
             updatedPlugin = plugin;
-
-            if (plugin === PluginID.ARTIFACTS) {
-              setFragment(null);
-            }
           }
 
           toolExecuted = true;
@@ -360,7 +319,6 @@ export const processResponse = async (
       selectedPlugin: updatedPlugin,
       assistantGeneratedImages,
       citations,
-      fragment,
     };
   } else {
     throw new Error('Response body is null');

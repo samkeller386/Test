@@ -20,8 +20,6 @@ import { MessageQuickFeedback } from './message-quick-feedback';
 import { MessageTypeResolver } from './message-type-solver';
 import useHotkey from '@/lib/hooks/use-hotkey';
 import { toast } from 'sonner';
-import type { Fragment } from '@/lib/tools/e2b/fragments/types';
-import { MessageFragment } from './message-fragment';
 import { LoadingState } from './loading-states';
 import dynamic from 'next/dynamic';
 import { useUIContext } from '@/context/ui-context';
@@ -77,10 +75,6 @@ export const Message: FC<MessageProps> = ({
   } = useUIContext();
 
   const { message, feedback } = chatMessage;
-
-  const fragment = (
-    message.fragment ? JSON.parse(message.fragment as string) : null
-  ) as Fragment | null;
 
   const messagesToDisplay = isTemporaryChat
     ? temporaryChatMessages
@@ -323,10 +317,6 @@ export const Message: FC<MessageProps> = ({
           isGenerating &&
           isLast &&
           message.role === 'assistant' && <AgentStatus state={agentStatus} />}
-
-        {fragment && (
-          <MessageFragment fragment={fragment} chatMessage={chatMessage} />
-        )}
 
         <div className="mt-3 flex flex-wrap gap-2" />
 

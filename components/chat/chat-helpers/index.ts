@@ -3,7 +3,6 @@
 import type { AlertAction } from '@/context/alert-context';
 import { createChat } from '@/db/chats';
 import { buildFinalMessages } from '@/lib/build-prompt';
-import type { Fragment } from '@/lib/tools/e2b/fragments/types';
 import type { Tables } from '@/supabase/types';
 import {
   type ChatMessage,
@@ -40,7 +39,6 @@ export const handleHostedChat = async (
   setToolInUse: Dispatch<SetStateAction<string>>,
   alertDispatch: Dispatch<AlertAction>,
   selectedPlugin: PluginID,
-  setFragment: (fragment: Fragment | null, chatMessage?: ChatMessage) => void,
   setAgentStatus: Dispatch<SetStateAction<AgentStatusState | null>>,
 ) => {
   const { provider } = modelData;
@@ -50,9 +48,6 @@ export const handleHostedChat = async (
   if (selectedPlugin === PluginID.TERMINAL) {
     apiEndpoint = '/api/chat/openai';
     setToolInUse(PluginID.TERMINAL);
-  } else if (selectedPlugin === PluginID.ARTIFACTS) {
-    apiEndpoint = '/api/chat/tools/fragments';
-    setToolInUse(PluginID.ARTIFACTS);
   } else {
     setToolInUse(
       isRagEnabled
@@ -104,7 +99,6 @@ export const handleHostedChat = async (
     alertDispatch,
     selectedPlugin,
     isContinuation,
-    setFragment,
     setAgentStatus,
   );
 };

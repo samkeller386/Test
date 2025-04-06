@@ -44,8 +44,6 @@ const llmConfig = {
     reasoningWebSearch: `${getPentestGPTInfo(false, 'October 2023', 'reasoningModel')}\n${systemPromptEnding}`,
     // For reasoning tool
     pentestGPTReasoning: `${getPentestGPTInfo(true, 'October 2023', 'reasoningModel')}\n${systemPromptEnding}`,
-    // For fragment tool
-    pentestGPTFragment: `${getPentestGPTInfo(true, 'October 2024', 'GPT-4o')}}`,
   },
   hackerRAG: {
     enabled:

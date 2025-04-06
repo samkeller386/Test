@@ -15,7 +15,6 @@ import { LLM_LIST } from '../../../lib/models/llm-list';
 
 import { useUIContext } from '@/context/ui-context';
 import { createMessageFeedback } from '@/db/message-feedback';
-import type { Fragment } from '@/lib/tools/e2b/fragments/types';
 import {
   createTempMessages,
   generateChatTitle,
@@ -24,7 +23,6 @@ import {
   handleHostedChat,
   validateChatSettings,
 } from '../chat-helpers';
-import { useFragments } from './use-fragments';
 import { getMessageFileItemsByMessageId } from '@/db/message-file-items';
 import { useRetrievalLogic } from './retrieval-logic';
 
@@ -71,8 +69,6 @@ export const useChatHandler = () => {
   } = useUIContext();
 
   let { selectedPlugin } = useUIContext();
-
-  const { setFragment } = useFragments();
 
   const isGeneratingRef = useRef(isGenerating);
 
@@ -132,8 +128,6 @@ export const useChatHandler = () => {
     setToolInUse('none');
     setAgentStatus(null);
     setSelectedPlugin(PluginID.NONE);
-
-    setFragment(null);
 
     setIsReadyToChat(true);
     return router.push(`/c`);
@@ -368,7 +362,6 @@ export const useChatHandler = () => {
       let ragId = null;
       let assistantGeneratedImages: string[] = [];
       let citations: string[] = [];
-      let fragment: Fragment | null = null;
 
       const {
         fullText,
@@ -380,7 +373,6 @@ export const useChatHandler = () => {
         selectedPlugin: updatedSelectedPlugin,
         assistantGeneratedImages: assistantGeneratedImagesFromResponse,
         citations: citationsFromResponse,
-        fragment: fragmentFromResponse,
       } = await handleHostedChat(
         payload,
         modelData!,
@@ -397,7 +389,6 @@ export const useChatHandler = () => {
         setToolInUse,
         alertDispatch,
         selectedPlugin,
-        setFragment,
         setAgentStatus,
       );
       generatedText = fullText;
@@ -409,10 +400,6 @@ export const useChatHandler = () => {
       selectedPlugin = updatedSelectedPlugin;
       assistantGeneratedImages = assistantGeneratedImagesFromResponse;
       citations = citationsFromResponse;
-      fragment =
-        Object.keys(fragmentFromResponse || {}).length === 0
-          ? null
-          : fragmentFromResponse;
 
       if (isTemporaryChat) {
         // Update temporary chat messages with the generated response
@@ -427,7 +414,6 @@ export const useChatHandler = () => {
                   thinking_enabled: !!thinkingText,
                   thinking_elapsed_secs: thinkingElapsedSecs,
                   citations: citations || [],
-                  fragment: fragment ? JSON.stringify(fragment) : null,
                 },
               }
             : msg,
@@ -518,8 +504,6 @@ export const useChatHandler = () => {
           ragId,
           isTemporaryChat,
           citations,
-          fragment,
-          setFragment,
           thinkingText,
           thinkingElapsedSecs,
           newMessageFiles,

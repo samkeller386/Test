@@ -6,7 +6,6 @@ import {
   updateMessage,
 } from '@/db/messages';
 import { uploadMessageImage } from '@/db/storage/message-images';
-import type { Fragment } from '@/lib/tools/e2b/fragments/types';
 import { lastSequenceNumber } from '@/lib/utils';
 import type { Tables, TablesInsert } from '@/supabase/types';
 import {
@@ -39,8 +38,6 @@ export const handleCreateMessages = async (
   ragId?: string | null,
   isTemporary = false,
   citations?: string[],
-  fragment?: Fragment | null,
-  setFragment?: (fragment: Fragment | null, chatMessage?: ChatMessage) => void,
   thinkingText?: string,
   thinkingElapsedSecs?: number | null,
   newChatFiles?: { id: string }[],
@@ -94,7 +91,7 @@ export const handleCreateMessages = async (
         rag_used: ragUsed || false,
         rag_id: ragId || null,
         citations: citations || [],
-        fragment: fragment ? JSON.stringify(fragment) : null,
+        fragment: null,
       },
       fileItems: [],
       isFinal: false,
@@ -137,7 +134,7 @@ export const handleCreateMessages = async (
     rag_used: ragUsed || false,
     rag_id: ragId || null,
     citations: citations || [],
-    fragment: fragment ? JSON.stringify(fragment) : null,
+    fragment: null,
   };
 
   let finalChatMessages: ChatMessage[] = [];
@@ -308,11 +305,6 @@ export const handleCreateMessages = async (
         isFinal: true,
       },
     ];
-
-    setFragment?.(
-      fragment ?? null,
-      finalChatMessages[finalChatMessages.length - 1],
-    );
 
     setMessages(finalChatMessages);
   }
