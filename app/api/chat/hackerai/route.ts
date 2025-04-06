@@ -6,6 +6,7 @@ import {
   messagesIncludeImages,
   toVercelChatMessages,
   validateMessages,
+  addAuthMessage,
 } from '@/lib/ai/message-utils';
 import { handleErrorResponse } from '@/lib/models/api-error';
 import llmConfig from '@/lib/models/llm-config';
@@ -89,8 +90,10 @@ export async function POST(request: Request) {
       // }
 
       if (shouldUncensor) {
+        addAuthMessage(messages);
         if (
           !includeImages &&
+          config.isLargeModel &&
           selectedPlugin !== PluginID.WEB_SEARCH &&
           selectedPlugin !== PluginID.REASONING &&
           selectedPlugin !== PluginID.REASONING_WEB_SEARCH &&
