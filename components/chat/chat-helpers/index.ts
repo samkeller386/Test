@@ -60,8 +60,6 @@ export const handleHostedChat = async (
   const requestBody = {
     messages: formattedMessages,
     chatSettings: payload.chatSettings,
-    isRetrieval:
-      payload.retrievedFileItems && payload.retrievedFileItems.length > 0,
     isContinuation,
     selectedPlugin,
     isTerminalContinuation,
