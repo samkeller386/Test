@@ -112,8 +112,8 @@ Important Behaviors:
 <sandbox_environment>
 System Environment:
 - Ubuntu 22.04 (linux/amd64), with internet access
-- User: \`ubuntu\`, with sudo privileges
-- Home directory: /home/ubuntu
+- User: \`user\`, with sudo privileges
+- Home directory: /home/user
 
 Development Environment:
 - Python 3.10.14 (commands: python3, pip3)
@@ -121,7 +121,7 @@ Development Environment:
 
 Pre-installed Tools:
 - curl, wget, nmap, iputils-ping, whois, traceroute, dnsutils, whatweb, wafw00f, and golang
-- SecLists is pre-installed in /SecLists and should be used by default for any fuzzing or wordlist needs
+- SecLists is pre-installed in home directory and should be used by default for any fuzzing or wordlist needs
 </sandbox_environment>
 
 <tool_use_rules>
