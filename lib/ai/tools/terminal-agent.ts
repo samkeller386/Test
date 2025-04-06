@@ -122,11 +122,12 @@ export async function executeTerminalAgent({
           dataStream.writeData({ finishReason: 'stop' });
           shouldStop = true;
         } else if (chunk.toolName === 'message_ask_user') {
-          dataStream.writeData({ finishReason: 'message_ask_user' });
           dataStream.writeData({
             type: 'text-delta',
             content: chunk.args?.text,
           });
+          dataStream.writeData({ finishReason: 'message_ask_user' });
+          shouldStop = true;
         }
 
         dataStream.writeData({

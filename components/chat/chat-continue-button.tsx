@@ -15,31 +15,34 @@ export const ChatContinueButton: FC<ChatContinueButtonProps> = ({
   onTerminalContinue,
   onContinue,
 }) => {
-  if (isGenerating || !finishReason) return null;
+  if (
+    !isGenerating &&
+    (finishReason === 'length' || finishReason === 'terminal-calls')
+  ) {
+    const getButtonText = () => {
+      switch (finishReason) {
+        case 'terminal-calls':
+          return 'Continue';
+        case 'length':
+          return 'Continue generating';
+      }
+    };
 
-  const getButtonText = () => {
-    switch (finishReason) {
-      case 'terminal-calls':
-        return 'Continue';
-      case 'length':
-        return 'Continue generating';
-      default:
-        return 'Continue';
-    }
-  };
+    return (
+      <div className="flex w-full justify-center p-2">
+        <Button
+          onClick={
+            finishReason === 'terminal-calls' ? onTerminalContinue : onContinue
+          }
+          variant="secondary"
+          className="flex items-center space-x-1 px-4 py-2"
+        >
+          <IconPlayerTrackNext size={16} />
+          <span>{getButtonText()}</span>
+        </Button>
+      </div>
+    );
+  }
 
-  return (
-    <div className="flex w-full justify-center p-2">
-      <Button
-        onClick={
-          finishReason === 'terminal-calls' ? onTerminalContinue : onContinue
-        }
-        variant="secondary"
-        className="flex items-center space-x-1 px-4 py-2"
-      >
-        <IconPlayerTrackNext size={16} />
-        <span>{getButtonText()}</span>
-      </Button>
-    </div>
-  );
+  return null;
 };

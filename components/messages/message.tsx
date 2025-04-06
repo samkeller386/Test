@@ -25,6 +25,7 @@ import dynamic from 'next/dynamic';
 import { useUIContext } from '@/context/ui-context';
 import { ChatFileItem } from '../chat/chat-file-item';
 import { AgentStatus, isValidAgentStatus } from './agent-status';
+import { MessageAskUser } from './message-ask-user';
 
 const DynamicFilePreview = dynamic(() => import('../ui/file-preview'), {
   ssr: false,
@@ -63,6 +64,7 @@ export const Message: FC<MessageProps> = ({
     isTemporaryChat,
     chatImages,
     chatFiles,
+    selectedChat,
   } = useContext(PentestGPTContext);
 
   const {
@@ -330,6 +332,12 @@ export const Message: FC<MessageProps> = ({
             </Button>
           </div>
         )}
+
+        {isLast &&
+          message.role === 'assistant' &&
+          selectedChat?.finish_reason === 'message_ask_user' && (
+            <MessageAskUser />
+          )}
 
         {!quickFeedback && !sendReportQuery && !isEditing && (
           <div
