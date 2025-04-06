@@ -105,7 +105,7 @@ export async function executeTerminalAgent({
         setSandbox,
         setPersistentSandbox,
       }),
-      maxSteps: 5,
+      maxSteps: 10,
       toolChoice: 'required',
     });
 
@@ -118,8 +118,13 @@ export async function executeTerminalAgent({
           content: chunk.textDelta,
         });
       } else if (chunk.type === 'tool-call') {
+        dataStream.writeData({
+          type: 'tool-call',
+          content: chunk.toolName,
+        });
+
         if (chunk.toolName === 'idle') {
-          dataStream.writeData({ finishReason: 'stop' });
+          dataStream.writeData({ finishReason: 'idle' });
           shouldStop = true;
         } else if (chunk.toolName === 'message_ask_user') {
           dataStream.writeData({
@@ -129,11 +134,6 @@ export async function executeTerminalAgent({
           dataStream.writeData({ finishReason: 'message_ask_user' });
           shouldStop = true;
         }
-
-        dataStream.writeData({
-          type: 'tool-call',
-          content: chunk.toolName,
-        });
       }
     }
 

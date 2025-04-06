@@ -66,6 +66,7 @@ export const useChatHandler = () => {
     setIsReadyToChat,
     setSelectedPlugin,
     setAgentStatus,
+    toolInUse,
   } = useUIContext();
 
   let { selectedPlugin } = useUIContext();
@@ -144,6 +145,30 @@ export const useChatHandler = () => {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
       await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Update chat's finish reason to 'aborted' when terminal in use
+      if (
+        selectedChat &&
+        (toolInUse === 'temporary-sandbox' ||
+          toolInUse === 'persistent-sandbox')
+      ) {
+        const updatedChat = await updateChat(selectedChat.id, {
+          updated_at: new Date().toISOString(),
+          finish_reason: 'aborted',
+        });
+
+        // Only update state if we're still on the same chat
+        if (selectedChat.id === updatedChat.id) {
+          setChats((prevChats) => {
+            const updatedChats = prevChats.map((prevChat) =>
+              prevChat.id === updatedChat.id ? updatedChat : prevChat,
+            );
+            return updatedChats;
+          });
+
+          setSelectedChat(updatedChat);
+        }
+      }
     }
   };
 

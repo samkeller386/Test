@@ -25,7 +25,7 @@ import dynamic from 'next/dynamic';
 import { useUIContext } from '@/context/ui-context';
 import { ChatFileItem } from '../chat/chat-file-item';
 import { AgentStatus, isValidAgentStatus } from './agent-status';
-import { MessageAskUser } from './message-ask-user';
+import { MessageStatus } from './message-status';
 
 const DynamicFilePreview = dynamic(() => import('../ui/file-preview'), {
   ssr: false,
@@ -333,13 +333,11 @@ export const Message: FC<MessageProps> = ({
           </div>
         )}
 
-        {isLast &&
-          message.role === 'assistant' &&
-          selectedChat?.finish_reason === 'message_ask_user' && (
-            <MessageAskUser />
-          )}
+        {!isGenerating && isLast && message.role === 'assistant' && (
+          <MessageStatus finish_reason={selectedChat?.finish_reason} />
+        )}
 
-        {!quickFeedback && !sendReportQuery && !isEditing && (
+        {!isGenerating && isLast && !quickFeedback && !sendReportQuery && !isEditing && (
           <div
             className={`absolute bottom-1 ${message.role === 'user' ? 'right-5 sm:right-8' : 'left-5 sm:left-8'}`}
           >
@@ -348,7 +346,6 @@ export const Message: FC<MessageProps> = ({
               onEdit={handleStartEdit}
               isAssistant={message.role === 'assistant'}
               isLast={isLast}
-              isEditing={isEditing}
               isHovering={isHovering}
               isGoodResponse={feedback?.feedback === 'good'}
               isBadResponse={feedback?.feedback === 'bad'}
