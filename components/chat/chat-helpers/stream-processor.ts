@@ -59,8 +59,6 @@ export const processResponse = async (
     let thinkingText = '';
     let finishReason = '';
     let thinkingElapsedSecs: number | null = null;
-    let ragUsed = false;
-    let ragId = null;
     let isFirstChunk = true;
     let isFirstChunkReceived = false;
     let updatedPlugin = selectedPlugin;
@@ -247,13 +245,6 @@ export const processResponse = async (
               citations = firstValue.citations;
             }
 
-            // Handle RAG data
-            if (firstValue?.ragUsed !== undefined) {
-              ragUsed = Boolean(firstValue.ragUsed);
-              ragId =
-                firstValue.ragId !== null ? String(firstValue.ragId) : null;
-            }
-
             // Handle finishReason
             if (firstValue?.finishReason) {
               if (firstValue.finishReason === 'tool-calls') {
@@ -314,8 +305,6 @@ export const processResponse = async (
       thinkingText,
       thinkingElapsedSecs,
       finishReason,
-      ragUsed,
-      ragId,
       selectedPlugin: updatedPlugin,
       assistantGeneratedImages,
       citations,

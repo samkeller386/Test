@@ -28,7 +28,6 @@ export const handleHostedChat = async (
   modelData: LLM,
   tempAssistantChatMessage: ChatMessage,
   isRegeneration: boolean,
-  isRagEnabled: boolean,
   isContinuation: boolean,
   isTerminalContinuation: boolean,
   newAbortController: AbortController,
@@ -50,11 +49,9 @@ export const handleHostedChat = async (
     setToolInUse(PluginID.TERMINAL);
   } else {
     setToolInUse(
-      isRagEnabled
-        ? 'Enhanced Search'
-        : selectedPlugin && selectedPlugin !== PluginID.NONE
-          ? selectedPlugin
-          : 'none',
+      selectedPlugin && selectedPlugin !== PluginID.NONE
+        ? selectedPlugin
+        : 'none',
     );
   }
 
@@ -66,7 +63,6 @@ export const handleHostedChat = async (
     isRetrieval:
       payload.retrievedFileItems && payload.retrievedFileItems.length > 0,
     isContinuation,
-    isRagEnabled,
     selectedPlugin,
     isTerminalContinuation,
   };

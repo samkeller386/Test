@@ -5,13 +5,13 @@ const MODERATION_CHAR_LIMIT = 1000;
 export async function getModerationResult(
   messages: any[],
   openaiApiKey: string,
-  hackerRAGMinLength: number,
+  messageMinLength: number,
   isLargeModel: boolean,
 ): Promise<{ shouldUncensorResponse: boolean }> {
   const openai = new OpenAI({ apiKey: openaiApiKey });
 
   // Find the last user message that exceeds the minimum length
-  const targetMessage = findTargetMessage(messages, hackerRAGMinLength);
+  const targetMessage = findTargetMessage(messages, messageMinLength);
 
   if (!targetMessage) {
     return { shouldUncensorResponse: false };

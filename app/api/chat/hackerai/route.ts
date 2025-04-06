@@ -18,7 +18,6 @@ import { createStreamResponse } from '@/lib/ai-helper';
 import { LargeModel } from '@/lib/models/hackerai-llm-list';
 import { executeReasonLLMTool } from '@/lib/ai/tools/reason-llm';
 import { executeReasoningWebSearchTool } from '@/lib/ai/tools/reasoning-web-search';
-import { processRag } from '@/lib/rag/rag-processor';
 import { executeDeepResearchTool } from '@/lib/ai/tools/deep-research';
 import { myProvider } from '@/lib/ai/providers';
 // import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
@@ -51,9 +50,7 @@ export async function POST(request: Request) {
   const {
     messages,
     chatSettings,
-    isRetrieval,
     isContinuation,
-    isRagEnabled,
     selectedPlugin,
     isTerminalContinuation,
   } = await request.json();
@@ -81,25 +78,6 @@ export async function POST(request: Request) {
       baseSystemPrompt,
       profile.profile_context,
     );
-
-    // Process RAG
-    let ragUsed = false;
-    let ragId: string | null = null;
-    const shouldUseRAG = !isRetrieval && isRagEnabled;
-
-    if (shouldUseRAG) {
-      const ragResult = await processRag({
-        messages,
-        isContinuation,
-        profile,
-      });
-
-      ragUsed = ragResult.ragUsed;
-      ragId = ragResult.ragId;
-      if (ragResult.systemPrompt) {
-        systemPrompt = ragResult.systemPrompt;
-      }
-    }
 
     const includeImages = messagesIncludeImages(messages);
     let selectedChatModel = config.selectedModel;
@@ -235,8 +213,6 @@ export async function POST(request: Request) {
     try {
       return createDataStreamResponse({
         execute: (dataStream) => {
-          if (ragUsed) dataStream.writeData({ ragUsed, ragId });
-
           // const { getSelectedSchemas } = createToolSchemas({
           //   chatSettings,
           //   messages,
@@ -252,7 +228,7 @@ export async function POST(request: Request) {
             abortSignal: request.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),
             // tools:
-            //   config.isLargeModel && !ragUsed && !shouldUncensorResponse
+            //   config.isLargeModel && !shouldUncensorResponse
             //     ? getSelectedSchemas(['browser', 'webSearch'])
             //     : undefined,
           });

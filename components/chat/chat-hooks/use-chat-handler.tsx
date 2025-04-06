@@ -210,7 +210,6 @@ export const useChatHandler = () => {
     isTerminalContinuation = false,
   ) => {
     const isEdit = editSequenceNumber !== undefined;
-    const isRagEnabled = selectedPlugin === PluginID.ENHANCED_SEARCH;
 
     // Simpler model handling
     const baseModel = (model?.split(':')[0] as LLMID) || chatSettings?.model;
@@ -358,8 +357,6 @@ export const useChatHandler = () => {
       let thinkingText = '';
       let thinkingElapsedSecs: number | null = null;
       let finishReason = '';
-      let ragUsed = false;
-      let ragId = null;
       let assistantGeneratedImages: string[] = [];
       let citations: string[] = [];
 
@@ -368,8 +365,6 @@ export const useChatHandler = () => {
         thinkingText: thinkingTextFromResponse,
         thinkingElapsedSecs: thinkingElapsedSecsFromResponse,
         finishReason: finishReasonFromResponse,
-        ragUsed: ragUsedFromResponse,
-        ragId: ragIdFromResponse,
         selectedPlugin: updatedSelectedPlugin,
         assistantGeneratedImages: assistantGeneratedImagesFromResponse,
         citations: citationsFromResponse,
@@ -378,7 +373,6 @@ export const useChatHandler = () => {
         modelData!,
         tempAssistantChatMessage,
         isRegeneration,
-        isRagEnabled,
         isContinuation,
         isTerminalContinuation,
         newAbortController,
@@ -395,8 +389,6 @@ export const useChatHandler = () => {
       thinkingText = thinkingTextFromResponse;
       thinkingElapsedSecs = thinkingElapsedSecsFromResponse;
       finishReason = finishReasonFromResponse;
-      ragUsed = ragUsedFromResponse;
-      ragId = ragIdFromResponse;
       selectedPlugin = updatedSelectedPlugin;
       assistantGeneratedImages = assistantGeneratedImagesFromResponse;
       citations = citationsFromResponse;
@@ -500,8 +492,6 @@ export const useChatHandler = () => {
           selectedPlugin,
           assistantGeneratedImages,
           editSequenceNumber,
-          ragUsed,
-          ragId,
           isTemporaryChat,
           citations,
           thinkingText,
