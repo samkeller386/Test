@@ -23,6 +23,7 @@ export const MESSAGE_ICON_SIZE = 20;
 interface MessageActionsProps {
   isAssistant: boolean;
   isLast: boolean;
+  isEditing: boolean;
   isHovering: boolean;
   isGoodResponse: boolean;
   isBadResponse: boolean;
@@ -41,6 +42,7 @@ interface MessageActionsProps {
 export const MessageActions: FC<MessageActionsProps> = ({
   isAssistant,
   isLast,
+  isEditing,
   isHovering,
   isGoodResponse,
   isBadResponse,
@@ -63,7 +65,7 @@ export const MessageActions: FC<MessageActionsProps> = ({
     isTemporaryChat,
   } = useContext(PentestGPTContext);
 
-  const { isMobile } = useUIContext();
+  const { isMobile, isGenerating } = useUIContext();
 
   const { playAudio, stopAudio, isLoading, isPlaying } = useAudioPlayer();
   const [showCheckmark, setShowCheckmark] = useState(false);
@@ -116,7 +118,7 @@ export const MessageActions: FC<MessageActionsProps> = ({
     };
   }, []);
 
-  return (
+  return (isLast && isGenerating) || isEditing ? null : (
     <div className={`text-muted-foreground flex items-center space-x-4`}>
       {/* Temporary chat doesn't have edit functionality */}
       {(isHovering || isLast) &&
