@@ -32,6 +32,7 @@ export const createTerminalTool = (context: ToolContext) => {
     terminalTemplate = SANDBOX_TEMPLATE,
     setSandbox,
     setPersistentSandbox,
+    isPremiumUser,
   } = context;
 
   let sandbox = initialSandbox;
@@ -41,7 +42,7 @@ export const createTerminalTool = (context: ToolContext) => {
     description: 'Execute commands in the sandbox environment.',
     parameters: z.object({
       command: z.string().describe('Command to execute'),
-      ...(selectedPlugin
+      ...(selectedPlugin || !isPremiumUser
         ? {}
         : {
             useTemporarySandbox: z
@@ -51,7 +52,7 @@ export const createTerminalTool = (context: ToolContext) => {
     }),
     execute: async (args) => {
       const { command, useTemporarySandbox } = args;
-
+      console.log('useTemporarySandbox', useTemporarySandbox);
       // Validate plugin-specific commands
       if (selectedPlugin) {
         const expectedCommand = PLUGIN_COMMAND_MAP[selectedPlugin];
@@ -60,8 +61,10 @@ export const createTerminalTool = (context: ToolContext) => {
         }
       }
 
-      // Set sandbox type
-      if (selectedPlugin) {
+      // Set sandbox type - force temporary sandbox for non-premium users
+      if (!isPremiumUser) {
+        persistentSandbox = false;
+      } else if (selectedPlugin) {
         persistentSandbox = false; // Always use temporary sandbox for plugins
       } else {
         persistentSandbox = !Boolean(useTemporarySandbox);
