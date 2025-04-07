@@ -75,13 +75,6 @@ export const createTerminalTool = (context: ToolContext) => {
         setPersistentSandbox(persistentSandbox);
       }
 
-      dataStream.writeData({
-        type: 'sandbox-type',
-        sandboxType: persistentSandbox
-          ? 'persistent-sandbox'
-          : 'temporary-sandbox',
-      });
-
       // Create or connect to sandbox
       if (!sandbox) {
         sandbox = persistentSandbox
@@ -89,11 +82,13 @@ export const createTerminalTool = (context: ToolContext) => {
               userID,
               SANDBOX_TEMPLATE,
               BASH_SANDBOX_TIMEOUT,
+              dataStream,
             )
           : await createOrConnectTemporaryTerminal(
               userID,
               terminalTemplate,
               BASH_SANDBOX_TIMEOUT,
+              dataStream,
             );
 
         // Update the sandbox in the parent context if needed
@@ -115,6 +110,11 @@ export const createTerminalTool = (context: ToolContext) => {
           },
         });
       }
+
+      dataStream.writeData({
+        type: 'tool-call',
+        content: 'terminal',
+      });
 
       // Execute command
       const terminalStream = await executeTerminalCommand({

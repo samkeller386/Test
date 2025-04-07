@@ -3,7 +3,7 @@ import { PluginID } from '@/types/plugins';
 import type { FC } from 'react';
 import { MessageMarkdown } from './message-markdown';
 import { MessagePluginFile } from './message-plugin-file';
-import { MessageTerminal } from './e2b-messages/message-terminal';
+import { MessageTerminal } from './terminal-messages/message-terminal';
 import { MessageCitations } from './message-citations';
 import { MessageThinking } from './message-thinking';
 
@@ -65,7 +65,6 @@ export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
     return (
       <MessageTerminal
         content={message.content}
-        messageId={message.id}
         isAssistant={message.role === 'assistant'}
       />
     );
