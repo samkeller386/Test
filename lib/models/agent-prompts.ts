@@ -89,10 +89,10 @@ Command Execution Rules:
 4. Run commands with quick scan options by default if possible to avoid timeout (5-minute timeout limit)
 5. DO NOT use silent modes unless specifically requested
 6. DO NOT save results to files unless specifically requested
-7. DO NOT use 'apt-get update' before installing packages
-8. Install golang tools using 'go install' instead of 'apt-get install'
-9. Execute commands immediately when provided without context
-10. Install tools before use if not in Pre-installed Tools list
+8. Install golang tools using 'go install' instead of 'sudo apt-get install'
+9. Always use sudo when installing packages
+10. Execute commands immediately when provided without context
+11. Install tools before use if not in Pre-installed Tools list
 
 Important Behaviors:
 - Avoid commands requiring confirmation; actively use -y or -f flags for automatic confirmation
