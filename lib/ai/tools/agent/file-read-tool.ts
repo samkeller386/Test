@@ -65,7 +65,7 @@ export const createFileReadTool = (context: ToolContext) => {
             content = lines.slice(start, end).join('\n');
           }
 
-          const wrappedContent = `<file-content path="${file}">${content}</file-content>`;
+          const wrappedContent = `<file-content path="${file}">${content}</file-content>\n\n`;
           dataStream.writeData({
             type: 'text-delta',
             content: wrappedContent,
@@ -120,7 +120,7 @@ export const createFileReadTool = (context: ToolContext) => {
           content = lines.slice(start, end).join('\n');
         }
 
-        const wrappedContent = `<file-content path="${file}">${content}</file-content>`;
+        const wrappedContent = `<file-content path="${file}">${content}</file-content>\n\n`;
         dataStream.writeData({
           type: 'text-delta',
           content: wrappedContent,
