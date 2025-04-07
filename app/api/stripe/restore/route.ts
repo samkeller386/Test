@@ -88,12 +88,18 @@ async function restoreToDatabase(
     return { type: 'error', error: 'invalid customer value' };
   }
 
+  // Get the first subscription item's billing period
+  const firstItem = subscription.items.data[0];
+  if (!firstItem) {
+    return { type: 'error', error: 'no subscription items found' };
+  }
+
   // Determine the plan type and team name
   const planType = subscription.metadata.teamName ? 'team' : 'pro';
   const teamName = subscription.metadata.teamName || null;
 
   // Get the quantity (number of seats) for team plans
-  const quantity = subscription.items.data[0].quantity || 1;
+  const quantity = firstItem.quantity || 1;
   // Check if the subscription already exists in the database
   const existingSubscription = await supabaseAdmin
     .from('subscriptions')
@@ -110,7 +116,7 @@ async function restoreToDatabase(
         user_id: user.id,
         customer_id: subscription.customer,
         status: subscription.status,
-        start_date: unixToDateString(subscription.current_period_start),
+        start_date: unixToDateString(firstItem.current_period_start),
         cancel_at: subscription.cancel_at
           ? unixToDateString(subscription.cancel_at)
           : null,
@@ -132,7 +138,7 @@ async function restoreToDatabase(
       user_id: user.id,
       customer_id: subscription.customer,
       status: subscription.status,
-      start_date: unixToDateString(subscription.current_period_start),
+      start_date: unixToDateString(firstItem.current_period_start),
       cancel_at: subscription.cancel_at
         ? unixToDateString(subscription.cancel_at)
         : null,

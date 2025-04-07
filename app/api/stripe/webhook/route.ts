@@ -47,10 +47,43 @@ export async function POST(request: Request) {
       // Store the status in your database and check when a user accesses your service.
       // This approach helps you avoid hitting rate limits.
       case 'invoice.paid':
-        await upsertSubscription(
-          receivedEvent.data.object.subscription as string,
-          receivedEvent.data.object.customer as string,
-        );
+        console.log('🔔 Processing invoice.paid webhook');
+        // Type guard to ensure we're dealing with an Invoice
+        if ('parent' in receivedEvent.data.object) {
+          const invoice = receivedEvent.data.object as Stripe.Invoice;
+          console.log('📄 Invoice details:', {
+            id: invoice.id,
+            customer: invoice.customer,
+            parentType: invoice.parent?.type,
+            hasSubscriptionDetails: !!invoice.parent?.subscription_details,
+          });
+
+          // Check if the invoice has a parent of type subscription_details
+          if (
+            invoice.parent?.type === 'subscription_details' &&
+            invoice.parent.subscription_details?.subscription
+          ) {
+            console.log('✅ Found valid subscription details:', {
+              subscriptionId: invoice.parent.subscription_details.subscription,
+              customerId: invoice.customer,
+            });
+
+            await upsertSubscription(
+              invoice.parent.subscription_details.subscription as string,
+              invoice.customer as string,
+            );
+            console.log('✅ Successfully processed subscription update');
+          } else {
+            console.log('⚠️ Invoice does not have valid subscription details:', {
+              parentType: invoice.parent?.type,
+              hasSubscriptionDetails: !!invoice.parent?.subscription_details,
+              hasSubscriptionId:
+                !!invoice.parent?.subscription_details?.subscription,
+            });
+          }
+        } else {
+          console.log('⚠️ Received object is not an Invoice');
+        }
         break;
       case 'customer.subscription.updated':
         await upsertSubscription(
