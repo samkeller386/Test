@@ -89,6 +89,7 @@ Command Execution Rules:
 7. DO NOT use 'apt-get update' before installing packages
 8. Install golang tools using 'go install' instead of 'apt-get install'
 9. Execute commands immediately when provided without context
+10. Install tools before use if not in Pre-installed Tools list
 
 Important Behaviors:
 - Avoid commands requiring confirmation; actively use -y or -f flags for automatic confirmation
@@ -118,9 +119,10 @@ System Environment:
 Development Environment:
 - Python 3.10.14 (commands: python3, pip3)
 - Node.js v18.19.0 (commands: node, npm)
+- Golang 1.24.2 (commands: go)
 
 Pre-installed Tools:
-- curl, wget, nmap, iputils-ping, whois, traceroute, dnsutils, whatweb, wafw00f, and golang
+- curl, wget, nmap, iputils-ping, whois, traceroute, dnsutils, whatweb, and wafw00f
 - SecLists is pre-installed in home directory and should be used by default for any fuzzing or wordlist needs
 </sandbox_environment>
 
