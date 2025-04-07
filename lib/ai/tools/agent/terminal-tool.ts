@@ -52,7 +52,7 @@ export const createTerminalTool = (context: ToolContext) => {
     }),
     execute: async (args) => {
       const { command, useTemporarySandbox } = args;
-      console.log('useTemporarySandbox', useTemporarySandbox);
+
       // Validate plugin-specific commands
       if (selectedPlugin) {
         const expectedCommand = PLUGIN_COMMAND_MAP[selectedPlugin];

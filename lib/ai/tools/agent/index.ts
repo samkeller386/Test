@@ -18,7 +18,9 @@ export function createAgentTools(context: ToolContext) {
     message_notify_user: createMessageNotifyTool(context),
     message_ask_user: createMessageAskTool(),
     // file_write: createFileWriteTool(context),
-    file_upload: createFileUploadTool(context),
+    ...(context.isPremiumUser
+      ? { file_upload: createFileUploadTool(context) }
+      : {}),
     // file_read: createFileReadTool(context),
     idle: createIdleTool(),
   };
