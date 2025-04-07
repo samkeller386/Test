@@ -93,7 +93,7 @@ export async function executeTerminalAgent({
         persistentSandbox = isPersistent;
       }
     };
-    console.log('isPremiumUser', isPremiumUser);
+
     const { fullStream, finishReason } = streamText({
       model: myProvider.languageModel(selectedChatModel),
       maxTokens: 2048,
