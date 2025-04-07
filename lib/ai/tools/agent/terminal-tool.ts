@@ -31,6 +31,7 @@ export const createTerminalTool = (context: ToolContext) => {
     selectedPlugin,
     terminalTemplate = SANDBOX_TEMPLATE,
     setSandbox,
+    setPersistentSandbox,
   } = context;
 
   let sandbox = initialSandbox;
@@ -64,6 +65,11 @@ export const createTerminalTool = (context: ToolContext) => {
         persistentSandbox = false; // Always use temporary sandbox for plugins
       } else {
         persistentSandbox = !Boolean(useTemporarySandbox);
+      }
+
+      // Update persistent sandbox state in parent context
+      if (setPersistentSandbox) {
+        setPersistentSandbox(persistentSandbox);
       }
 
       dataStream.writeData({
