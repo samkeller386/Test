@@ -85,9 +85,9 @@ export async function POST(request: Request) {
     let shouldUncensorResponse = false;
 
     const handleMessages = (shouldUncensor: boolean) => {
-      // if (includeImages && config.isLargeModel) {
-      //   selectedChatModel = 'vision-model';
-      // }
+      if (includeImages && config.isLargeModel) {
+        selectedChatModel = 'vision-model';
+      }
 
       if (shouldUncensor) {
         addAuthMessage(messages);
