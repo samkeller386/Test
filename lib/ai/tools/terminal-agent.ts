@@ -110,7 +110,7 @@ export async function executeTerminalAgent({
         setPersistentSandbox,
         isPremiumUser,
       }),
-      maxSteps: 10,
+      maxSteps: 5,
       toolChoice: 'required',
       abortSignal: config.abortSignal,
     });
