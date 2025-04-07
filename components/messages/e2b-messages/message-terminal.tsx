@@ -8,7 +8,7 @@ import {
   IconArrowUp,
 } from '@tabler/icons-react';
 import { PluginID } from '@/types/plugins';
-import { terminalPlugins } from '../message-type-solver';
+import { allTerminalPlugins } from '../message-type-solver';
 import { useUIContext } from '@/context/ui-context';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -156,7 +156,7 @@ export const MessageTerminal: React.FC<MessageTerminalProps> = ({
                 className={cn('flex items-center shrink-0 mr-2', {
                   'animate-pulse':
                     contentBlocks.length - 1 === index &&
-                    terminalPlugins.includes(toolInUse as PluginID),
+                    allTerminalPlugins.includes(toolInUse as PluginID),
                 })}
               >
                 <IconTerminal2 size={16} className="mr-2" />

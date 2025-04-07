@@ -23,7 +23,7 @@ interface MessageTypeResolverProps {
 //   return filenameMatch ? filenameMatch[1].trim() : undefined
 // }
 
-export const terminalPlugins = [
+export const allTerminalPlugins = [
   PluginID.TERMINAL,
   PluginID.SQLI_EXPLOITER,
   PluginID.SSL_SCANNER,
@@ -58,8 +58,9 @@ export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
   // })
 
   if (
-    (isPluginOutput && terminalPlugins.includes(message.plugin as PluginID)) ||
-    terminalPlugins.includes(toolInUse as PluginID)
+    (isPluginOutput &&
+      allTerminalPlugins.includes(message.plugin as PluginID)) ||
+    allTerminalPlugins.includes(toolInUse as PluginID)
   ) {
     return (
       <MessageTerminal
