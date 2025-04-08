@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       return rateLimitCheckResult.response;
     }
 
-    let systemPrompt = buildSystemPrompt(
+    const systemPrompt = buildSystemPrompt(
       llmConfig.systemPrompts.agent,
       profile.profile_context,
     );

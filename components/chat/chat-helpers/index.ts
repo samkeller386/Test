@@ -41,7 +41,7 @@ export const handleHostedChat = async (
   setAgentStatus: Dispatch<SetStateAction<AgentStatusState | null>>,
 ) => {
   const { provider } = modelData;
-  let apiEndpoint = `/api/chat/${provider}`;
+  const apiEndpoint = `/api/chat/${provider}`;
 
   setToolInUse(
     selectedPlugin && selectedPlugin !== PluginID.NONE

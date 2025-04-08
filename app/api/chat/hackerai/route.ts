@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     const baseSystemPrompt = config.isLargeModel
       ? llmConfig.systemPrompts.largeModel
       : llmConfig.systemPrompts.smallModel;
-    let systemPrompt = buildSystemPrompt(
+    const systemPrompt = buildSystemPrompt(
       baseSystemPrompt,
       profile.profile_context,
     );

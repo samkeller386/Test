@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileContentBlock } from './types';
+import type { FileContentBlock } from './types';
 import { MessageMarkdown } from '../message-markdown';
 import { Button } from '@/components/ui/button';
 import { IconChevronDown, IconChevronUp, IconFile } from '@tabler/icons-react';

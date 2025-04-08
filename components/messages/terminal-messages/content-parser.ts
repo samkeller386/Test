@@ -1,4 +1,4 @@
-import { ContentBlock } from './types';
+import type { ContentBlock } from './types';
 
 export const parseContent = (content: string): ContentBlock[] => {
   const blocks: ContentBlock[] = [];

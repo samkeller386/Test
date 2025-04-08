@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { type ToolContext } from './types';
+import type { ToolContext } from './types';
 import {
   handleFileError,
   getSandboxTemplate,
@@ -12,9 +12,9 @@ const writeFileContent = async (
   sandbox: any,
   file: string,
   content: string,
-  append: boolean = false,
-  leading_newline: boolean = false,
-  trailing_newline: boolean = false,
+  append: boolean,
+  leading_newline: boolean,
+  trailing_newline: boolean,
   dataStream: any,
 ): Promise<string> => {
   try {
@@ -119,9 +119,9 @@ export const createFileWriteTool = (context: ToolContext) => {
           sandbox,
           file,
           content,
-          append,
-          leading_newline,
-          trailing_newline,
+          append ?? false,
+          leading_newline ?? false,
+          trailing_newline ?? false,
           dataStream,
         );
       } catch (error) {

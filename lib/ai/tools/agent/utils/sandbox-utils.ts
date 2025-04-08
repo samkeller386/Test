@@ -70,7 +70,7 @@ export const ensureSandboxConnection = async (
   timeout: number,
   dataStream: any,
   setSandbox?: (sandbox: any) => void,
-  persistentSandbox: boolean = true,
+  persistentSandbox = true,
 ): Promise<any> => {
   if (!sandbox) {
     return persistentSandbox
