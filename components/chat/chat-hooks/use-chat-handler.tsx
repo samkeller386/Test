@@ -397,7 +397,6 @@ export const useChatHandler = () => {
         citations: citationsFromResponse,
       } = await handleHostedChat(
         payload,
-        modelData!,
         tempAssistantChatMessage,
         isRegeneration,
         isContinuation,

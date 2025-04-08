@@ -24,7 +24,6 @@ export * from './validation';
 
 export const handleHostedChat = async (
   payload: ChatPayload,
-  modelData: LLM,
   tempAssistantChatMessage: ChatMessage,
   isRegeneration: boolean,
   isContinuation: boolean,
@@ -39,9 +38,6 @@ export const handleHostedChat = async (
   selectedPlugin: PluginID,
   setAgentStatus: Dispatch<SetStateAction<AgentStatusState | null>>,
 ) => {
-  const { provider } = modelData;
-  const apiEndpoint = `/api/chat/${provider}`;
-
   setToolInUse(
     selectedPlugin && selectedPlugin !== PluginID.NONE
       ? selectedPlugin
@@ -59,7 +55,6 @@ export const handleHostedChat = async (
   };
 
   const chatResponse = await fetchChatResponse(
-    apiEndpoint,
     requestBody,
     newAbortController,
     setIsGenerating,
@@ -91,14 +86,13 @@ export const handleHostedChat = async (
 };
 
 export const fetchChatResponse = async (
-  url: string,
   body: object,
   controller: AbortController,
   setIsGenerating: Dispatch<SetStateAction<boolean>>,
   setChatMessages: Dispatch<SetStateAction<ChatMessage[]>>,
   alertDispatch: Dispatch<AlertAction>,
 ) => {
-  const response = await fetch(url, {
+  const response = await fetch(`/api/chat`, {
     method: 'POST',
     body: JSON.stringify(body),
     signal: controller.signal,
