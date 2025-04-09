@@ -78,6 +78,7 @@ export async function processRag({
     },
     body: JSON.stringify({
       query: standaloneQuestion,
+      partition: 'test',
     }),
   });
 
@@ -90,7 +91,7 @@ export async function processRag({
   ) {
     // Filter out chunks with score lower than 0.1
     const filteredChunks = data.scored_chunks.filter(
-      (chunk) => chunk.score >= 0.09,
+      (chunk) => chunk.score >= 0.08,
     );
 
     // If no chunks remain after filtering, return early
