@@ -145,7 +145,7 @@ export function LoginForm({
           ) : (
             <>
               <div>
-                <span>Don't have an account? </span>
+                <span>Don&apos;t have an account? </span>
                 <Button
                   variant="link"
                   className="p-0 text-sm"
