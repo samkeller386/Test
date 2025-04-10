@@ -41,10 +41,8 @@ export const TerminalBlockComponent: React.FC<TerminalBlockProps> = ({
   onToggleExpanded,
 }) => {
   const { toolInUse, isMobile } = useUIContext();
-  const hasOutput = block.stdout || block.stderr || block.error;
-  const outputContent = [block.stdout, block.stderr, block.error]
-    .filter(Boolean)
-    .join('\n');
+  const hasOutput = block.stdout || block.error;
+  const outputContent = [block.stdout, block.error].filter(Boolean).join('\n');
 
   const lines = outputContent.split('\n');
   const shouldShowMore = lines.length > MAX_VISIBLE_LINES;
@@ -110,7 +108,7 @@ export const TerminalBlockComponent: React.FC<TerminalBlockProps> = ({
           {showFullTerminalView && (
             <div className="font-mono text-foreground/80">
               {renderContent(
-                `\`\`\`stdout\nubuntu@sandbox:~$ ${block.command}\n\`\`\``,
+                `\`\`\`stdout\nubuntu@sandbox:${block.exec_dir ? `~${block.exec_dir}` : '~'}$ ${block.command}\n\`\`\``,
               )}
             </div>
           )}
@@ -121,21 +119,6 @@ export const TerminalBlockComponent: React.FC<TerminalBlockProps> = ({
               )}
               {shouldShowMore &&
                 block.stdout.split('\n').length > MAX_VISIBLE_LINES && (
-                  <ShowMoreButton
-                    isExpanded={isExpanded}
-                    onClick={() => onToggleExpanded(index)}
-                    remainingLines={lines.length - MAX_VISIBLE_LINES}
-                  />
-                )}
-            </div>
-          )}
-          {block.stderr && (
-            <div className="font-mono text-destructive/90">
-              {renderContent(
-                `\`\`\`stderr\n${shouldShowMore ? displayedContent : block.stderr}\n\`\`\``,
-              )}
-              {shouldShowMore &&
-                block.stderr.split('\n').length > MAX_VISIBLE_LINES && (
                   <ShowMoreButton
                     isExpanded={isExpanded}
                     onClick={() => onToggleExpanded(index)}
