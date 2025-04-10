@@ -130,7 +130,7 @@ export const TerminalBlockComponent: React.FC<TerminalBlockProps> = ({
           {block.error && (
             <div className="font-mono text-destructive/90">
               {renderContent(
-                `\`\`\`stderr\n${shouldShowMore ? displayedContent : block.error}\n\`\`\``,
+                `\`\`\`stdout\n${shouldShowMore ? displayedContent : block.error}\n\`\`\``,
               )}
               {shouldShowMore &&
                 block.error.split('\n').length > MAX_VISIBLE_LINES && (
