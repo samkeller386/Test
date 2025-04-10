@@ -1,18 +1,9 @@
 import { getAIProfile } from '@/lib/server/server-chat-helpers';
-import { getSystemPrompt } from '@/lib/ai/prompts';
-import {
-  filterEmptyAssistantMessages,
-  handleAssistantMessages,
-  messagesIncludeImages,
-  toVercelChatMessages,
-  validateMessages,
-  addAuthMessage,
-} from '@/lib/ai/message-utils';
+import { toVercelChatMessages } from '@/lib/ai/message-utils';
 import { handleErrorResponse } from '@/lib/models/api-error';
 import llmConfig from '@/lib/models/llm-config';
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
 import { createDataStreamResponse, smoothStream, streamText } from 'ai';
-import { getModerationResult } from '@/lib/server/moderation';
 import { PluginID } from '@/types/plugins';
 import { myProvider } from '@/lib/ai/providers';
 import { terminalPlugins } from '@/lib/ai/terminal-utils';
@@ -21,6 +12,7 @@ import PostHogClient from '@/app/posthog';
 import { handleToolExecution } from '@/lib/ai/tool-handler';
 import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
 import { processRag } from '@/lib/ai/rag-processor';
+import { processChatMessages } from '@/lib/ai/message-utils';
 
 export const preferredRegion = [
   'iad1',
@@ -60,70 +52,31 @@ export async function POST(request: Request) {
       selectedPlugin,
     );
 
-    if (!config.selectedModel) {
-      throw new Error('Selected model is undefined');
-    }
     if (config.rateLimitCheckResult !== null) {
       return config.rateLimitCheckResult.response;
     }
 
-    let shouldUncensorResponse = false;
     const { region } = geolocation(request);
-    if (
-      llmConfig.openai.apiKey &&
-      !isContinuation &&
-      !isTerminalContinuation &&
-      !terminalPlugins.includes(selectedPlugin as PluginID) &&
-      selectedPlugin !== PluginID.TERMINAL &&
-      region !== 'bom1' &&
-      region !== 'cpt1'
-    ) {
-      const { shouldUncensorResponse: moderationResult } =
-        await getModerationResult(
-          messages,
-          llmConfig.openai.apiKey || '',
-          10,
-          config.isLargeModel,
-        );
-      shouldUncensorResponse = moderationResult;
-    }
-
-    let selectedChatModel = config.selectedModel;
-    let supportsImages = true;
-    const handleMessages = (shouldUncensor: boolean) => {
-      // Handle vision support for large model
-      if (selectedChatModel === 'chat-model-large') {
-        supportsImages = messagesIncludeImages(messages);
-        if (supportsImages) {
-          selectedChatModel = 'vision-model';
-        }
-      }
-
-      if (shouldUncensor) {
-        addAuthMessage(messages);
-        if (
-          selectedChatModel === 'chat-model-large' &&
-          selectedPlugin !== PluginID.WEB_SEARCH &&
-          selectedPlugin !== PluginID.REASONING &&
-          selectedPlugin !== PluginID.REASONING_WEB_SEARCH &&
-          selectedPlugin !== PluginID.DEEP_RESEARCH &&
-          !terminalPlugins.includes(selectedPlugin as PluginID) &&
-          !isRagEnabled
-        ) {
-          return handleAssistantMessages(messages);
-        }
-      }
-
-      return filterEmptyAssistantMessages(messages);
-    };
-
-    handleMessages(shouldUncensorResponse);
-
-    // Remove invalid message exchanges
-    const validatedMessages = validateMessages(messages);
+    let {
+      messages: validatedMessages,
+      selectedModel: finalSelectedModel,
+      supportsImages,
+      systemPrompt,
+    } = await processChatMessages(
+      messages,
+      config.selectedModel,
+      selectedPlugin,
+      isRagEnabled,
+      isContinuation,
+      isTerminalContinuation,
+      region,
+      llmConfig.openai.apiKey,
+      config.isLargeModel,
+      profile.profile_context,
+    );
 
     const toolResponse = await handleToolExecution({
-      messages,
+      messages: validatedMessages,
       profile,
       isTerminalContinuation,
       selectedPlugin,
@@ -134,11 +87,6 @@ export async function POST(request: Request) {
       return toolResponse;
     }
 
-    let systemPrompt = getSystemPrompt({
-      selectedChatModel,
-      profileContext: profile.profile_context,
-    });
-
     // Process RAG
     let ragUsed = false;
     let ragId: string | null = null;
@@ -147,7 +95,7 @@ export async function POST(request: Request) {
         messages,
         isContinuation,
         profile,
-        selectedChatModel,
+        selectedChatModel: finalSelectedModel,
       });
 
       ragUsed = ragResult.ragUsed;
@@ -161,14 +109,16 @@ export async function POST(request: Request) {
     if (posthog) {
       posthog.capture({
         distinctId: profile.user_id,
-        event: selectedChatModel,
+        event: finalSelectedModel,
       });
     }
 
-    const addActiveTools =
-      selectedChatModel === 'chat-model-gpt-large' && !ragUsed;
-    if (addActiveTools) {
-      selectedChatModel = 'chat-model-gpt-large-with-tools';
+    const isGptLargeModel = finalSelectedModel === 'chat-model-gpt-large';
+    const shouldUseTools =
+      (finalSelectedModel === 'chat-model-large' || isGptLargeModel) &&
+      !ragUsed;
+    if (shouldUseTools && isGptLargeModel) {
+      finalSelectedModel = 'chat-model-gpt-large-with-tools';
     }
 
     try {
@@ -177,7 +127,7 @@ export async function POST(request: Request) {
           dataStream.writeData({ ragUsed, ragId });
 
           const baseConfig = {
-            model: myProvider.languageModel(selectedChatModel),
+            model: myProvider.languageModel(finalSelectedModel),
             system: systemPrompt,
             messages: toVercelChatMessages(validatedMessages, supportsImages),
             maxTokens: 2048,
@@ -185,19 +135,27 @@ export async function POST(request: Request) {
             experimental_transform: smoothStream({ chunking: 'word' }),
           };
 
-          const result = addActiveTools
-            ? streamText({
-                ...baseConfig,
-                tools: createToolSchemas({
-                  chatSettings,
-                  messages: validatedMessages,
-                  profile,
-                  dataStream,
-                  isTerminalContinuation,
-                  abortSignal: request.signal,
-                }).getSelectedSchemas(['browser', 'webSearch', 'terminal']),
-              })
-            : streamText(baseConfig);
+          const toolConfig = {
+            chatSettings,
+            messages: validatedMessages,
+            profile,
+            dataStream,
+            isTerminalContinuation,
+            abortSignal: request.signal,
+          };
+
+          const result = streamText({
+            ...baseConfig,
+            ...(shouldUseTools
+              ? {
+                  tools: createToolSchemas(toolConfig).getSelectedSchemas(
+                    isGptLargeModel
+                      ? ['browser', 'webSearch', 'terminal']
+                      : ['browser', 'webSearch'],
+                  ),
+                }
+              : {}),
+          });
 
           result.mergeIntoDataStream(dataStream);
         },
@@ -233,6 +191,9 @@ async function getProviderConfig(
   };
 
   const selectedModel = modelMap[chatSettings.model];
+  if (!selectedModel) {
+    throw new Error('Selected model is undefined');
+  }
   const isLargeModel = chatSettings.model.includes('large');
 
   const rateLimitModel =
