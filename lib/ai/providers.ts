@@ -21,7 +21,7 @@ export const myProvider = customProvider({
       parallelToolCalls: false,
     }),
     'chat-model-reasoning': wrapLanguageModel({
-      model: openrouter('deepseek/deepseek-r1'),
+      model: openrouter('x-ai/grok-3-mini-beta'),
       middleware: extractReasoningMiddleware({ tagName: 'think' }),
     }),
     'deep-research': perplexity('sonar-deep-research'),
