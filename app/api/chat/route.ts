@@ -136,7 +136,6 @@ export async function POST(request: Request) {
           };
 
           const toolConfig = {
-            chatSettings,
             messages: validatedMessages,
             profile,
             dataStream,
