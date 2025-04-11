@@ -230,80 +230,6 @@ export const availablePlugins: PluginSummary[] = [
       },
     ],
   },
-  // Vulnerability scanners id 20-29
-  {
-    id: 20,
-    name: 'WordPress Scanner',
-    value: PluginID.WORDPRESS_SCANNER,
-    categories: ['vuln-scanners'],
-    icon: 'https://cdn-icons-png.flaticon.com/128/49/49006.png',
-    invertInDarkMode: true,
-    description:
-      'Scan WordPress for outdated plugins, core vulnerabilities, user enumeration and more',
-    githubRepoUrl: pluginUrls.WORDPRESS_SCANNER,
-    isInstalled: false,
-    isPremium: true,
-    createdAt: '2024-09-19',
-    starters: [
-      {
-        title: 'Perform Basic WordPress Scan',
-        description: 'on example.com',
-        chatMessage: 'Perform a basic WordPress scan on example.com',
-      },
-      {
-        title: 'Enumerate themes',
-        description: 'for example.com',
-        chatMessage: 'Check for vulnerable plugins for example.com',
-      },
-      {
-        title: 'Enumerate WordPress Users',
-        description: 'for example.com',
-        chatMessage:
-          'Enumerate WordPress users on example.com and assess user enumeration vulnerability',
-      },
-      {
-        title: 'WordPress Scanner Help',
-        description: 'How does the WordPress Scanner plugin work?',
-        chatMessage: 'How does the WordPress Scanner plugin work?',
-      },
-    ],
-  },
-  {
-    id: 22,
-    name: 'SSL/TLS Scanner',
-    value: PluginID.SSL_SCANNER,
-    categories: ['vuln-scanners'],
-    icon: 'https://cdn-icons-png.flaticon.com/128/1034/1034605.png',
-    invertInDarkMode: true,
-    description:
-      'Find SSL/TLS issues like POODLE, Heartbleed, DROWN, ROBOT, etc',
-    githubRepoUrl: pluginUrls.SSL_SCANNER,
-    isInstalled: false,
-    isPremium: true,
-    createdAt: '2024-07-11',
-    starters: [
-      {
-        title: 'Perform Quick SSL/TLS Scan',
-        description: 'of hackerone.com (port 443 only)',
-        chatMessage: 'Perform a quick SSL/TLS scan on hackerone.com',
-      },
-      {
-        title: 'Conduct a Deep SSL/TLS Scan',
-        description: 'on bugcrowd.com (top 1000 ports)',
-        chatMessage: 'Conduct a deep SSL/TLS scan on bugcrowd.com',
-      },
-      {
-        title: 'Scan SSL/TLS on Ports',
-        description: '443 and 8443 of intigriti.com',
-        chatMessage: 'Scan SSL/TLS on ports 443 and 8443 of intigriti.com',
-      },
-      {
-        title: 'SSL/TLS Scanner Help',
-        description: 'How does the SSL/TLS Scanner plugin work?',
-        chatMessage: 'How does the SSL/TLS Scanner plugin work?',
-      },
-    ],
-  },
   // Exploit Tools id 30-39
   {
     id: 30,
@@ -340,32 +266,6 @@ export const availablePlugins: PluginSummary[] = [
         title: 'SQLi Exploiter Help',
         description: 'How does the SQLi Exploiter plugin work?',
         chatMessage: 'How does the SQLi Exploiter plugin work?',
-      },
-    ],
-  },
-  {
-    id: 31,
-    name: 'XSS Exploiter',
-    value: PluginID.XSS_EXPLOITER,
-    categories: ['exploit'],
-    icon: 'https://cdn-icons-png.flaticon.com/128/14702/14702433.png',
-    invertInDarkMode: true,
-    description: 'Exploit XSS in real life-attacks, extract cookies, and data',
-    githubRepoUrl: pluginUrls.XSS_EXPLOITER,
-    isInstalled: false,
-    isPremium: true,
-    createdAt: '2024-09-25',
-    starters: [
-      {
-        title: 'Find XSS Vulnerabilities',
-        description: 'on testphp.vulnweb.com',
-        chatMessage:
-          'Find XSS vulnerabilities on http://testphp.vulnweb.com/listproducts.php',
-      },
-      {
-        title: 'XSS Exploiter Help',
-        description: 'How does the XSS Exploiter plugin work?',
-        chatMessage: 'How does the XSS Exploiter plugin work?',
       },
     ],
   },
