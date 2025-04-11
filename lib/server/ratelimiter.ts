@@ -119,12 +119,6 @@ function _getLimit(model: string, subscriptionInfo: SubscriptionInfo): number {
   const isPaid = subscriptionInfo.isPremium || subscriptionInfo.isTeam;
   const suffix = isPaid ? '_PREMIUM' : '_FREE';
 
-  if (model === 'generate-title') {
-    return isPaid
-      ? getValidatedLimit(process.env.GENERATE_TITLE_LIMIT_PREMIUM, 100)
-      : getValidatedLimit(process.env.RATELIMITER_LIMIT_PENTESTGPT_FREE, 15);
-  }
-
   // Pro queries group (reasoning and web search related plugins)
   const proQueryModels = [
     'reasoning',

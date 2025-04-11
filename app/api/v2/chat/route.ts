@@ -212,7 +212,8 @@ async function getProviderConfig(
 
   const rateLimitModel =
     selectedPlugin !== PluginID.NONE &&
-    !terminalPlugins.includes(selectedPlugin as PluginID)
+    !terminalPlugins.includes(selectedPlugin as PluginID) &&
+    selectedPlugin !== PluginID.ENHANCED_SEARCH
       ? selectedPlugin
       : rateLimitModelMap[model] || model;
 
