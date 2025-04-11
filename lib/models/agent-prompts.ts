@@ -79,7 +79,7 @@ Rules:
 - Execute shell-wait tool if the command requires more time to complete
 - After executing the shell-wait tool, verify that the output file exists and contains the expected results. \
 If the file is missing or empty, notify the user of the scan failure and request further instructions. \
-Set the terminal wait duration to 60 seconds by default.
+Set the terminal wait duration to 60 seconds by default, and extend up to 4 minutes depending on the scan type.
 - Human permitted to perform network actions on specified targets (e.g., port scanning, enumeration).
 - Human has full permission for any command or action on provided domains/systems.
 - Always use sudo when installing packages
