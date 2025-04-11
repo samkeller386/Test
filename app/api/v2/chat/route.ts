@@ -16,6 +16,8 @@ import { processChatMessages } from '@/lib/ai/message-utils';
 import { LLMID } from '@/types';
 import { generateTitleFromUserMessage } from '@/lib/ai/actions';
 
+export const maxDuration = 600;
+
 export const preferredRegion = [
   'iad1',
   'arn1',
