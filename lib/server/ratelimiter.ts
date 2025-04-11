@@ -250,19 +250,18 @@ export function getRateLimitErrorMessage(
 
   if (premium) {
     if (model === 'pentestgpt') {
-      message += `\n\nIn the meantime, you can use Large Model or GPT-4o`;
+      message += `\n\nIn the meantime, you can use Large Model or PentestGPT 4o`;
     } else if (model === 'pentestgpt-pro') {
-      message += `\n\nIn the meantime, you can use GPT-4o or Small Model`;
+      message += `\n\nIn the meantime, you can use PentestGPT 4o or Small Model`;
     } else if (model === 'gpt-4') {
       message += `\n\nIn the meantime, you can use Large Model or Small Model`;
     }
   } else {
     message += `\n\n🔓 Want more? Upgrade to Pro or Team and unlock a world of features:
-- Higher usage limits
-- Access to additional PentestGPT models
-- Access to file uploads, vision, deep research and web browsing
-- Access to advanced plugins
-- Access to terminal`;
+- Access to smarter models
+- Extended limits on messaging, web search, reasoning, and terminal
+- Access to file uploads, vision, browsing, and deep research
+- Opportunities to test new features`;
   }
 
   return message.trim();
