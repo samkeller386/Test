@@ -2,12 +2,6 @@ import { PluginID } from '@/types/plugins';
 
 export const getPluginPrompt = (pluginID: PluginID): string => {
   switch (pluginID) {
-    case PluginID.SQLI_EXPLOITER:
-      return `
-The user has selected the SQL Injection Exploiter plugin, which uses the sqlmap tool in the terminal. This tool identifies and exploits SQL injection vulnerabilities. Remember:
-1. Focus on SQL injection vulnerabilities and exploitation techniques.
-2. Provide sqlmap-specific options and explanations.
-`;
     case PluginID.PORT_SCANNER:
       return `
 The user has selected the Port Scanner plugin, which uses the nmap tool in the terminal. This tool performs comprehensive port scanning to discover open ports and services on target systems. Remember:

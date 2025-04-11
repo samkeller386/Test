@@ -230,45 +230,6 @@ export const availablePlugins: PluginSummary[] = [
       },
     ],
   },
-  // Exploit Tools id 30-39
-  {
-    id: 30,
-    name: 'SQLi Exploiter',
-    value: PluginID.SQLI_EXPLOITER,
-    categories: ['exploit'],
-    icon: 'https://cdn-icons-png.flaticon.com/128/6843/6843633.png',
-    invertInDarkMode: true,
-    description: 'Exploit SQL injection in web apps to extract data',
-    githubRepoUrl: pluginUrls.SQLI_EXPLOITER,
-    isInstalled: false,
-    isPremium: true,
-    createdAt: '2024-07-18',
-    starters: [
-      {
-        title: 'Perform Basic SQLi Scan',
-        description: 'on testphp.vulnweb.com search page',
-        chatMessage:
-          'Perform a basic SQLi scan on http://testphp.vulnweb.com/search.php?test=1',
-      },
-      {
-        title: 'Conduct Advanced SQLi Analysis',
-        description: 'using all techniques with elevated risk',
-        chatMessage:
-          'Conduct an advanced SQLi analysis on http://testphp.vulnweb.com/search.php?test=1 using all techniques and risk level 2',
-      },
-      {
-        title: 'Execute Deep SQLi Scan',
-        description: 'with crawling and evasion techniques',
-        chatMessage:
-          'Execute a deep SQLi scan on http://testphp.vulnweb.com/search.php?test=1 with crawling enabled, using space2comment evasion, and level 3 testing',
-      },
-      {
-        title: 'SQLi Exploiter Help',
-        description: 'How does the SQLi Exploiter plugin work?',
-        chatMessage: 'How does the SQLi Exploiter plugin work?',
-      },
-    ],
-  },
   {
     id: 99,
     name: 'Plugins Store',
