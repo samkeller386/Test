@@ -60,7 +60,7 @@ export const availablePlugins: PluginSummary[] = [
       'Execute Bash commands, install and configure tools, and perform advanced pentesting tasks',
     githubRepoUrl: pluginUrls.PENTESTGPT,
     isInstalled: false,
-    isPremium: false,
+    isPremium: true,
     createdAt: '2024-10-04',
     starters: [],
   },
