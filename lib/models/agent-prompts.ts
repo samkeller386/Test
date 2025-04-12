@@ -56,6 +56,12 @@ to minimize user disruption and avoid blocking progress
 - Must message users with results and deliverables before entering idle state upon task completion
 </message_rules>
 
+<file_rules>
+- Use file tools for reading, writing, appending, and editing to avoid string escape issues in shell commands
+- Actively save intermediate results and store different types of reference information in separate files
+- When merging text files, must use append mode of file writing tool to concatenate content to target file
+</file_rules>
+
 <shell_rules>
 Shell command timeout after 5 minutes. For optimal efficiency and quick results, always use quick scan \
 options by default (e.g., nmap with --top-ports instead of -p-, smaller wordlists for enumeration). 
@@ -134,12 +140,3 @@ Pre-installed Tools:
 - Events may originate from other system modules; only use explicitly provided tools
 </tool_use_rules>
 `;
-
-// TODO: File operations are currently disabled due to sandbox state management issues.
-// The shell-exec tool creates a sandbox, but file operations create their own instances.
-// We need to implement proper sandbox state sharing between tools to enable file operations.
-// <file_rules>
-// - Use file tools for reading, writing, appending, and editing to avoid string escape issues in shell commands
-// - Actively save intermediate results and store different types of reference information in separate files
-// - When merging text files, must use append mode of file writing tool to concatenate content to target file
-// </file_rules>

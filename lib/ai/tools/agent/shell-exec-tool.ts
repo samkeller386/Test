@@ -16,6 +16,7 @@ import {
   reduceTerminalOutput,
 } from '@/lib/ai/terminal-utils';
 import PostHogClient from '@/app/posthog';
+import { ensureSandboxConnection } from './utils/sandbox-utils';
 
 /**
  * Creates a terminal tool for executing commands in the sandbox environment
@@ -34,9 +35,6 @@ export const createShellExecTool = (context: ToolContext) => {
     setPersistentSandbox,
     isPremiumUser,
   } = context;
-
-  let sandbox = initialSandbox;
-  let persistentSandbox = initialPersistentSandbox;
 
   return tool({
     description:
@@ -57,7 +55,11 @@ export const createShellExecTool = (context: ToolContext) => {
           }),
     }),
     execute: async (args) => {
-      const { exec_dir, command, useTemporarySandbox } = args;
+      const { exec_dir, command, useTemporarySandbox } = args as {
+        exec_dir: string;
+        command: string;
+        useTemporarySandbox?: boolean;
+      };
 
       // Validate plugin-specific commands
       if (selectedPlugin) {
@@ -67,41 +69,23 @@ export const createShellExecTool = (context: ToolContext) => {
         }
       }
 
-      // Set sandbox type - force temporary sandbox for non-premium users
-      if (!isPremiumUser) {
-        persistentSandbox = false;
-      } else if (selectedPlugin) {
-        persistentSandbox = false; // Always use temporary sandbox for plugins
-      } else {
-        persistentSandbox = !useTemporarySandbox;
-      }
-
-      // Update persistent sandbox state in parent context
-      if (setPersistentSandbox) {
-        setPersistentSandbox(persistentSandbox);
-      }
-
-      // Create or connect to sandbox
-      if (!sandbox) {
-        sandbox = persistentSandbox
-          ? await createOrConnectPersistentTerminal(
-              userID,
-              SANDBOX_TEMPLATE,
-              BASH_SANDBOX_TIMEOUT,
-              dataStream,
-            )
-          : await createOrConnectTemporaryTerminal(
-              userID,
-              terminalTemplate,
-              BASH_SANDBOX_TIMEOUT,
-              dataStream,
-            );
-
-        // Update the sandbox in the parent context if needed
-        if (setSandbox) {
-          setSandbox(sandbox);
-        }
-      }
+      // Ensure sandbox connection
+      const { sandbox, persistentSandbox } = await ensureSandboxConnection(
+        {
+          userID,
+          dataStream,
+          isPremiumUser,
+          selectedPlugin,
+          terminalTemplate,
+          setSandbox,
+          setPersistentSandbox,
+        },
+        {
+          initialSandbox,
+          initialPersistentSandbox,
+          useTemporarySandbox,
+        },
+      );
 
       const posthog = PostHogClient();
       if (posthog) {

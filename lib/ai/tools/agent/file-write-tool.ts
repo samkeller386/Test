@@ -66,11 +66,10 @@ export const createFileWriteTool = (context: ToolContext) => {
     userID,
     terminalTemplate,
     setSandbox,
-    persistentSandbox,
+    persistentSandbox: initialPersistentSandbox = true,
     dataStream,
+    isPremiumUser,
   } = context;
-
-  let sandbox = initialSandbox;
 
   return tool({
     description:
@@ -87,7 +86,7 @@ export const createFileWriteTool = (context: ToolContext) => {
         .boolean()
         .optional()
         .describe('Whether to add a trailing newline'),
-      ...(sandbox
+      ...(initialSandbox
         ? {}
         : {
             useTemporarySandbox: z
@@ -95,33 +94,47 @@ export const createFileWriteTool = (context: ToolContext) => {
               .describe('Use temporary sandbox (15-minute timeout).'),
           }),
     }),
-    execute: async ({
-      file,
-      content,
-      append,
-      leading_newline,
-      trailing_newline,
-      useTemporarySandbox,
-    }) => {
+    execute: async (args) => {
+      const {
+        file,
+        content,
+        append = false,
+        leading_newline = false,
+        trailing_newline = false,
+        useTemporarySandbox,
+      } = args as {
+        file: string;
+        content: string;
+        append?: boolean;
+        leading_newline?: boolean;
+        trailing_newline?: boolean;
+        useTemporarySandbox?: boolean;
+      };
+
       try {
         // Ensure sandbox connection
-        sandbox = await ensureSandboxConnection(
-          sandbox,
-          userID,
-          getSandboxTemplate(terminalTemplate),
-          getSandboxTimeout(),
-          dataStream,
-          setSandbox,
-          persistentSandbox && !useTemporarySandbox,
+        const { sandbox } = await ensureSandboxConnection(
+          {
+            userID,
+            dataStream,
+            isPremiumUser,
+            terminalTemplate,
+            setSandbox,
+          },
+          {
+            initialSandbox,
+            initialPersistentSandbox,
+            useTemporarySandbox,
+          },
         );
 
         return writeFileContent(
           sandbox,
           file,
           content,
-          append ?? false,
-          leading_newline ?? false,
-          trailing_newline ?? false,
+          append,
+          leading_newline,
+          trailing_newline,
           dataStream,
         );
       } catch (error) {
