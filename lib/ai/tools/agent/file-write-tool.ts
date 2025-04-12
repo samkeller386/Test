@@ -3,8 +3,6 @@ import { z } from 'zod';
 import type { ToolContext } from './types';
 import {
   handleFileError,
-  getSandboxTemplate,
-  getSandboxTimeout,
   ensureSandboxConnection,
 } from './utils/sandbox-utils';
 
@@ -62,12 +60,13 @@ const writeFileContent = async (
  */
 export const createFileWriteTool = (context: ToolContext) => {
   const {
+    dataStream,
     sandbox: initialSandbox,
     userID,
     terminalTemplate,
-    setSandbox,
     persistentSandbox: initialPersistentSandbox = true,
-    dataStream,
+    setSandbox,
+    setPersistentSandbox,
     isPremiumUser,
   } = context;
 
@@ -120,6 +119,7 @@ export const createFileWriteTool = (context: ToolContext) => {
             isPremiumUser,
             terminalTemplate,
             setSandbox,
+            setPersistentSandbox,
           },
           {
             initialSandbox,

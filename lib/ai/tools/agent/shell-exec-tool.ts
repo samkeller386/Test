@@ -3,13 +3,8 @@ import { z } from 'zod';
 import {
   type ToolContext,
   SANDBOX_TEMPLATE,
-  BASH_SANDBOX_TIMEOUT,
   PLUGIN_COMMAND_MAP,
 } from './types';
-import {
-  createOrConnectTemporaryTerminal,
-  createOrConnectPersistentTerminal,
-} from '@/lib/tools/e2b/sandbox';
 import { executeTerminalCommand } from '@/lib/tools/e2b/terminal-executor';
 import {
   streamTerminalOutput,
