@@ -18,7 +18,6 @@ interface TerminalToolConfig {
   messages: any[];
   profile: any;
   dataStream: any;
-  isTerminalContinuation?: boolean;
   selectedPlugin?: PluginID;
   previousMessage?: string;
   abortSignal?: AbortSignal;
@@ -29,13 +28,7 @@ export async function executeTerminalAgent({
 }: {
   config: TerminalToolConfig;
 }) {
-  const {
-    messages,
-    profile,
-    dataStream,
-    isTerminalContinuation,
-    selectedPlugin,
-  } = config;
+  const { messages, profile, dataStream, selectedPlugin } = config;
 
   let sandbox: Sandbox | null = null;
   let persistentSandbox = false;
