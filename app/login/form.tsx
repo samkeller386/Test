@@ -74,9 +74,7 @@ export function LoginForm({
         <div className="grow border-t border-gray-300" />
       </div>
 
-      <form
-        className="animate-in mt-4 flex w-full flex-1 flex-col justify-center gap-3"
-      >
+      <form className="animate-in mt-4 flex w-full flex-1 flex-col justify-center gap-3">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
