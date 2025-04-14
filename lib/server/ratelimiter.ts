@@ -209,12 +209,7 @@ function _getFixedModelName(model: string): string {
 
 function _makeStorageKey(userId: string, model: string): string {
   // Pro queries group (reasoning and web search related plugins)
-  const proQueryModels = [
-    'reasoning',
-    'websearch',
-    'reasoning-web-search',
-    'web-search',
-  ];
+  const proQueryModels = ['websearch', 'reasoning-web-search', 'web-search'];
 
   // Use a common key for all pro query models
   if (proQueryModels.includes(model)) {
@@ -253,8 +248,8 @@ export function getRateLimitErrorMessage(
   } else {
     message += `\n\n🔓 Want more? Upgrade to Pro or Team and unlock a world of features:
 - Access to smarter models
-- Extended limits on messaging, web search, reasoning, and terminal
-- Access to file uploads, vision, browsing, and deep research
+- Extended limits on messaging, reasoning, and terminal
+- Access to file uploads, vision, web search, and deep research
 - Opportunities to test new features`;
   }
 
