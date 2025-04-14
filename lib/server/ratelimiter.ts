@@ -239,9 +239,9 @@ export function getRateLimitErrorMessage(
 
   if (premium) {
     if (model === 'pentestgpt') {
-      message += `\n\nIn the meantime, you can use Large Model or PentestGPT 4o`;
+      message += `\n\nIn the meantime, you can use Large Model or PentestGPT 4.1`;
     } else if (model === 'pentestgpt-pro') {
-      message += `\n\nIn the meantime, you can use PentestGPT 4o or Small Model`;
+      message += `\n\nIn the meantime, you can use PentestGPT 4.1 or Small Model`;
     } else if (model === 'gpt-4') {
       message += `\n\nIn the meantime, you can use Large Model or Small Model`;
     }
@@ -260,7 +260,7 @@ function getModelName(model: string): string {
   const modelNames: { [key: string]: string } = {
     pentestgpt: 'Small Model',
     'pentestgpt-pro': 'Large Model',
-    'gpt-4': 'PentestGPT 4o',
+    'gpt-4': 'PentestGPT 4.1',
     terminal: 'terminal',
     'tts-1': 'text-to-speech',
     'stt-1': 'speech-to-text',
