@@ -9,13 +9,7 @@ import { perplexity } from '@ai-sdk/perplexity';
 
 export const myProvider = customProvider({
   languageModels: {
-    'chat-model-small': openrouter('mistralai/mistral-small-3.1-24b-instruct', {
-      extraBody: {
-        provider: {
-          order: ['Mistral'],
-        },
-      },
-    }),
+    'chat-model-small': openai('gpt-4.1-mini-2025-04-14'),
     'chat-model-large': openrouter('x-ai/grok-3-beta'),
     'chat-model-gpt-small': openai('gpt-4.1-mini-2025-04-14'),
     'chat-model-gpt-large': openai('gpt-4.1-2025-04-14'),
@@ -34,12 +28,6 @@ export const myProvider = customProvider({
       middleware: extractReasoningMiddleware({ tagName: 'think' }),
     }),
     'deep-research': perplexity('sonar-deep-research'),
-    'vision-model': openrouter('mistralai/mistral-small-3.1-24b-instruct', {
-      extraBody: {
-        provider: {
-          order: ['Mistral'],
-        },
-      },
-    }),
+    'vision-model': openai('gpt-4.1-mini-2025-04-14'),
   },
 });
