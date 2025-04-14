@@ -149,7 +149,7 @@ function _getLimit(model: string, subscriptionInfo: SubscriptionInfo): number {
   // Standard model handling
   const fixedModelName = _getFixedModelName(model);
   const limitKey = `RATELIMITER_LIMIT_${fixedModelName}${suffix}`;
-  const defaultLimit = isPaid ? 30 : 0;
+  const defaultLimit = 0;
   const limit = getValidatedLimit(process.env[limitKey], defaultLimit);
 
   if (subscriptionInfo.isTeam) {
