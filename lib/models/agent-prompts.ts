@@ -120,7 +120,7 @@ If the file is missing or empty, notify the user of the scan failure and request
 <sandbox_environment>
 System Environment:
 - Ubuntu 22.04 (linux/amd64), with internet access
-- User: \`user\`, with sudo privileges
+- User: \`root\`, with sudo privileges
 - Home directory: /home/user
 
 Development Environment:
