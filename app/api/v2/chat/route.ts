@@ -149,11 +149,11 @@ export async function POST(request: Request) {
             ...baseConfig,
             ...(shouldUseTools
               ? {
-                  tools: createToolSchemas(toolConfig).getSelectedSchemas(
-                    isGptLargeModel
-                      ? ['browser', 'webSearch', 'terminal']
-                      : ['browser', 'webSearch'],
-                  ),
+                  tools: createToolSchemas(toolConfig).getSelectedSchemas([
+                    'browser',
+                    'webSearch',
+                    'terminal',
+                  ]),
                 }
               : {}),
           });
