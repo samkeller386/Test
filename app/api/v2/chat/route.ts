@@ -82,6 +82,7 @@ export async function POST(request: Request) {
       isTerminalContinuation: modelParams.isTerminalContinuation,
       selectedPlugin: modelParams.selectedPlugin,
       isLargeModel: config.isLargeModel,
+      agentMode: modelParams.agentMode,
       abortSignal: request.signal,
       chatMetadata,
       title,
@@ -141,6 +142,7 @@ export async function POST(request: Request) {
           const toolConfig = {
             messages: validatedMessages,
             profile,
+            agentMode: modelParams.agentMode,
             dataStream,
             abortSignal: request.signal,
           };

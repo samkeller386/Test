@@ -13,13 +13,14 @@ import { getToolsWithAnswerPrompt } from '@/lib/tools/tool-store/prompts/system-
 import { getTerminalTemplate } from '@/lib/tools/tool-store/tools-helper';
 import { myProvider } from '@/lib/ai/providers';
 import { SANDBOX_TEMPLATE } from '@/lib/ai/tools/agent/types';
+import { AgentMode } from '@/types/llms';
 
 interface TerminalToolConfig {
   messages: any[];
   profile: any;
   dataStream: any;
+  agentMode: AgentMode;
   selectedPlugin?: PluginID;
-  previousMessage?: string;
   abortSignal?: AbortSignal;
 }
 
@@ -28,7 +29,7 @@ export async function executeTerminalAgent({
 }: {
   config: TerminalToolConfig;
 }) {
-  const { messages, profile, dataStream, selectedPlugin } = config;
+  const { messages, profile, dataStream, agentMode, selectedPlugin } = config;
 
   let sandbox: Sandbox | null = null;
   let persistentSandbox = false;
@@ -97,6 +98,7 @@ export async function executeTerminalAgent({
         setSandbox,
         setPersistentSandbox,
         isPremiumUser,
+        agentMode,
       }),
       maxSteps: 5,
       toolChoice: 'required',

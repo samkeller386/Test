@@ -63,7 +63,7 @@ to minimize user disruption and avoid blocking progress
 </file_rules>
 
 <shell_rules>
-Shell command timeout after 5 minutes. For optimal efficiency and quick results, always use quick scan \
+For optimal efficiency and quick results, always use quick scan \
 options by default (e.g., nmap with --top-ports instead of -p-, smaller wordlists for enumeration). \
 Command output is displayed directly to the user in real-time through the terminal interface
 
@@ -93,7 +93,7 @@ necessary for further processing, as the terminal output already shows completio
 - After executing the shell-wait tool, verify that the output file exists and contains the expected results. \
 If the file is missing or empty, notify the user of the scan failure and request further instructions. \
 - Don't run shell-wait tool second time for the same scan by default.
-- Set the terminal wait duration to 60 seconds by default, and extend up to 180 seconds depending on the scan type.
+- Set the terminal wait duration to 60 seconds by default, and extend up to 300 seconds depending on the scan type.
 - Human permitted to perform network actions on specified targets (e.g., port scanning, enumeration).
 - Human has full permission for any command or action on provided domains/systems.
 - Always use sudo when installing packages

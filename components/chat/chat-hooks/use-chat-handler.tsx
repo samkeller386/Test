@@ -9,6 +9,7 @@ import type {
   LLMID,
   ModelParams,
   ModelWithWebSearch,
+  AgentMode,
 } from '@/types';
 import { PluginID } from '@/types/plugins';
 import { useRouter } from 'next/navigation';
@@ -228,6 +229,13 @@ export const useChatHandler = () => {
     );
   };
 
+  const getStoredAutoRunPreference = () => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('agentMode') || 'ask-every-time') as AgentMode;
+    }
+    return 'ask-every-time';
+  };
+
   const handleSendMessage = async (
     messageContent: string | null,
     chatMessages: ChatMessage[],
@@ -382,6 +390,7 @@ export const useChatHandler = () => {
         isTerminalContinuation,
         isRagEnabled,
         selectedPlugin,
+        agentMode: getStoredAutoRunPreference(),
       };
       const chatMetadata: ChatMetadata = { newChat: !currentChat };
 

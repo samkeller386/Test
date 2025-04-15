@@ -21,6 +21,11 @@ export interface FileContentBlock {
   isWrite?: boolean;
 }
 
+export interface AskTerminalCommandBlock {
+  command: string;
+  execDir: string;
+}
+
 export type ContentBlock =
   | {
       type: 'text';
@@ -37,6 +42,10 @@ export type ContentBlock =
   | {
       type: 'file-content';
       content: FileContentBlock;
+    }
+  | {
+      type: 'ask-terminal-command';
+      content: AskTerminalCommandBlock;
     };
 
 export interface ShowMoreButtonProps {

@@ -6,7 +6,7 @@ import { executeReasoningWebSearchTool } from '@/lib/ai/tools/reasoning-web-sear
 import { executeDeepResearchTool } from '@/lib/ai/tools/deep-research';
 import { terminalPlugins } from '@/lib/ai/terminal-utils';
 import { createStreamResponse } from '@/lib/ai-helper';
-import { generateTitleFromUserMessage } from '@/lib/ai/actions';
+import { AgentMode } from '@/types/llms';
 
 interface ToolHandlerConfig {
   messages: any[];
@@ -14,6 +14,7 @@ interface ToolHandlerConfig {
   isTerminalContinuation: boolean;
   selectedPlugin: PluginID;
   isLargeModel: boolean;
+  agentMode: AgentMode;
   abortSignal: AbortSignal;
   chatMetadata?: { newChat: boolean };
   title: Promise<string>;
@@ -26,6 +27,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
     isTerminalContinuation,
     selectedPlugin,
     isLargeModel,
+    agentMode,
     abortSignal,
     chatMetadata,
     title,
@@ -39,6 +41,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
             messages,
             profile,
             dataStream,
+            agentMode,
             abortSignal,
           },
         }),
@@ -80,6 +83,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
               messages,
               profile,
               dataStream,
+              agentMode,
               abortSignal,
             },
           }),
@@ -157,6 +161,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
                 profile,
                 dataStream,
                 selectedPlugin: selectedPlugin as PluginID,
+                agentMode,
                 abortSignal,
               },
             }),
