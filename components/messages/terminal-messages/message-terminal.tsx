@@ -6,7 +6,6 @@ import { parseContent } from './content-parser';
 import { TerminalBlockComponent } from './terminal-block';
 import { FileContentBlockComponent } from './file-content-block';
 import { ShellWaitBlockComponent } from './shell-wait-block';
-import { AskTerminalCommandBlock } from './ask-terminal-command-block';
 
 export const MessageTerminal: React.FC<MessageTerminalProps> = ({
   content,
@@ -71,14 +70,10 @@ export const MessageTerminal: React.FC<MessageTerminalProps> = ({
               isExpanded={expandedOutputs.has(index)}
               onToggleBlock={toggleBlock}
               onToggleExpanded={toggleExpanded}
+              totalBlocks={contentBlocks.length}
             />
           ) : block.type === 'shell-wait' ? (
             <ShellWaitBlockComponent block={block.content} />
-          ) : block.type === 'ask-terminal-command' ? (
-            <AskTerminalCommandBlock
-              command={block.content.command}
-              execDir={block.content.execDir}
-            />
           ) : (
             <FileContentBlockComponent
               block={block.content}

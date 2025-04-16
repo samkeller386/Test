@@ -27,4 +27,5 @@ export interface ModelParams {
   isRagEnabled: boolean;
   selectedPlugin: PluginID;
   agentMode: AgentMode;
+  confirmTerminalCommand: boolean;
 }

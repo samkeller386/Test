@@ -61,7 +61,6 @@ export async function POST(request: Request) {
       messages,
       config.selectedModel,
       modelParams.selectedPlugin,
-      modelParams.isRagEnabled,
       modelParams.isContinuation,
       modelParams.isTerminalContinuation,
       llmConfig.openai.apiKey,
@@ -83,6 +82,7 @@ export async function POST(request: Request) {
       selectedPlugin: modelParams.selectedPlugin,
       isLargeModel: config.isLargeModel,
       agentMode: modelParams.agentMode,
+      confirmTerminalCommand: modelParams.confirmTerminalCommand,
       abortSignal: request.signal,
       chatMetadata,
       title,
@@ -143,6 +143,7 @@ export async function POST(request: Request) {
             messages: validatedMessages,
             profile,
             agentMode: modelParams.agentMode,
+            confirmTerminalCommand: modelParams.confirmTerminalCommand,
             dataStream,
             abortSignal: request.signal,
           };

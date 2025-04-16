@@ -14,12 +14,14 @@ import { getTerminalTemplate } from '@/lib/tools/tool-store/tools-helper';
 import { myProvider } from '@/lib/ai/providers';
 import { SANDBOX_TEMPLATE } from '@/lib/ai/tools/agent/types';
 import { AgentMode } from '@/types/llms';
+import { executeTerminalCommandWithConfig } from './terminal-command-executor';
 
 interface TerminalToolConfig {
   messages: any[];
   profile: any;
   dataStream: any;
   agentMode: AgentMode;
+  confirmTerminalCommand: boolean;
   selectedPlugin?: PluginID;
   abortSignal?: AbortSignal;
 }
@@ -29,7 +31,8 @@ export async function executeTerminalAgent({
 }: {
   config: TerminalToolConfig;
 }) {
-  const { messages, profile, dataStream, agentMode, selectedPlugin } = config;
+  const { profile, dataStream, agentMode, selectedPlugin } = config;
+  let messages = config.messages;
 
   let sandbox: Sandbox | null = null;
   let persistentSandbox = false;
@@ -83,6 +86,29 @@ export async function executeTerminalAgent({
       }
     };
 
+    // Try to execute terminal command if confirmTerminalCommand is true
+    if (config.confirmTerminalCommand) {
+      // Remove the last assistant message with continue prompt
+      messages.pop();
+      const { messages: updatedMessages } =
+        await executeTerminalCommandWithConfig({
+          userID,
+          dataStream,
+          isPremiumUser,
+          selectedPlugin,
+          terminalTemplate,
+          setSandbox,
+          setPersistentSandbox,
+          initialSandbox: sandbox || undefined,
+          initialPersistentSandbox: persistentSandbox,
+          messages,
+        });
+
+      // Update messages with the terminal output
+      messages = updatedMessages;
+    }
+
+    // Always run the agent after terminal command execution
     const { fullStream, finishReason } = streamText({
       model: myProvider.languageModel(selectedChatModel),
       maxTokens: 2048,
@@ -123,6 +149,17 @@ export async function executeTerminalAgent({
             content: chunk.args?.text,
           });
           dataStream.writeData({ finishReason: 'message_ask_user' });
+          shouldStop = true;
+        } else if (
+          agentMode === 'ask-every-time' &&
+          chunk.toolName === 'shell_exec'
+        ) {
+          const { useTemporarySandbox, exec_dir, command } = chunk.args;
+          dataStream.writeData({
+            type: 'text-delta',
+            content: `<terminal-command sandbox-type="${useTemporarySandbox ? 'temporary' : 'persistent'}" exec-dir="${exec_dir}">${command}</terminal-command>`,
+          });
+          dataStream.writeData({ finishReason: 'terminal_command_ask_user' });
           shouldStop = true;
         }
       }

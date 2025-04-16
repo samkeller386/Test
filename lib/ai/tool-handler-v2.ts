@@ -15,6 +15,7 @@ interface ToolHandlerConfig {
   selectedPlugin: PluginID;
   isLargeModel: boolean;
   agentMode: AgentMode;
+  confirmTerminalCommand: boolean;
   abortSignal: AbortSignal;
   chatMetadata?: { newChat: boolean };
   title: Promise<string>;
@@ -28,31 +29,11 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
     selectedPlugin,
     isLargeModel,
     agentMode,
+    confirmTerminalCommand,
     abortSignal,
     chatMetadata,
     title,
   } = config;
-
-  if (isTerminalContinuation) {
-    return createStreamResponse(async (dataStream) => {
-      await Promise.all([
-        executeTerminalAgent({
-          config: {
-            messages,
-            profile,
-            dataStream,
-            agentMode,
-            abortSignal,
-          },
-        }),
-        (async () => {
-          if (chatMetadata?.newChat) {
-            dataStream.writeData({ chatTitle: await title });
-          }
-        })(),
-      ]);
-    });
-  }
 
   switch (selectedPlugin) {
     case PluginID.WEB_SEARCH:
@@ -84,6 +65,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
               profile,
               dataStream,
               agentMode,
+              confirmTerminalCommand,
               abortSignal,
             },
           }),
@@ -152,7 +134,11 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
       });
 
     default:
-      if (terminalPlugins.includes(selectedPlugin as PluginID)) {
+      if (
+        isTerminalContinuation ||
+        confirmTerminalCommand ||
+        terminalPlugins.includes(selectedPlugin as PluginID)
+      ) {
         return createStreamResponse(async (dataStream) => {
           await Promise.all([
             executeTerminalAgent({
@@ -162,6 +148,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
                 dataStream,
                 selectedPlugin: selectedPlugin as PluginID,
                 agentMode,
+                confirmTerminalCommand,
                 abortSignal,
               },
             }),

@@ -229,9 +229,23 @@ export const useChatHandler = () => {
     );
   };
 
+  const handleSendConfirmTerminalCommand = async () => {
+    await handleSendMessage(
+      null,
+      chatMessages,
+      false,
+      true,
+      undefined,
+      undefined,
+      false,
+      true,
+    );
+  };
+
   const getStoredAutoRunPreference = () => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('agentMode') || 'ask-every-time') as AgentMode;
+      return (localStorage.getItem('agentMode') ||
+        'ask-every-time') as AgentMode;
     }
     return 'ask-every-time';
   };
@@ -244,6 +258,7 @@ export const useChatHandler = () => {
     editSequenceNumber?: number,
     model?: ModelWithWebSearch,
     isTerminalContinuation = false,
+    confirmTerminalCommand = false,
   ) => {
     const isEdit = editSequenceNumber !== undefined;
     const isRagEnabled = selectedPlugin === PluginID.ENHANCED_SEARCH;
@@ -391,6 +406,7 @@ export const useChatHandler = () => {
         isRagEnabled,
         selectedPlugin,
         agentMode: getStoredAutoRunPreference(),
+        confirmTerminalCommand,
       };
       const chatMetadata: ChatMetadata = { newChat: !currentChat };
 
@@ -570,6 +586,7 @@ export const useChatHandler = () => {
     handleStopMessage,
     handleSendContinuation,
     handleSendTerminalContinuation,
+    handleSendConfirmTerminalCommand,
     handleSendEdit,
     handleSendFeedback,
     handleSelectChat,

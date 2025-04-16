@@ -101,12 +101,16 @@ export const createShellExecTool = (context: ToolContext) => {
         content: 'terminal',
       });
 
+      dataStream.writeData({
+        type: 'text-delta',
+        content: `<terminal-command sandbox-type="${persistentSandbox ? 'persistent' : 'temporary'}" exec-dir="${exec_dir}">${command}</terminal-command>`,
+      });
+
       // Execute command
       const terminalStream = await executeTerminalCommand({
         userID,
         command,
         exec_dir,
-        usePersistentSandbox: persistentSandbox,
         sandbox,
       });
 

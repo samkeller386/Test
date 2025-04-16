@@ -8,12 +8,14 @@ export const createToolSchemas = ({
   messages,
   profile,
   agentMode,
+  confirmTerminalCommand,
   dataStream,
   abortSignal,
 }: {
   messages: any;
   profile: any;
   agentMode: AgentMode;
+  confirmTerminalCommand: boolean;
   dataStream: any;
   abortSignal: AbortSignal;
 }) => {
@@ -87,6 +89,7 @@ This tool executes Bash commands in a Debian environment with root privileges. U
             messages,
             profile,
             agentMode,
+            confirmTerminalCommand,
             dataStream,
             abortSignal,
           },

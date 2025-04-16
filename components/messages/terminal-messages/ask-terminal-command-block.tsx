@@ -10,6 +10,7 @@ import {
 import { IconTerminal2 } from '@tabler/icons-react';
 import { useUIContext } from '@/context/ui-context';
 import { useAgentModePreference } from './use-auto-run-preference';
+import { useChatHandler } from '@/components/chat/chat-hooks/use-chat-handler';
 
 interface AskTerminalCommandBlockProps {
   command: string;
@@ -21,6 +22,11 @@ export const AskTerminalCommandBlock: React.FC<
 > = ({ command, execDir }) => {
   const { isMobile } = useUIContext();
   const { agentMode, setAgentMode } = useAgentModePreference();
+  const { handleSendConfirmTerminalCommand } = useChatHandler();
+
+  const handleConfirm = async () => {
+    await handleSendConfirmTerminalCommand();
+  };
 
   return (
     <div className="overflow-hidden rounded-lg border border-border my-3">
@@ -30,15 +36,14 @@ export const AskTerminalCommandBlock: React.FC<
           <span>{execDir}</span>
         </div>
         <div className="text-sm">
-          <code className="font-mono text-foreground/80 break-all whitespace-pre-wrap">{command}</code>
+          <code className="font-mono text-foreground/80 break-all whitespace-pre-wrap">
+            {command}
+          </code>
         </div>
       </div>
       <div className="flex items-center justify-between px-4 py-2 bg-muted">
         {!isMobile && (
-          <Select
-            value={agentMode}
-            onValueChange={setAgentMode}
-          >
+          <Select value={agentMode} onValueChange={setAgentMode}>
             <SelectTrigger className="w-[160px] h-8 text-sm">
               <SelectValue placeholder="Ask every time" />
             </SelectTrigger>
@@ -50,19 +55,10 @@ export const AskTerminalCommandBlock: React.FC<
         )}
         <div className="flex items-center gap-2 ml-auto">
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8"
-          >
-            Cancel
-          </Button>
-          <Button
             variant="default"
             size="sm"
             className="h-8"
-            onClick={() => {
-              console.log('Run command');
-            }}
+            onClick={handleConfirm}
           >
             Run command
           </Button>
