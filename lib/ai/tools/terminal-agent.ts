@@ -88,8 +88,6 @@ export async function executeTerminalAgent({
 
     // Try to execute terminal command if confirmTerminalCommand is true
     if (config.confirmTerminalCommand) {
-      // Remove the last assistant message with continue prompt
-      messages.pop();
       const { messages: updatedMessages } =
         await executeTerminalCommandWithConfig({
           userID,

@@ -33,7 +33,7 @@ export async function executeTerminalCommandWithConfig({
   initialPersistentSandbox,
   messages,
 }: TerminalCommandExecutorConfig) {
-  const lastAssistantMessageContent = messages[messages.length - 1]?.content;
+  const lastAssistantMessageContent = messages[messages.length - 2]?.content;
   const isConfirmedCommand =
     lastAssistantMessageContent?.includes('<terminal-command');
 
