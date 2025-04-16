@@ -42,7 +42,7 @@ export async function executeTerminalCommandWithConfig({
   }
 
   const confirmedCommandRegex =
-    /<terminal-command(?:\s+sandbox-type="([^"]*)")?(?:\s+exec-dir="([^"]*)")?>([\s\S]*?)<\/terminal-command>/g;
+    /<terminal-command(?:\s+exec-dir="([^"]*)")?>([\s\S]*?)<\/terminal-command>/g;
 
   const matches = Array.from(
     lastAssistantMessageContent.matchAll(confirmedCommandRegex),
@@ -53,7 +53,7 @@ export async function executeTerminalCommandWithConfig({
     return { messages, output: null };
   }
 
-  const [, sandboxType, exec_dir, command] = lastMatch;
+  const [, exec_dir, command] = lastMatch;
 
   const { sandbox, persistentSandbox } = await ensureSandboxConnection(
     {
@@ -68,7 +68,6 @@ export async function executeTerminalCommandWithConfig({
     {
       initialSandbox,
       initialPersistentSandbox,
-      useTemporarySandbox: sandboxType === 'temporary',
     },
   );
 

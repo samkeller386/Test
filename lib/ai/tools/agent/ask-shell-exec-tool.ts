@@ -19,13 +19,6 @@ export const createAskShellExecTool = (context: ToolContext) => {
           'Working directory for command execution (must use absolute path)',
         ),
       command: z.string().describe('Shell command to execute'),
-      ...(selectedPlugin || !isPremiumUser
-        ? {}
-        : {
-            useTemporarySandbox: z
-              .boolean()
-              .describe('Use temporary sandbox (15-minute timeout).'),
-          }),
     }),
   });
 };

@@ -78,11 +78,11 @@ export async function executeTerminalAgent({
     };
 
     const setPersistentSandbox = (isPersistent: boolean) => {
-      // Prevent setting persistent sandbox for non-premium users
+      // Enforce persistent sandbox for pro users and temporary for free users
       if (!isPremiumUser) {
         persistentSandbox = false;
       } else {
-        persistentSandbox = isPersistent;
+        persistentSandbox = true;
       }
     };
 
@@ -152,10 +152,10 @@ export async function executeTerminalAgent({
           agentMode === 'ask-every-time' &&
           chunk.toolName === 'shell_exec'
         ) {
-          const { useTemporarySandbox, exec_dir, command } = chunk.args;
+          const { exec_dir, command } = chunk.args;
           dataStream.writeData({
             type: 'text-delta',
-            content: `<terminal-command sandbox-type="${useTemporarySandbox ? 'temporary' : 'persistent'}" exec-dir="${exec_dir}">${command}</terminal-command>`,
+            content: `<terminal-command exec-dir="${exec_dir}">${command}</terminal-command>`,
           });
           dataStream.writeData({ finishReason: 'terminal_command_ask_user' });
           shouldStop = true;

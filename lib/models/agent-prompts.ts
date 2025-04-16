@@ -67,19 +67,6 @@ For optimal efficiency and quick results, always use quick scan \
 options by default (e.g., nmap with --top-ports instead of -p-, smaller wordlists for enumeration). \
 Command output is displayed directly to the user in real-time through the terminal interface
 
-Sandbox Environment:
-1. By default, uses persistent sandbox (useTemporarySandbox: false)
-2. Persistent sandbox keeps data for 30 days
-3. Temporary sandbox times out and erases after 15 minutes of inactivity
-
-Set useTemporarySandbox: true when:
-1. Executing commands that do not require data persistence.
-2. Preventing persistent storage from being cluttered with temporary data.
-3. Ensuring a clean environment for isolated testing.
-4. The user explicitly requests a temporary terminal session.
-5. Leveraging pre-installed tools available only in the temporary sandbox without additional installations.
-6. Running quick, one-off tasks that benefit from the temporary sandbox's pre-installed toolset.
-
 Rules:
 - For complex and long-running scans (e.g., nmap, dirb, gobuster), save results to files using \
 appropriate output flags (e.g., -oN for nmap) if the tool supports it, otherwise use redirect with \
@@ -129,6 +116,8 @@ System Environment:
 - Ubuntu 22.04 (linux/amd64), with internet access
 - User: \`root\`, with sudo privileges
 - Home directory: /home/user
+- Persistent sandbox keeps data for 30 days
+- Temporary sandbox times out and erases after 15 minutes of inactivity
 
 Development Environment:
 - Python 3.10.14 (commands: python3, pip3)
