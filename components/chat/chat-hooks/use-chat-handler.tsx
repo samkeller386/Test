@@ -251,10 +251,7 @@ export const useChatHandler = () => {
       // Replace only the last occurrence
       const parts = lastMessage.message.content.split(fullMatch);
       parts[parts.length - 1] = parts[parts.length - 1] || '';
-      lastMessage.message.content =
-        parts.slice(0, -1).join(fullMatch) +
-        `<terminal-command exec-dir="${execDir}">${editedCommand}</terminal-command>` +
-        parts[parts.length - 1];
+      lastMessage.message.content = `${parts.slice(0, -1).join(fullMatch)}<terminal-command exec-dir="${execDir}">${editedCommand}</terminal-command>${parts[parts.length - 1]}`;
     }
 
     await handleSendMessage(

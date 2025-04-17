@@ -12,7 +12,7 @@ import { handleToolExecution } from '@/lib/ai/tool-handler-v2';
 import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
 import { processRag } from '@/lib/ai/rag-processor';
 import { processChatMessages } from '@/lib/ai/message-utils';
-import { LLMID } from '@/types';
+import type { LLMID } from '@/types';
 import { generateTitleFromUserMessage } from '@/lib/ai/actions';
 
 export const maxDuration = 600;

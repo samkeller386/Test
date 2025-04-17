@@ -1,6 +1,6 @@
 import type { Sandbox } from '@e2b/code-interpreter';
 import { PluginID } from '@/types/plugins';
-import { AgentMode } from '@/types/llms';
+import type { AgentMode } from '@/types/llms';
 
 /**
  * Interface for tools that need access to the data stream

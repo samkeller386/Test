@@ -10,8 +10,8 @@ import {
   type ModelParams,
   type MessageImage,
   PluginID,
-  LLMID,
-  ChatMetadata,
+  type LLMID,
+  type ChatMetadata,
 } from '@/types';
 import type { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';

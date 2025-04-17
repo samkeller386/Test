@@ -288,7 +288,7 @@ export async function processChatMessages(
   // Remove invalid message exchanges
   const validatedMessages = validateMessages(messages);
 
-  let systemPrompt = getSystemPrompt({
+  const systemPrompt = getSystemPrompt({
     selectedChatModel: selectedChatModel,
     profileContext: profileContext,
   });

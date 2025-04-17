@@ -89,6 +89,7 @@ export const ToolPicker: FC<ToolPickerProps> = ({
               {[...filteredTools].reverse().map((tool, index) => (
                 <div
                   key={tool.id}
+                  role="button"
                   ref={(ref) => {
                     itemsRef.current[filteredTools.length - 1 - index] = ref;
                   }}
