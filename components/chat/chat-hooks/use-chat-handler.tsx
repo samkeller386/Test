@@ -344,7 +344,6 @@ export const useChatHandler = () => {
         ? [...temporaryChatMessages]
         : [...chatMessages];
 
-      console.log('sentChatMessages', sentChatMessages);
       // If the message is an edit, remove all following messages
       if (isEdit) {
         sentChatMessages = sentChatMessages.filter(

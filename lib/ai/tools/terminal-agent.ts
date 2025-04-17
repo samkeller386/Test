@@ -95,7 +95,6 @@ export async function executeTerminalAgent({
       messages = result.messages;
     }
 
-    console.log('messages', messages);
     // Always run the agent after terminal command execution
     const { fullStream, finishReason } = streamText({
       model: myProvider.languageModel(selectedChatModel),
