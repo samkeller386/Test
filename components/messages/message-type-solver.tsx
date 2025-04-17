@@ -60,6 +60,7 @@ export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
       <MessageTerminal
         content={message.content}
         isAssistant={message.role === 'assistant'}
+        isLastMessage={isLastMessage}
       />
     );
   }

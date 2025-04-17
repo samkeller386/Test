@@ -88,22 +88,21 @@ export async function executeTerminalAgent({
 
     // Try to execute terminal command if confirmTerminalCommand is true
     if (config.confirmTerminalCommand) {
-      const { messages: updatedMessages } =
-        await executeTerminalCommandWithConfig({
-          userID,
-          dataStream,
-          isPremiumUser,
-          selectedPlugin,
-          terminalTemplate,
-          setSandbox,
-          setPersistentSandbox,
-          initialSandbox: sandbox || undefined,
-          initialPersistentSandbox: persistentSandbox,
-          messages,
-        });
+      const result = await executeTerminalCommandWithConfig({
+        userID,
+        dataStream,
+        isPremiumUser,
+        selectedPlugin,
+        terminalTemplate,
+        setSandbox,
+        setPersistentSandbox,
+        initialSandbox: sandbox || undefined,
+        initialPersistentSandbox: persistentSandbox,
+        messages,
+      });
 
-      // Update messages with the terminal output
-      messages = updatedMessages;
+      if (typeof result === 'string') return result;
+      messages = result.messages;
     }
 
     // Always run the agent after terminal command execution

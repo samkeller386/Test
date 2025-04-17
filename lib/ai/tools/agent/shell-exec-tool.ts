@@ -52,6 +52,10 @@ export const createShellExecTool = (context: ToolContext) => {
       if (selectedPlugin) {
         const expectedCommand = PLUGIN_COMMAND_MAP[selectedPlugin];
         if (expectedCommand && !command.trim().startsWith(expectedCommand)) {
+          dataStream.writeData({
+            type: 'text-delta',
+            content: `Command must start with "${expectedCommand}" for this plugin`,
+          });
           return `Command must start with "${expectedCommand}" for this plugin`;
         }
       }

@@ -7,6 +7,7 @@ import {
 import type { Sandbox } from '@e2b/code-interpreter';
 import type { PluginID } from '@/types/plugins';
 import { ensureSandboxConnection } from './agent/utils/sandbox-utils';
+import { PLUGIN_COMMAND_MAP } from './agent/types';
 
 interface TerminalCommandExecutorConfig {
   userID: string;
@@ -54,6 +55,18 @@ export async function executeTerminalCommandWithConfig({
   }
 
   const [, exec_dir, command] = lastMatch;
+
+  // Validate plugin-specific commands
+  if (selectedPlugin) {
+    const expectedCommand = PLUGIN_COMMAND_MAP[selectedPlugin];
+    if (expectedCommand && !command.trim().startsWith(expectedCommand)) {
+      dataStream.writeData({
+        type: 'text-delta',
+        content: `Command must start with "${expectedCommand}" for this plugin`,
+      });
+      return `Command must start with "${expectedCommand}" for this plugin`;
+    }
+  }
 
   const { sandbox, persistentSandbox } = await ensureSandboxConnection(
     {
