@@ -12,6 +12,7 @@ import {
 } from '@/lib/ai/terminal-utils';
 import PostHogClient from '@/app/posthog';
 import { ensureSandboxConnection } from './utils/sandbox-utils';
+import { PluginID } from '@/types/plugins';
 
 /**
  * Creates a terminal tool for executing commands in the sandbox environment
@@ -27,7 +28,6 @@ export const createShellExecTool = (context: ToolContext) => {
     selectedPlugin,
     terminalTemplate = SANDBOX_TEMPLATE,
     setSandbox,
-    setPersistentSandbox,
     isPremiumUser,
   } = context;
 
@@ -49,7 +49,7 @@ export const createShellExecTool = (context: ToolContext) => {
       };
 
       // Validate plugin-specific commands
-      if (selectedPlugin) {
+      if (selectedPlugin && selectedPlugin !== PluginID.NONE) {
         const expectedCommand = PLUGIN_COMMAND_MAP[selectedPlugin];
         if (expectedCommand && !command.trim().startsWith(expectedCommand)) {
           dataStream.writeData({
@@ -69,7 +69,6 @@ export const createShellExecTool = (context: ToolContext) => {
           selectedPlugin,
           terminalTemplate,
           setSandbox,
-          setPersistentSandbox,
         },
         {
           initialSandbox,

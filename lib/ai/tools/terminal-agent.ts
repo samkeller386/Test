@@ -7,7 +7,7 @@ import { pauseSandbox } from '@/lib/tools/e2b/sandbox';
 import { createAgentTools } from '@/lib/ai/tools/agent';
 import { PENTESTGPT_AGENT_SYSTEM_PROMPT } from '@/lib/models/agent-prompts';
 import { getSubscriptionInfo } from '@/lib/server/subscription-utils';
-import type { PluginID } from '@/types/plugins';
+import { PluginID } from '@/types/plugins';
 import { isFreePlugin } from '@/lib/tools/tool-store/tools-helper';
 import { getToolsWithAnswerPrompt } from '@/lib/tools/tool-store/prompts/system-prompt';
 import { getTerminalTemplate } from '@/lib/tools/tool-store/tools-helper';
@@ -59,7 +59,7 @@ export async function executeTerminalAgent({
     const isPremiumUser = subscriptionInfo.isPremium;
 
     // Handle plugin-specific setup
-    if (selectedPlugin) {
+    if (selectedPlugin && selectedPlugin !== PluginID.NONE) {
       if (!isFreePlugin(selectedPlugin) && !isPremiumUser) {
         dataStream.writeData({
           type: 'error',
@@ -77,15 +77,6 @@ export async function executeTerminalAgent({
       sandbox = newSandbox;
     };
 
-    const setPersistentSandbox = (isPersistent: boolean) => {
-      // Enforce persistent sandbox for pro users and temporary for free users
-      if (!isPremiumUser) {
-        persistentSandbox = false;
-      } else {
-        persistentSandbox = true;
-      }
-    };
-
     // Try to execute terminal command if confirmTerminalCommand is true
     if (config.confirmTerminalCommand) {
       const result = await executeTerminalCommandWithConfig({
@@ -95,7 +86,6 @@ export async function executeTerminalAgent({
         selectedPlugin,
         terminalTemplate,
         setSandbox,
-        setPersistentSandbox,
         initialSandbox: sandbox || undefined,
         initialPersistentSandbox: persistentSandbox,
         messages,
@@ -105,6 +95,7 @@ export async function executeTerminalAgent({
       messages = result.messages;
     }
 
+    console.log('messages', messages);
     // Always run the agent after terminal command execution
     const { fullStream, finishReason } = streamText({
       model: myProvider.languageModel(selectedChatModel),
@@ -119,7 +110,6 @@ export async function executeTerminalAgent({
         selectedPlugin,
         terminalTemplate,
         setSandbox,
-        setPersistentSandbox,
         isPremiumUser,
         agentMode,
       }),
