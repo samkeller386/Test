@@ -118,9 +118,10 @@ export async function POST(request: Request) {
     }
 
     const isGptLargeModel = finalSelectedModel === 'chat-model-gpt-large';
-    const shouldUseTools = isGptLargeModel && !ragUsed;
-    if (shouldUseTools && isGptLargeModel) {
-      finalSelectedModel = 'chat-model-gpt-large-with-tools';
+    if (!ragUsed) {
+      finalSelectedModel = isGptLargeModel
+        ? 'chat-model-gpt-large-with-tools'
+        : 'chat-model-gpt-small-with-tools';
     }
 
     try {
@@ -148,13 +149,13 @@ export async function POST(request: Request) {
 
           const result = streamText({
             ...baseConfig,
-            ...(shouldUseTools
+            ...(!ragUsed
               ? {
-                  tools: createToolSchemas(toolConfig).getSelectedSchemas([
-                    'browser',
-                    'webSearch',
-                    'terminal',
-                  ]),
+                  tools: createToolSchemas(toolConfig).getSelectedSchemas(
+                    isGptLargeModel
+                      ? ['browser', 'webSearch', 'terminal']
+                      : ['browser', 'webSearch'],
+                  ),
                 }
               : {}),
           });
