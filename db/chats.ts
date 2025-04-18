@@ -1,7 +1,20 @@
 import { supabase } from '@/lib/supabase/browser-client';
 import type { TablesInsert, TablesUpdate } from '@/supabase/types';
+import {
+  deleteAllStoredChats,
+  deleteStoredChat,
+  getStoredChatById,
+  getStoredChatsByUserId,
+  updateStoredChat,
+  updateStoredChats,
+} from './local/db';
 
 export const getChatById = async (chatId: string) => {
+  const storedChat = await getStoredChatById(chatId);
+  if (storedChat) {
+    return storedChat;
+  }
+
   const { data: chat } = await supabase
     .from('chats')
     .select('*')
@@ -22,6 +35,8 @@ export const createChat = async (chat: TablesInsert<'chats'>) => {
     throw new Error(error.message);
   }
 
+  await updateStoredChat(createdChat);
+
   return createdChat;
 };
 
@@ -40,6 +55,8 @@ export const updateChat = async (
     throw new Error(error.message);
   }
 
+  await updateStoredChat(updatedChat);
+
   return updatedChat;
 };
 
@@ -49,6 +66,8 @@ export const deleteChat = async (chatId: string) => {
   if (error) {
     throw new Error(error.message);
   }
+
+  await deleteStoredChat(chatId);
 
   return true;
 };
@@ -63,10 +82,17 @@ export const deleteAllChats = async (userId: string) => {
     throw new Error(chatDeleteError.message);
   }
 
+  await deleteAllStoredChats(userId);
+
   return true;
 };
 
 export const getChatsByUserId = async (userId: string) => {
+  const storedChats = await getStoredChatsByUserId(userId);
+  if (storedChats) {
+    return storedChats;
+  }
+
   const { data: chats, error } = await supabase
     .from('chats')
     .select('*')
@@ -96,6 +122,8 @@ export const getMoreChatsByUserId = async (
   if (error) {
     throw new Error(error.message);
   }
+
+  await updateStoredChats(chats);
 
   return chats;
 };

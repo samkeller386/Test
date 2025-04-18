@@ -1,7 +1,20 @@
 import { supabase } from '@/lib/supabase/browser-client';
 import type { TablesInsert } from '@/supabase/types';
+import {
+  getStoredMessageFileItemsByMessageId,
+  getStoredMessageById,
+  updateStoredMessageFileItems,
+} from './local/db';
 
 export const getMessageFileItemsByMessageId = async (messageId: string) => {
+  const storedMessage = await getStoredMessageById(messageId);
+  if (storedMessage) {
+    return {
+      ...storedMessage,
+      file_items: storedMessage.file_items,
+    };
+  }
+
   const { data: messageFileItems, error } = await supabase
     .from('messages')
     .select(
@@ -36,6 +49,8 @@ export const createMessageFileItems = async (
   if (!createdMessageFileItems) {
     throw new Error(error.message);
   }
+
+  await updateStoredMessageFileItems(createdMessageFileItems);
 
   return createdMessageFileItems;
 };

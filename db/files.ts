@@ -3,8 +3,19 @@ import type { TablesInsert, TablesUpdate } from '@/supabase/types';
 import mammoth from 'mammoth';
 import { toast } from 'sonner';
 import { uploadFile } from './storage/files';
+import {
+  getStoredFileById,
+  getStoredFilesCount,
+  updateStoredFile,
+  deleteStoredFile,
+} from './local/db';
 
 export const getFileById = async (fileId: string) => {
+  const storedFile = await getStoredFileById(fileId);
+  if (storedFile) {
+    return storedFile;
+  }
+
   const { data: file, error } = await supabase
     .from('files')
     .select('*')
@@ -19,6 +30,11 @@ export const getFileById = async (fileId: string) => {
 };
 
 export const getAllFilesCount = async () => {
+  const storedFilesCount = await getStoredFilesCount();
+  if (storedFilesCount) {
+    return storedFilesCount;
+  }
+
   const { count, error } = await supabase
     .from('files')
     .select('*', { count: 'exact' });
@@ -115,6 +131,8 @@ export const createFile = async (
 
   const fetchedFile = await getFileById(createdFile.id);
 
+  await updateStoredFile(fetchedFile);
+
   return fetchedFile;
 };
 
@@ -178,6 +196,8 @@ export const createDocXFile = async (
 
   const fetchedFile = await getFileById(createdFile.id);
 
+  await updateStoredFile(fetchedFile);
+
   return fetchedFile;
 };
 
@@ -196,6 +216,8 @@ export const updateFile = async (
     throw new Error(error.message);
   }
 
+  await updateStoredFile(updatedFile);
+
   return updatedFile;
 };
 
@@ -205,6 +227,8 @@ export const deleteFile = async (fileId: string) => {
   if (error) {
     throw new Error(error.message);
   }
+
+  await deleteStoredFile(fileId);
 
   return true;
 };

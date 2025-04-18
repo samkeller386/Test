@@ -1,7 +1,7 @@
-import { useAlertContext } from '@/context/alert-context';
-import { PentestGPTContext } from '@/context/context';
-import { updateChat } from '@/db/chats';
-import type { Tables, TablesInsert } from '@/supabase/types';
+import { useAlertContext } from "@/context/alert-context"
+import { PentestGPTContext } from "@/context/context"
+import { updateChat } from "@/db/chats"
+import type { Tables, TablesInsert } from "@/supabase/types"
 import type {
   ChatMessage,
   ChatMetadata,
@@ -9,29 +9,29 @@ import type {
   LLMID,
   ModelParams,
   ModelWithWebSearch,
-  AgentMode,
-} from '@/types';
-import { PluginID } from '@/types/plugins';
-import { useRouter } from 'next/navigation';
-import { useContext, useEffect, useRef } from 'react';
-import { LLM_LIST } from '../../../lib/models/llm-list';
+  AgentMode
+} from "@/types"
+import { PluginID } from "@/types/plugins"
+import { useRouter } from "next/navigation"
+import { useContext, useEffect, useRef } from "react"
+import { LLM_LIST } from "../../../lib/models/llm-list"
 
-import { useUIContext } from '@/context/ui-context';
-import { createMessageFeedback } from '@/db/message-feedback';
+import { useUIContext } from "@/context/ui-context"
+import { createMessageFeedback } from "@/db/message-feedback"
 import {
   createTempMessages,
   handleCreateChat,
   handleCreateMessages,
   handleHostedChat,
-  validateChatSettings,
-} from '../chat-helpers';
-import { getMessageFileItemsByMessageId } from '@/db/message-file-items';
-import { useRetrievalLogic } from './retrieval-logic';
-import { isTerminalPlugin } from '@/lib/tools/tool-store/tools-helper';
+  validateChatSettings
+} from "../chat-helpers"
+import { getMessageFileItemsByMessageId } from "@/db/message-file-items"
+import { useRetrievalLogic } from "./retrieval-logic"
+import { isTerminalPlugin } from "@/lib/tools/tool-store/tools-helper"
 
 export const useChatHandler = () => {
-  const router = useRouter();
-  const { dispatch: alertDispatch } = useAlertContext();
+  const router = useRouter()
+  const { dispatch: alertDispatch } = useAlertContext()
 
   const {
     chatFiles,
@@ -58,8 +58,8 @@ export const useChatHandler = () => {
     setUseRetrieval,
     isTemporaryChat,
     temporaryChatMessages,
-    setTemporaryChatMessages,
-  } = useContext(PentestGPTContext);
+    setTemporaryChatMessages
+  } = useContext(PentestGPTContext)
 
   const {
     setIsGenerating,
@@ -69,122 +69,122 @@ export const useChatHandler = () => {
     setIsReadyToChat,
     setSelectedPlugin,
     setAgentStatus,
-    toolInUse,
-  } = useUIContext();
+    toolInUse
+  } = useUIContext()
 
-  let { selectedPlugin } = useUIContext();
+  let { selectedPlugin } = useUIContext()
 
-  const isGeneratingRef = useRef(isGenerating);
+  const isGeneratingRef = useRef(isGenerating)
 
-  const { retrievalLogic } = useRetrievalLogic();
+  const { retrievalLogic } = useRetrievalLogic()
 
   useEffect(() => {
-    isGeneratingRef.current = isGenerating;
-  }, [isGenerating]);
+    isGeneratingRef.current = isGenerating
+  }, [isGenerating])
 
-  const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement>(null)
 
   // Initialize chat settings on component mount
   useEffect(() => {
     if (selectedChat?.model) {
-      setChatSettings((prevSettings) => ({
+      setChatSettings(prevSettings => ({
         ...prevSettings,
-        model: selectedChat.model as LLMID,
-      }));
+        model: selectedChat.model as LLMID
+      }))
     }
-  }, [selectedChat, setChatSettings]);
+  }, [selectedChat, setChatSettings])
 
   const handleSelectChat = async (
-    chat: Tables<'chats'> | { chat_id: string },
+    chat: Tables<"chats"> | { chat_id: string }
   ) => {
-    await handleStopMessage();
-    setIsReadyToChat(false);
+    await handleStopMessage()
+    setIsReadyToChat(false)
 
     // Handle both full chat object and search result
-    const chatId = 'id' in chat ? chat.id : chat.chat_id;
+    const chatId = "id" in chat ? chat.id : chat.chat_id
 
-    if ('model' in chat && chat.model) {
-      setChatSettings((prevSettings) => ({
+    if ("model" in chat && chat.model) {
+      setChatSettings(prevSettings => ({
         ...prevSettings,
-        model: chat.model as LLMID,
-      }));
+        model: chat.model as LLMID
+      }))
     }
 
-    return router.push(`/c/${chatId}`);
-  };
+    return router.push(`/c/${chatId}`)
+  }
 
   const handleNewChat = async () => {
-    await handleStopMessage();
+    await handleStopMessage()
 
-    setUserInput('');
-    setChatMessages([]);
-    setSelectedChat(null);
+    setUserInput("")
+    setChatMessages([])
+    setSelectedChat(null)
 
-    setIsGenerating(false);
-    setFirstTokenReceived(false);
+    setIsGenerating(false)
+    setFirstTokenReceived(false)
 
-    setChatFiles([]);
-    setChatImages([]);
-    setNewMessageFiles([]);
-    setNewMessageImages([]);
-    setUseRetrieval(false);
+    setChatFiles([])
+    setChatImages([])
+    setNewMessageFiles([])
+    setNewMessageImages([])
+    setUseRetrieval(false)
 
-    setToolInUse('none');
-    setAgentStatus(null);
-    setSelectedPlugin(PluginID.NONE);
+    setToolInUse("none")
+    setAgentStatus(null)
+    setSelectedPlugin(PluginID.NONE)
 
-    setIsReadyToChat(true);
-    return router.push(`/c`);
-  };
+    setIsReadyToChat(true)
+    return router.push(`/c`)
+  }
 
   const handleFocusChatInput = () => {
-    chatInputRef.current?.focus();
-  };
+    chatInputRef.current?.focus()
+  }
 
   const handleStopMessage = async () => {
     if (abortController && !abortController.signal.aborted) {
-      abortController.abort();
+      abortController.abort()
       while (isGeneratingRef.current) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 100))
       }
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       // Update chat's finish reason to 'aborted' when terminal in use
       if (
         selectedChat &&
         (isTerminalPlugin(toolInUse as PluginID) ||
-          toolInUse === 'temporary-sandbox' ||
-          toolInUse === 'permanent-sandbox')
+          toolInUse === "temporary-sandbox" ||
+          toolInUse === "permanent-sandbox")
       ) {
         const updatedChat = await updateChat(selectedChat.id, {
           updated_at: new Date().toISOString(),
-          finish_reason: 'aborted',
-        });
+          finish_reason: "aborted"
+        })
 
         // Only update state if we're still on the same chat
         if (selectedChat.id === updatedChat.id) {
-          setChats((prevChats) => {
-            const updatedChats = prevChats.map((prevChat) =>
-              prevChat.id === updatedChat.id ? updatedChat : prevChat,
-            );
-            return updatedChats;
-          });
+          setChats(prevChats => {
+            const updatedChats = prevChats.map(prevChat =>
+              prevChat.id === updatedChat.id ? updatedChat : prevChat
+            )
+            return updatedChats
+          })
 
-          setSelectedChat(updatedChat);
+          setSelectedChat(updatedChat)
         }
       }
     }
-  };
+  }
 
   const handleSendFeedback = async (
     chatMessage: ChatMessage,
-    feedback: 'good' | 'bad',
+    feedback: "good" | "bad",
     reason?: string,
     detailedFeed?: string,
     allow_email?: boolean,
-    allow_sharing?: boolean,
+    allow_sharing?: boolean
   ) => {
-    const feedbackInsert: TablesInsert<'feedback'> = {
+    const feedbackInsert: TablesInsert<"feedback"> = {
       message_id: chatMessage.message.id,
       user_id: chatMessage.message.user_id,
       chat_id: chatMessage.message.chat_id,
@@ -201,21 +201,21 @@ export const useChatHandler = () => {
       has_files: chatMessage.fileItems.length > 0,
       plugin: chatMessage.message.plugin || PluginID.NONE,
       rag_used: chatMessage.message.rag_used,
-      rag_id: chatMessage.message.rag_id,
-    };
-    const newFeedback = await createMessageFeedback(feedbackInsert);
+      rag_id: chatMessage.message.rag_id
+    }
+    const newFeedback = await createMessageFeedback(feedbackInsert)
     setChatMessages((prevMessages: ChatMessage[]) =>
       prevMessages.map((message: ChatMessage) =>
         message.message.id === chatMessage.message.id
           ? { ...message, feedback: newFeedback[0] }
-          : message,
-      ),
-    );
-  };
+          : message
+      )
+    )
+  }
 
   const handleSendContinuation = async () => {
-    await handleSendMessage(null, chatMessages, false, true);
-  };
+    await handleSendMessage(null, chatMessages, false, true)
+  }
 
   const handleSendTerminalContinuation = async () => {
     await handleSendMessage(
@@ -225,9 +225,9 @@ export const useChatHandler = () => {
       true,
       undefined,
       undefined,
-      true,
-    );
-  };
+      true
+    )
+  }
 
   const handleSendConfirmTerminalCommand = async () => {
     await handleSendMessage(
@@ -238,17 +238,17 @@ export const useChatHandler = () => {
       undefined,
       undefined,
       false,
-      true,
-    );
-  };
+      true
+    )
+  }
 
   const getStoredAutoRunPreference = () => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('agentMode') ||
-        'ask-every-time') as AgentMode;
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("agentMode") ||
+        "ask-every-time") as AgentMode
     }
-    return 'ask-every-time';
-  };
+    return "ask-every-time"
+  }
 
   const handleSendMessage = async (
     messageContent: string | null,
@@ -258,53 +258,53 @@ export const useChatHandler = () => {
     editSequenceNumber?: number,
     model?: ModelWithWebSearch,
     isTerminalContinuation = false,
-    confirmTerminalCommand = false,
+    confirmTerminalCommand = false
   ) => {
-    const isEdit = editSequenceNumber !== undefined;
-    const isRagEnabled = selectedPlugin === PluginID.ENHANCED_SEARCH;
+    const isEdit = editSequenceNumber !== undefined
+    const isRagEnabled = selectedPlugin === PluginID.ENHANCED_SEARCH
 
     // Simpler model handling
-    const baseModel = (model?.split(':')[0] as LLMID) || chatSettings?.model;
-    const isWebSearch = model?.includes(':websearch');
+    const baseModel = (model?.split(":")[0] as LLMID) || chatSettings?.model
+    const isWebSearch = model?.includes(":websearch")
 
     if (isWebSearch) {
-      selectedPlugin = PluginID.WEB_SEARCH;
+      selectedPlugin = PluginID.WEB_SEARCH
     }
 
     try {
       if (!isRegeneration) {
-        setUserInput('');
+        setUserInput("")
       }
 
       if (isContinuation) {
-        setFirstTokenReceived(true);
+        setFirstTokenReceived(true)
       }
-      setIsGenerating(true);
-      setNewMessageImages([]);
+      setIsGenerating(true)
+      setNewMessageImages([])
 
-      const newAbortController = new AbortController();
-      setAbortController(newAbortController);
+      const newAbortController = new AbortController()
+      setAbortController(newAbortController)
 
-      const modelData = [...LLM_LIST].find((llm) => llm.modelId === baseModel);
+      const modelData = [...LLM_LIST].find(llm => llm.modelId === baseModel)
 
       validateChatSettings(
         chatSettings,
         modelData,
         profile,
         isContinuation,
-        messageContent,
-      );
+        messageContent
+      )
 
       if (chatSettings && !isRegeneration) {
-        setChatSettings((prevSettings) => ({
+        setChatSettings(prevSettings => ({
           ...prevSettings,
-          model: baseModel,
-        }));
+          model: baseModel
+        }))
       }
 
-      let currentChat = selectedChat ? { ...selectedChat } : null;
+      let currentChat = selectedChat ? { ...selectedChat } : null
 
-      const b64Images = newMessageImages.map((image) => image.base64);
+      const b64Images = newMessageImages.map(image => image.base64)
 
       const { tempUserChatMessage, tempAssistantChatMessage } =
         createTempMessages({
@@ -313,112 +313,112 @@ export const useChatHandler = () => {
           b64Images,
           isContinuation,
           selectedPlugin,
-          model: baseModel,
-        });
+          model: baseModel
+        })
 
       let sentChatMessages = isTemporaryChat
         ? [...temporaryChatMessages]
-        : [...chatMessages];
+        : [...chatMessages]
 
       // If the message is an edit, remove all following messages
       if (isEdit) {
         sentChatMessages = sentChatMessages.filter(
-          (chatMessage) =>
-            chatMessage.message.sequence_number < editSequenceNumber,
-        );
+          chatMessage =>
+            chatMessage.message.sequence_number < editSequenceNumber
+        )
       }
 
-      let lastMessageRetrievedFileItems: Tables<'file_items'>[] | null = null;
-      let editedMessageFiles: Tables<'files'>[] | null = null;
+      let lastMessageRetrievedFileItems: Tables<"file_items">[] | null = null
+      let editedMessageFiles: Tables<"files">[] | null = null
 
       if (isContinuation || isRegeneration) {
         // If is continuation or regeneration, get the last message's file items so we don't have to run the retrieval logic
         const messageFileItems = await getMessageFileItemsByMessageId(
-          sentChatMessages[sentChatMessages.length - 1].message.id,
-        );
+          sentChatMessages[sentChatMessages.length - 1].message.id
+        )
 
         lastMessageRetrievedFileItems =
           messageFileItems.file_items.sort((a, b) => {
             // First sort by file_id
-            if (a.file_id < b.file_id) return -1;
-            if (a.file_id > b.file_id) return 1;
+            if (a.file_id < b.file_id) return -1
+            if (a.file_id > b.file_id) return 1
 
             // Then sort by sequence_number if file_ids are equal
-            return a.sequence_number - b.sequence_number;
-          }) ?? [];
+            return a.sequence_number - b.sequence_number
+          }) ?? []
       }
 
       if (isEdit) {
         // If is edit, get the edited message's file items so we can tell the agent which file is attached to the edited message
         const editedChatMessage = chatMessages.find(
-          (msg) => msg.message.sequence_number === editSequenceNumber,
-        );
+          msg => msg.message.sequence_number === editSequenceNumber
+        )
         editedMessageFiles = chatFiles.filter(
-          (file) => file.message_id === editedChatMessage?.message.id,
-        );
+          file => file.message_id === editedChatMessage?.message.id
+        )
       }
 
       if (isRegeneration) {
-        sentChatMessages.pop();
-        sentChatMessages.push(tempAssistantChatMessage);
+        sentChatMessages.pop()
+        sentChatMessages.push(tempAssistantChatMessage)
       } else {
-        sentChatMessages.push(tempUserChatMessage);
-        if (!isContinuation) sentChatMessages.push(tempAssistantChatMessage);
+        sentChatMessages.push(tempUserChatMessage)
+        if (!isContinuation) sentChatMessages.push(tempAssistantChatMessage)
       }
 
       // Update the UI with the new messages except for continuations
       if (!isContinuation) {
         if (isTemporaryChat) {
-          setTemporaryChatMessages(sentChatMessages);
+          setTemporaryChatMessages(sentChatMessages)
         } else {
-          setChatMessages(sentChatMessages);
+          setChatMessages(sentChatMessages)
         }
       }
 
-      let retrievedFileItems: Tables<'file_items'>[] = [];
+      let retrievedFileItems: Tables<"file_items">[] = []
 
       if (
         (newMessageFiles.length > 0 || chatFiles.length > 0) &&
         useRetrieval
       ) {
-        setToolInUse('retrieval');
+        setToolInUse("retrieval")
 
         if (!isContinuation) {
           retrievedFileItems = await retrievalLogic(
             sentChatMessages,
             editedMessageFiles,
             chatFiles,
-            sourceCount,
-          );
+            sourceCount
+          )
         } else {
           // Get the last message's retrieved file items
-          retrievedFileItems = lastMessageRetrievedFileItems ?? [];
+          retrievedFileItems = lastMessageRetrievedFileItems ?? []
         }
       }
 
       const payload: ChatPayload = {
         chatMessages: sentChatMessages,
-        retrievedFileItems: retrievedFileItems,
-      };
+        retrievedFileItems: retrievedFileItems
+      }
       const modelParams: ModelParams = {
         isContinuation,
         isTerminalContinuation,
         isRagEnabled,
         selectedPlugin,
         agentMode: getStoredAutoRunPreference(),
-        confirmTerminalCommand,
-      };
-      const chatMetadata: ChatMetadata = { newChat: !currentChat };
+        confirmTerminalCommand
+      }
+      const chatMetadata: ChatMetadata = { newChat: !currentChat }
 
-      let generatedText = '';
-      let thinkingText = '';
-      let thinkingElapsedSecs: number | null = null;
-      let finishReason = '';
-      let ragUsed = false;
-      let ragId = null;
-      let assistantGeneratedImages: string[] = [];
-      let citations: string[] = [];
-      let chatTitle: string | null = null;
+      let generatedText = ""
+      let thinkingText = ""
+      let thinkingElapsedSecs: number | null = null
+      let finishReason = ""
+      let ragUsed = false
+      let ragId = null
+      let assistantGeneratedImages: string[] = []
+      let citations: string[] = []
+      let chatTitle: string | null = null
 
       const {
         fullText,
@@ -430,7 +430,7 @@ export const useChatHandler = () => {
         selectedPlugin: updatedSelectedPlugin,
         assistantGeneratedImages: assistantGeneratedImagesFromResponse,
         citations: citationsFromResponse,
-        chatTitle: chatTitleFromResponse,
+        chatTitle: chatTitleFromResponse
       } = await handleHostedChat(
         payload,
         tempAssistantChatMessage,
@@ -445,22 +445,22 @@ export const useChatHandler = () => {
         setAgentStatus,
         baseModel,
         modelParams,
-        chatMetadata,
-      );
-      generatedText = fullText;
-      thinkingText = thinkingTextFromResponse;
-      thinkingElapsedSecs = thinkingElapsedSecsFromResponse;
-      finishReason = finishReasonFromResponse;
-      ragUsed = ragUsedFromResponse;
-      ragId = ragIdFromResponse;
-      selectedPlugin = updatedSelectedPlugin;
-      assistantGeneratedImages = assistantGeneratedImagesFromResponse;
-      citations = citationsFromResponse;
-      chatTitle = chatTitleFromResponse;
+        chatMetadata
+      )
+      generatedText = fullText
+      thinkingText = thinkingTextFromResponse
+      thinkingElapsedSecs = thinkingElapsedSecsFromResponse
+      finishReason = finishReasonFromResponse
+      ragUsed = ragUsedFromResponse
+      ragId = ragIdFromResponse
+      selectedPlugin = updatedSelectedPlugin
+      assistantGeneratedImages = assistantGeneratedImagesFromResponse
+      citations = citationsFromResponse
+      chatTitle = chatTitleFromResponse
 
       if (isTemporaryChat) {
         // Update temporary chat messages with the generated response
-        const updatedMessages = sentChatMessages.map((msg) =>
+        const updatedMessages = sentChatMessages.map(msg =>
           msg.message.id === tempAssistantChatMessage.message.id
             ? {
                 ...msg,
@@ -470,57 +470,57 @@ export const useChatHandler = () => {
                   thinking_content: thinkingText,
                   thinking_enabled: !!thinkingText,
                   thinking_elapsed_secs: thinkingElapsedSecs,
-                  citations: citations || [],
-                },
+                  citations: citations || []
+                }
               }
-            : msg,
-        );
-        setTemporaryChatMessages(updatedMessages);
+            : msg
+        )
+        setTemporaryChatMessages(updatedMessages)
       } else {
         if (!currentChat) {
           currentChat = await handleCreateChat(
             baseModel!,
             profile!,
-            messageContent || '',
+            messageContent || "",
             finishReason,
             setSelectedChat,
             setChats,
-            chatTitle,
-          );
+            chatTitle
+          )
 
           // Update URL without triggering a page reload or new history entry
-          window.history.replaceState({}, '', `/c/${currentChat.id}`);
+          window.history.replaceState({}, "", `/c/${currentChat.id}`)
 
           // Remove the old title generation since we now get it from the API
           if (chatTitle && currentChat) {
             updateChat(currentChat.id, { name: chatTitle })
-              .then((updatedChat) => {
-                setSelectedChat(updatedChat);
-                setChats((prevChats) =>
-                  prevChats.map((chat) =>
-                    chat.id === updatedChat.id ? updatedChat : chat,
-                  ),
-                );
+              .then(updatedChat => {
+                setSelectedChat(updatedChat)
+                setChats(prevChats =>
+                  prevChats.map(chat =>
+                    chat.id === updatedChat.id ? updatedChat : chat
+                  )
+                )
               })
-              .catch(console.error);
+              .catch(console.error)
           }
         } else {
           const updatedChat = await updateChat(currentChat.id, {
             updated_at: new Date().toISOString(),
             finish_reason: finishReason,
-            model: chatSettings?.model,
-          });
+            model: chatSettings?.model
+          })
 
-          setChats((prevChats) => {
-            const updatedChats = prevChats.map((prevChat) =>
-              prevChat.id === updatedChat.id ? updatedChat : prevChat,
-            );
+          setChats(prevChats => {
+            const updatedChats = prevChats.map(prevChat =>
+              prevChat.id === updatedChat.id ? updatedChat : prevChat
+            )
 
-            return updatedChats;
-          });
+            return updatedChats
+          })
 
           if (selectedChat?.id === updatedChat.id) {
-            setSelectedChat(updatedChat);
+            setSelectedChat(updatedChat)
           }
         }
 
@@ -547,36 +547,30 @@ export const useChatHandler = () => {
           thinkingText,
           thinkingElapsedSecs,
           newMessageFiles,
-          setChatFiles,
-        );
+          setChatFiles
+        )
       }
 
-      setToolInUse('none');
-      setIsGenerating(false);
-      setFirstTokenReceived(false);
-      setAgentStatus(null);
+      setToolInUse("none")
+      setIsGenerating(false)
+      setFirstTokenReceived(false)
+      setAgentStatus(null)
     } catch (error) {
-      setToolInUse('none');
-      setIsGenerating(false);
-      setFirstTokenReceived(false);
-      setAgentStatus(null);
+      setToolInUse("none")
+      setIsGenerating(false)
+      setFirstTokenReceived(false)
+      setAgentStatus(null)
     }
-  };
+  }
 
   const handleSendEdit = async (
     editedContent: string,
-    sequenceNumber: number,
+    sequenceNumber: number
   ) => {
-    if (!selectedChat) return;
+    if (!selectedChat) return
 
-    handleSendMessage(
-      editedContent,
-      chatMessages,
-      false,
-      false,
-      sequenceNumber,
-    );
-  };
+    handleSendMessage(editedContent, chatMessages, false, false, sequenceNumber)
+  }
 
   return {
     chatInputRef,
@@ -589,6 +583,6 @@ export const useChatHandler = () => {
     handleSendConfirmTerminalCommand,
     handleSendEdit,
     handleSendFeedback,
-    handleSelectChat,
-  };
-};
+    handleSelectChat
+  }
+}

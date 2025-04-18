@@ -1,7 +1,25 @@
 import { supabase } from '@/lib/supabase/browser-client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/supabase/types';
+import {
+  deleteStoredMessage,
+  deleteStoredMessagesIncludingAndAfter,
+  getStoredMessageById,
+  getStoredMessagesByChatId,
+  updateStoredChatData,
+  updateStoredMessage,
+} from './local/db';
+
+export type MessageWithFileItemsAndFeedback = Tables<'messages'> & {
+  file_items: Tables<'file_items'>[];
+  feedback: Tables<'feedback'>[];
+};
 
 export const getMessageById = async (messageId: string) => {
+  const storedMessage = await getStoredMessageById(messageId);
+  if (storedMessage) {
+    return storedMessage;
+  }
+
   const { data: message } = await supabase
     .from('messages')
     .select('*')
@@ -19,7 +37,18 @@ export const getMessagesByChatId = async (
   chatId: string,
   limit = 20,
   lastSequenceNumber?: number,
-) => {
+  storage = true,
+): Promise<MessageWithFileItemsAndFeedback[]> => {
+  if (lastSequenceNumber === undefined) {
+    if (storage) {
+      const storedMessages = await getStoredMessagesByChatId(chatId);
+      if (storedMessages) {
+        console.log('Returning stored messages for chat:', chatId);
+        return storedMessages;
+      }
+    }
+  }
+
   let query = supabase
     .from('messages')
     .select('*, feedback(*), file_items (*)')
@@ -51,6 +80,10 @@ export const createMessage = async (message: TablesInsert<'messages'>) => {
     throw new Error(error.message);
   }
 
+  updateStoredMessage({
+    message: createdMessage,
+  });
+
   return createdMessage;
 };
 
@@ -74,7 +107,7 @@ export const createMessages = async (
     .filter((id) => id !== undefined);
 
   if (fileIds.length > 0) {
-    const { error: filesError } = await supabase
+    const { data: files, error: filesError } = await supabase
       .from('files')
       .update({ message_id: createdMessages[0].id, chat_id: chatId })
       .in('id', fileIds)
@@ -94,6 +127,18 @@ export const createMessages = async (
     if (filesError) {
       throw new Error(filesError.message);
     }
+
+    if (chatId) {
+      updateStoredChatData(chatId, {
+        chatFiles: files,
+      });
+    }
+  }
+
+  for (const message of createdMessages) {
+    updateStoredMessage({
+      message: message,
+    });
   }
 
   return createdMessages;
@@ -114,6 +159,10 @@ export const updateMessage = async (
     throw new Error(error.message);
   }
 
+  updateStoredMessage({
+    message: updatedMessage,
+  });
+
   return updatedMessage;
 };
 
@@ -126,6 +175,8 @@ export const deleteMessage = async (messageId: string) => {
   if (error) {
     throw new Error(error.message);
   }
+
+  deleteStoredMessage(messageId);
 
   return true;
 };
@@ -198,6 +249,8 @@ export async function deleteMessagesIncludingAndAfter(
 
     files = filesData;
   }
+
+  deleteStoredMessagesIncludingAndAfter(userId, chatId, sequenceNumber);
 
   const { error } = await supabase.rpc('delete_messages_including_and_after', {
     p_user_id: userId,

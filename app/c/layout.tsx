@@ -9,6 +9,9 @@ import { LargeModel, SmallModel } from '@/lib/models/hackerai-llm-list';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useContext, useEffect, useState } from 'react';
 import Loading from '../loading';
+import { getChatFilesByChatId } from '@/db/chat-files';
+import { getMessagesByChatId } from '@/db/messages';
+import { createStorage, updateStoredChatData } from '@/db/local/db';
 
 interface WorkspaceLayoutProps {
   children: ReactNode;
@@ -20,6 +23,11 @@ const fetchWorkspaceData = async (
 ) => {
   try {
     const chats = await getChatsByUserId(userId);
+    for (const chat of chats) {
+      const messages = await getMessagesByChatId(chat.id, 20, undefined, false);
+      const chatFiles = await getChatFilesByChatId(chat.id);
+      createStorage(chat, messages, chatFiles);
+    }
     setChats(chats);
     return true;
   } catch (error) {

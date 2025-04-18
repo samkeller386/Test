@@ -1,6 +1,17 @@
 import { supabase } from '@/lib/supabase/browser-client';
+import { getStoredChatFilesByChatId } from './local/db';
 
 export const getChatFilesByChatId = async (chatId: string) => {
+  const storedChatFiles = await getStoredChatFilesByChatId(chatId);
+  if (storedChatFiles) {
+    console.log(
+      'Returning stored chat files for chat:',
+      chatId,
+      storedChatFiles,
+    );
+    return { files: storedChatFiles };
+  }
+
   const { data: chatFiles, error } = await supabase
     .from('files')
     .select('*')
