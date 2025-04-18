@@ -69,21 +69,21 @@ export const toVercelChatMessages = (
       case 'assistant':
         formattedMessage = {
           role: 'assistant',
-          content: Array.isArray(message.content)
-            ? message.content.map((content) => {
-                if (typeof content === 'object' && content.type === 'text') {
-                  return {
-                    type: 'text',
-                    text: content.text,
-                  };
-                } else {
-                  return {
-                    type: 'text',
-                    text: content,
-                  };
-                }
-              })
-            : [{ type: 'text', text: message.content as string }],
+          content: (Array.isArray(message.content)
+            ? message.content
+            : [message.content]
+          ).map((content) => {
+            if (typeof content === 'object' && content.type === 'text') {
+              return {
+                type: 'text',
+                text: content.text,
+              };
+            }
+            return {
+              type: 'text',
+              text: String(content),
+            };
+          }),
         } as CoreAssistantMessage;
         break;
       case 'user':
