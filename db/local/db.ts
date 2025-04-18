@@ -3,7 +3,7 @@ import { MessageWithFileItemsAndFeedback } from '../messages';
 
 // IndexedDB setup
 const DB_NAME = 'pentest_gpt_db';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const STORES = {
   CHATS: 'chats',
   MESSAGES: 'messages',
@@ -93,6 +93,7 @@ const initDB = (): Promise<IDBDatabase> => {
         });
         filesStore.createIndex('chat_id', 'chat_id', { unique: false });
         filesStore.createIndex('message_id', 'message_id', { unique: false });
+        filesStore.createIndex('id', 'id', { unique: true });
       } else if (transaction) {
         const filesStore = transaction.objectStore(STORES.FILES);
         if (!filesStore.indexNames.contains('chat_id')) {
@@ -100,6 +101,9 @@ const initDB = (): Promise<IDBDatabase> => {
         }
         if (!filesStore.indexNames.contains('message_id')) {
           filesStore.createIndex('message_id', 'message_id', { unique: false });
+        }
+        if (!filesStore.indexNames.contains('id')) {
+          filesStore.createIndex('id', 'id', { unique: true });
         }
       }
 
@@ -639,8 +643,23 @@ export const getStoredFileById = async (
 };
 
 export const getStoredFilesCount = async (): Promise<number> => {
-  const files = await getItemsByIndex<Tables<'files'>>(STORES.FILES, 'id', '');
-  return files.length;
+  return new Promise(async (resolve, reject) => {
+    try {
+      const store = await getObjectStore(STORES.FILES);
+      const request = store.count();
+
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+
+      request.onerror = () => {
+        reject(request.error);
+      };
+    } catch (error) {
+      console.error('Error counting files:', error);
+      reject(error);
+    }
+  });
 };
 
 export const updateStoredFile = async (
