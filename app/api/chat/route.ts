@@ -116,9 +116,8 @@ export async function POST(request: Request) {
       });
     }
 
-    const isGptLargeModel = finalSelectedModel === 'chat-model-gpt-large';
     if (!ragUsed) {
-      finalSelectedModel = isGptLargeModel
+      finalSelectedModel = config.isLargeModel
         ? 'chat-model-gpt-large-with-tools'
         : 'chat-model-gpt-small-with-tools';
     }
@@ -151,7 +150,7 @@ export async function POST(request: Request) {
             ...(!ragUsed
               ? {
                   tools: createToolSchemas(toolConfig).getSelectedSchemas(
-                    isGptLargeModel
+                    config.isLargeModel
                       ? ['browser', 'webSearch', 'terminal']
                       : ['browser', 'webSearch'],
                   ),
@@ -206,7 +205,7 @@ async function getProviderConfig(
   if (!selectedModel) {
     throw new Error('Selected model is undefined');
   }
-  const isLargeModel = model.includes('large');
+  const isLargeModel = selectedModel.includes('large');
 
   const rateLimitModel =
     selectedPlugin !== PluginID.NONE &&
