@@ -1,9 +1,10 @@
 import { Tables } from '@/supabase/types';
 import { MessageWithFileItemsAndFeedback } from '../messages';
+import { MessageImage } from '@/types/images/message-image';
 
 // IndexedDB setup
 const DB_NAME = 'pentest_gpt_db';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const STORES = {
   CHATS: 'chats',
   MESSAGES: 'messages',
@@ -11,6 +12,7 @@ const STORES = {
   FEEDBACK: 'feedback',
   FILES: 'files',
   MESSAGE_FILE_ITEMS: 'messageFileItems',
+  MESSAGE_IMAGES: 'messageImages',
 };
 
 // Initialize database
@@ -131,6 +133,29 @@ const initDB = (): Promise<IDBDatabase> => {
           messageFileItemsStore.createIndex('file_item_id', 'file_item_id', {
             unique: false,
           });
+        }
+      }
+
+      // Create MessageImages store if it doesn't exist
+      if (!db.objectStoreNames.contains(STORES.MESSAGE_IMAGES)) {
+        const messageImagesStore = db.createObjectStore(STORES.MESSAGE_IMAGES, {
+          keyPath: 'path', // Use image path as the key
+        });
+        messageImagesStore.createIndex('message_id', 'messageId', {
+          unique: false,
+        });
+        messageImagesStore.createIndex('path', 'path', { unique: true });
+      } else if (transaction) {
+        const messageImagesStore = transaction.objectStore(
+          STORES.MESSAGE_IMAGES,
+        );
+        if (!messageImagesStore.indexNames.contains('message_id')) {
+          messageImagesStore.createIndex('message_id', 'messageId', {
+            unique: false,
+          });
+        }
+        if (!messageImagesStore.indexNames.contains('path')) {
+          messageImagesStore.createIndex('path', 'path', { unique: true });
         }
       }
 
@@ -413,6 +438,12 @@ export const updateStoredChatData = async (
   }
 };
 
+const deleteStoredMessageImagesByMessageId = async (
+  messageId: string,
+): Promise<void> => {
+  await deleteItem(STORES.MESSAGE_IMAGES, messageId);
+};
+
 export const deleteStoredMessage = async (messageId: string): Promise<void> => {
   try {
     const message = await getItem<Tables<'messages'>>(
@@ -447,6 +478,9 @@ export const deleteStoredMessage = async (messageId: string): Promise<void> => {
     for (const item of feedback) {
       await deleteItem(STORES.FEEDBACK, item.id);
     }
+
+    // Delete related images
+    await deleteStoredMessageImagesByMessageId(messageId);
   } catch (error) {
     console.error('Error deleting message:', error);
     throw error;
@@ -716,4 +750,19 @@ export const updateStoredMessageFileItems = async (
   for (const messageFileItem of messageFileItems) {
     await putItem(STORES.MESSAGE_FILE_ITEMS, messageFileItem);
   }
+};
+// New image storage functions
+export const storeMessageImage = async (image: MessageImage): Promise<void> => {
+  try {
+    await putItem(STORES.MESSAGE_IMAGES, image);
+  } catch (error) {
+    console.error('Error storing message image:', error);
+    throw error;
+  }
+};
+
+export const getStoredMessageImageByPath = async (
+  path: string,
+): Promise<MessageImage | undefined> => {
+  return await getItem(STORES.MESSAGE_IMAGES, path);
 };

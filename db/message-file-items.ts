@@ -1,10 +1,6 @@
 import { supabase } from '@/lib/supabase/browser-client';
 import type { TablesInsert } from '@/supabase/types';
-import {
-  getStoredMessageFileItemsByMessageId,
-  getStoredMessageById,
-  updateStoredMessageFileItems,
-} from './local/db';
+import { getStoredMessageById, updateStoredMessageFileItems } from './local/db';
 
 export const getMessageFileItemsByMessageId = async (messageId: string) => {
   const storedMessage = await getStoredMessageById(messageId);
