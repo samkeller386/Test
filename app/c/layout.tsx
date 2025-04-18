@@ -1,44 +1,44 @@
-'use client';
+"use client"
 
-import { Dashboard } from '@/components/ui/dashboard';
-import { PentestGPTContext } from '@/context/context';
-import { useUIContext } from '@/context/ui-context';
-import { getChatsByUserId } from '@/db/chats';
-import { getSubscriptionByUserId } from '@/db/subscriptions';
-import { LargeModel, SmallModel } from '@/lib/models/hackerai-llm-list';
-import { useRouter } from 'next/navigation';
-import { type ReactNode, useContext, useEffect, useState } from 'react';
-import Loading from '../loading';
-import { getChatFilesByChatId } from '@/db/chat-files';
-import { getMessagesByChatId } from '@/db/messages';
-import { createStorage, updateStoredChatData } from '@/db/local/db';
+import { Dashboard } from "@/components/ui/dashboard"
+import { PentestGPTContext } from "@/context/context"
+import { useUIContext } from "@/context/ui-context"
+import { getChatsByUserId } from "@/db/chats"
+import { getSubscriptionByUserId } from "@/db/subscriptions"
+import { LargeModel, SmallModel } from "@/lib/models/hackerai-llm-list"
+import { useRouter } from "next/navigation"
+import { type ReactNode, useContext, useEffect, useState } from "react"
+import Loading from "../loading"
+import { getChatFilesByChatId } from "@/db/chat-files"
+import { getMessagesByChatId } from "@/db/messages"
+import { createStorage } from "@/db/local/db"
 
 interface WorkspaceLayoutProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
 const fetchWorkspaceData = async (
   userId: string,
-  setChats: (chats: any[]) => void,
+  setChats: (chats: any[]) => void
 ) => {
   try {
-    const chats = await getChatsByUserId(userId);
+    const chats = await getChatsByUserId(userId)
     for (const chat of chats) {
-      const messages = await getMessagesByChatId(chat.id, 20, undefined, false);
-      const chatFiles = await getChatFilesByChatId(chat.id);
-      createStorage(chat, messages, chatFiles);
+      const messages = await getMessagesByChatId(chat.id, 20, undefined, false)
+      const chatFiles = await getChatFilesByChatId(chat.id)
+      createStorage(chat, messages, chatFiles)
     }
-    setChats(chats);
-    return true;
+    setChats(chats)
+    return true
   } catch (error) {
-    console.error('Error fetching workspace data:', error);
-    return false;
+    console.error("Error fetching workspace data:", error)
+    return false
   }
-};
+}
 
 export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
 
   // Destructure all context values in a single statement
   const {
@@ -51,61 +51,61 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
     setChatImages,
     setNewMessageFiles,
     setNewMessageImages,
-    user,
-  } = useContext(PentestGPTContext);
+    user
+  } = useContext(PentestGPTContext)
 
-  const { setIsGenerating, setFirstTokenReceived } = useUIContext();
+  const { setIsGenerating, setFirstTokenReceived } = useUIContext()
 
   useEffect(() => {
     const initializeWorkspace = async () => {
       try {
         if (!user) {
-          router.push('/login');
-          return;
+          router.push("/login")
+          return
         }
 
         // Get subscription and set model
-        const subscription = await getSubscriptionByUserId(user.id);
+        const subscription = await getSubscriptionByUserId(user.id)
         const modelId =
-          subscription?.status === 'active'
+          subscription?.status === "active"
             ? LargeModel.modelId
-            : SmallModel.modelId;
+            : SmallModel.modelId
 
         setChatSettings({
-          model: modelId,
-        });
+          model: modelId
+        })
 
         // Reset all chat-specific states
-        setSelectedChat(null);
-        setChatMessages([]);
-        setUserInput('');
-        setChatFiles([]);
-        setChatImages([]);
-        setNewMessageFiles([]);
-        setNewMessageImages([]);
-        setIsGenerating(false);
-        setFirstTokenReceived(false);
+        setSelectedChat(null)
+        setChatMessages([])
+        setUserInput("")
+        setChatFiles([])
+        setChatImages([])
+        setNewMessageFiles([])
+        setNewMessageImages([])
+        setIsGenerating(false)
+        setFirstTokenReceived(false)
 
         // Fetch workspace data
-        const success = await fetchWorkspaceData(user.id, setChats);
+        const success = await fetchWorkspaceData(user.id, setChats)
         if (!success) {
-          router.push('/');
-          return;
+          router.push("/")
+          return
         }
       } catch (error) {
-        console.error('Workspace initialization error:', error);
-        router.push('/');
+        console.error("Workspace initialization error:", error)
+        router.push("/")
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    initializeWorkspace();
-  }, [router]); // Only depend on router
+    initializeWorkspace()
+  }, [router]) // Only depend on router
 
   if (loading) {
-    return <Loading />;
+    return <Loading />
   }
 
-  return <Dashboard>{children}</Dashboard>;
+  return <Dashboard>{children}</Dashboard>
 }
