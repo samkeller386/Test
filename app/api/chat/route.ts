@@ -55,7 +55,6 @@ export async function POST(request: Request) {
     let {
       messages: validatedMessages,
       selectedModel: finalSelectedModel,
-      supportsImages,
       systemPrompt,
     } = await processChatMessages(
       messages,
@@ -132,7 +131,7 @@ export async function POST(request: Request) {
           const baseConfig = {
             model: myProvider.languageModel(finalSelectedModel),
             system: systemPrompt,
-            messages: toVercelChatMessages(validatedMessages, supportsImages),
+            messages: toVercelChatMessages(validatedMessages, true),
             maxTokens: 2048,
             abortSignal: request.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),

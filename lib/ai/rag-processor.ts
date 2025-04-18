@@ -51,8 +51,7 @@ export async function processRag({
   if (
     !RAGIE_API_KEY ||
     messages.length === 0 ||
-    filterTargetMessage.role !== 'user' ||
-    filterTargetMessage.content.length <= 5
+    filterTargetMessage.role !== 'user'
   ) {
     return result;
   }
