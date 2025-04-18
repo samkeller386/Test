@@ -39,14 +39,13 @@ export const getMessagesByChatId = async (
   lastSequenceNumber?: number,
   storage = true,
 ): Promise<MessageWithFileItemsAndFeedback[]> => {
-  if (lastSequenceNumber === undefined) {
-    if (storage) {
-      const storedMessages = await getStoredMessagesByChatId(chatId);
-      if (storedMessages) {
-        console.log('Returning stored messages for chat:', chatId);
-        return storedMessages;
-      }
-    }
+  const storedMessages = await getStoredMessagesByChatId(
+    chatId,
+    limit,
+    lastSequenceNumber,
+  );
+  if (storage && storedMessages) {
+    return storedMessages;
   }
 
   let query = supabase

@@ -336,10 +336,12 @@ export const getStoredMessageById = async (
 
 export const getStoredMessagesByChatId = async (
   chatId: string,
-): Promise<MessageWithFileItemsAndFeedback[]> => {
+  limit = 20,
+  lastSequenceNumber?: number,
+): Promise<MessageWithFileItemsAndFeedback[] | undefined> => {
   try {
     const chat = await getItem<Tables<'chats'>>(STORES.CHATS, chatId);
-    if (!chat) return [];
+    if (!chat) return undefined;
 
     // Get all messages for this chat
     const messages = await getItemsByIndex<Tables<'messages'>>(
@@ -348,18 +350,26 @@ export const getStoredMessagesByChatId = async (
       chatId,
     );
 
+    // Filter messages by sequence number if needed
+    let filteredMessages = messages;
+    if (lastSequenceNumber !== undefined) {
+      filteredMessages = messages.filter(
+        (message) => message.sequence_number < lastSequenceNumber,
+      );
+    }
+
     // For each message, get its file items and feedback
     const result: MessageWithFileItemsAndFeedback[] = [];
-    for (const message of messages) {
+    for (const message of filteredMessages) {
       const messageWithItems = await getStoredMessageById(message.id);
       if (messageWithItems) {
         result.push(messageWithItems);
       }
     }
 
-    // Sort messages by sequence number
-    result.sort((a, b) => a.sequence_number - b.sequence_number);
-    return result;
+    // Sort messages by sequence number and limit the results
+    result.sort((a, b) => b.sequence_number - a.sequence_number);
+    return result.slice(0, limit).reverse();
   } catch (error) {
     console.error('Error getting messages:', error);
     throw error;
@@ -537,7 +547,11 @@ export const deleteStoredMessagesIncludingAndAfter = async (
 ): Promise<void> => {
   try {
     // Get all messages for this chat
-    const messages = await getStoredMessagesByChatId(chatId);
+    const messages = await getItemsByIndex<Tables<'messages'>>(
+      STORES.MESSAGES,
+      'chat_id',
+      chatId,
+    );
 
     // Filter messages to delete
     const messagesToDelete = messages.filter(
