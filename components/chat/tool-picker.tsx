@@ -68,8 +68,7 @@ export const ToolPicker: FC<ToolPickerProps> = ({
     (tool) =>
       (tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         tool.value.toLowerCase().includes(searchQuery.toLowerCase())) &&
-      tool.value !== PluginID.NONE &&
-      tool.value !== PluginID.PLUGINS_STORE,
+      tool.value !== PluginID.NONE,
   );
 
   return (
