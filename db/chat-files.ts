@@ -7,11 +7,6 @@ export const getChatFilesByChatId = async (
 ) => {
   const storedChatFiles = await db.files.getByChatId(chatId);
   if (useStored && storedChatFiles) {
-    console.log(
-      'Returning stored chat files for chat:',
-      chatId,
-      storedChatFiles,
-    );
     return storedChatFiles;
   }
 

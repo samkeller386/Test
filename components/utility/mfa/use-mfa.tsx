@@ -112,7 +112,6 @@ const useMFAUtils = () => {
   const verifyMFA = async (code: string) => {
     setError('');
     try {
-      console.log('useMFA verifyMFA');
       const { data: challengeData, error: challengeError } =
         await supabase.auth.mfa.challenge({ factorId });
       if (challengeError) throw challengeError;

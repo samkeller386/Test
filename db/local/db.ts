@@ -276,7 +276,6 @@ const createStorage = async (
       const { file_items = [], feedback = [], ...messageData } = message;
 
       // Store the message
-      console.log('Storing message:', JSON.stringify(messageData));
       await putItem(STORES.MESSAGES, messageData);
 
       // Store file items and create message-file-item relationships
