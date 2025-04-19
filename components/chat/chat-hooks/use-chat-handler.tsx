@@ -514,20 +514,6 @@ export const useChatHandler = () => {
 
           // Update URL without triggering a page reload or new history entry
           window.history.replaceState({}, '', `/c/${currentChat.id}`);
-
-          // Remove the old title generation since we now get it from the API
-          if (chatTitle && currentChat) {
-            updateChat(currentChat.id, { name: chatTitle })
-              .then((updatedChat) => {
-                setSelectedChat(updatedChat);
-                setChats((prevChats) =>
-                  prevChats.map((chat) =>
-                    chat.id === updatedChat.id ? updatedChat : chat,
-                  ),
-                );
-              })
-              .catch(console.error);
-          }
         } else {
           const updatedChat = await updateChat(currentChat.id, {
             updated_at: new Date().toISOString(),
