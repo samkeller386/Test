@@ -90,9 +90,10 @@ export const deleteAllChats = async (userId: string) => {
 
 export const getChatsByUserId = async (
   userId: string,
+  useStored = true,
 ): Promise<Tables<'chats'>[]> => {
   const storedChats = await db.chats.getByUserId(userId);
-  if (storedChats) {
+  if (useStored && storedChats) {
     return storedChats;
   }
 

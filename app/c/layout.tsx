@@ -23,9 +23,10 @@ const fetchWorkspaceData = async (
   setChats: (chats: any[]) => void,
 ) => {
   try {
-    const chats = await getChatsByUserId(userId);
+    const chats = await getChatsByUserId(userId, false);
+    console.log('chats', chats);
     const queue = new PQueue({ concurrency: 10 });
-    db.storage.clean(
+    await db.storage.clean(
       userId,
       chats.map((chat) => chat.id),
     );

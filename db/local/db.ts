@@ -261,14 +261,13 @@ const getItemsByIndex = async <T>(
   });
 };
 
-// Reimplemented database functions using IndexedDB
-
 const createStorage = async (
   chat: Tables<'chats'>,
   messages: MessageWithFileItemsAndFeedback[],
   chatFiles: Tables<'files'>[] | null,
 ) => {
   try {
+    await initDB();
     // Store chat
     await putItem(STORES.CHATS, chat);
 
@@ -277,7 +276,7 @@ const createStorage = async (
       const { file_items = [], feedback = [], ...messageData } = message;
 
       // Store the message
-      console.log('Storing message:', messageData);
+      console.log('Storing message:', JSON.stringify(messageData));
       await putItem(STORES.MESSAGES, messageData);
 
       // Store file items and create message-file-item relationships
