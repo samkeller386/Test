@@ -14,18 +14,19 @@ const getItem = async <T>(
   storeName: string,
   key: string,
 ): Promise<T | undefined> => {
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     try {
-      const store = await getObjectStore(storeName);
-      const request = store.get(key);
+      getObjectStore(storeName).then(store => {
+        const request = store.get(key);
 
-      request.onsuccess = () => {
-        resolve(request.result as T);
-      };
+        request.onsuccess = () => {
+          resolve(request.result as T);
+        };
 
-      request.onerror = () => {
-        reject(request.error);
-      };
+        request.onerror = () => {
+          reject(request.error);
+        };
+      }).catch(reject);
     } catch (error) {
       reject(error);
     }
