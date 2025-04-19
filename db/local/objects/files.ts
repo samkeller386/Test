@@ -24,24 +24,13 @@ const getStoredFileById = async (
   return await getItem<Tables<'files'>>(STORES.FILES, fileId);
 };
 
-const getStoredFilesCount = async (): Promise<number> => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const store = await getObjectStore(STORES.FILES);
-      const request = store.count();
-
-      request.onsuccess = () => {
-        resolve(request.result);
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    } catch (error) {
-      console.error('Error counting files:', error);
-      reject(error);
-    }
-  });
+const getStoredFilesCount = async (userId: string) => {
+  const files = await getItemsByIndex<Tables<'files'>>(
+    STORES.FILES,
+    'user_id',
+    userId,
+  );
+  return files.length;
 };
 
 const updateStoredFile = async (file: Tables<'files'>): Promise<void> => {

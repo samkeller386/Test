@@ -16,17 +16,19 @@ const getItem = async <T>(
 ): Promise<T | undefined> => {
   return new Promise((resolve, reject) => {
     try {
-      getObjectStore(storeName).then(store => {
-        const request = store.get(key);
+      getObjectStore(storeName)
+        .then((store) => {
+          const request = store.get(key);
 
-        request.onsuccess = () => {
-          resolve(request.result as T);
-        };
+          request.onsuccess = () => {
+            resolve(request.result as T);
+          };
 
-        request.onerror = () => {
-          reject(request.error);
-        };
-      }).catch(reject);
+          request.onerror = () => {
+            reject(request.error);
+          };
+        })
+        .catch(reject);
     } catch (error) {
       reject(error);
     }
@@ -34,18 +36,21 @@ const getItem = async <T>(
 };
 
 const putItem = async <T>(storeName: string, item: T): Promise<void> => {
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     try {
-      const store = await getObjectStore(storeName, 'readwrite');
-      const request = store.put(item);
+      getObjectStore(storeName, 'readwrite')
+        .then((store) => {
+          const request = store.put(item);
 
-      request.onsuccess = () => {
-        resolve();
-      };
+          request.onsuccess = () => {
+            resolve();
+          };
 
-      request.onerror = () => {
-        reject(request.error);
-      };
+          request.onerror = () => {
+            reject(request.error);
+          };
+        })
+        .catch(reject);
     } catch (error) {
       reject(error);
     }
@@ -56,9 +61,9 @@ const deleteItem = async (
   storeName: string,
   key: string | [string, string],
 ): Promise<void> => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const store = await getObjectStore(storeName, 'readwrite');
+  try {
+    const store = await getObjectStore(storeName, 'readwrite');
+    return new Promise((resolve, reject) => {
       const request = store.delete(key);
 
       request.onsuccess = () => {
@@ -68,10 +73,10 @@ const deleteItem = async (
       request.onerror = () => {
         reject(request.error);
       };
-    } catch (error) {
-      reject(error);
-    }
-  });
+    });
+  } catch (error) {
+    throw error;
+  }
 };
 
 const getItemsByIndex = async <T>(
@@ -79,19 +84,22 @@ const getItemsByIndex = async <T>(
   indexName: string,
   key: string,
 ): Promise<T[]> => {
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     try {
-      const store = await getObjectStore(storeName);
-      const index = store.index(indexName);
-      const request = index.getAll(key);
+      getObjectStore(storeName)
+        .then((store) => {
+          const index = store.index(indexName);
+          const request = index.getAll(key);
 
-      request.onsuccess = () => {
-        resolve(request.result as T[]);
-      };
+          request.onsuccess = () => {
+            resolve(request.result as T[]);
+          };
 
-      request.onerror = () => {
-        reject(request.error);
-      };
+          request.onerror = () => {
+            reject(request.error);
+          };
+        })
+        .catch(reject);
     } catch (error) {
       reject(error);
     }

@@ -26,8 +26,8 @@ export const getFileById = async (fileId: string, useStored = true) => {
   return file;
 };
 
-export const getAllFilesCount = async () => {
-  const storedFilesCount = await localDB.files.getCount();
+export const getAllFilesCount = async (userId: string) => {
+  const storedFilesCount = await localDB.files.getCount(userId);
   if (storedFilesCount) {
     return storedFilesCount;
   }
@@ -79,7 +79,7 @@ export const createFile = async (
   }
   fileRecord.name = validFilename;
 
-  const filesCounts = (await getAllFilesCount()) || 0;
+  const filesCounts = (await getAllFilesCount(fileRecord.user_id)) || 0;
   const maxFiles = Number.parseInt(
     process.env.NEXT_PUBLIC_RATELIMITER_LIMIT_FILES || '100',
   );
@@ -142,7 +142,7 @@ export const createDocXFile = async (
   file: File,
   fileRecord: TablesInsert<'files'>,
 ) => {
-  const filesCounts = (await getAllFilesCount()) || 0;
+  const filesCounts = (await getAllFilesCount(fileRecord.user_id)) || 0;
   const maxFiles = Number.parseInt(
     process.env.NEXT_PUBLIC_RATELIMITER_LIMIT_FILES || '100',
   );
@@ -259,8 +259,10 @@ export const getFileItemsByFileIds = async (fileIds: string[]) => {
     throw new Error(error.message);
   }
 
-  await localDB.fileItems.updateMany(data);
-  returnData.push(...data);
+  if (data?.length > 0) {
+    await localDB.fileItems.updateMany(data);
+    returnData.push(...data);
+  }
 
   return returnData;
 };

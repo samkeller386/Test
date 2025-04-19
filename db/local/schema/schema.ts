@@ -1,6 +1,6 @@
 // IndexedDB setup
 const DB_NAME = 'pentest_gpt_db';
-const DB_VERSION = 5;
+const DB_VERSION = 8;
 
 const STORES = {
   CHATS: 'chats',
@@ -90,6 +90,7 @@ const initDB = (): Promise<IDBDatabase> => {
         const filesStore = db.createObjectStore(STORES.FILES, {
           keyPath: 'id',
         });
+        filesStore.createIndex('user_id', 'user_id', { unique: false });
         filesStore.createIndex('chat_id', 'chat_id', { unique: false });
         filesStore.createIndex('message_id', 'message_id', { unique: false });
         filesStore.createIndex('id', 'id', { unique: true });
@@ -103,6 +104,9 @@ const initDB = (): Promise<IDBDatabase> => {
         }
         if (!filesStore.indexNames.contains('id')) {
           filesStore.createIndex('id', 'id', { unique: true });
+        }
+        if (!filesStore.indexNames.contains('user_id')) {
+          filesStore.createIndex('user_id', 'user_id', { unique: false });
         }
       }
 

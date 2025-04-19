@@ -10,9 +10,18 @@ import {
 import { supabase } from '@/lib/supabase/browser-client';
 import { toast } from 'sonner';
 
+type MFAFactor = {
+  id: string;
+  factor_type: 'totp' | 'phone';
+  status: 'verified' | 'unverified';
+  friendly_name?: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type MFAContextType = {
   isLoading: boolean;
-  factors: any[];
+  factors: MFAFactor[];
   factorId: string;
   qrCode: string;
   secret: string;
