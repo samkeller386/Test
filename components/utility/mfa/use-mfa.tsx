@@ -1,8 +1,47 @@
-import { useState, useEffect } from 'react';
+'use client';
+
+import {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  ReactNode,
+} from 'react';
 import { supabase } from '@/lib/supabase/browser-client';
 import { toast } from 'sonner';
 
+type MFAContextType = {
+  isLoading: boolean;
+  factors: any[];
+  factorId: string;
+  qrCode: string;
+  secret: string;
+  error: string;
+  isEnrolling: boolean;
+  startEnrollment: () => Promise<void>;
+  verifyMFA: (code: string) => Promise<void>;
+  verifyBeforeUnenroll: (code: string) => Promise<boolean>;
+  unenrollMFA: () => Promise<void>;
+  fetchFactors: () => Promise<void>;
+};
+
+const MFAContext = createContext<MFAContextType | undefined>(undefined);
+
+export const MFAProvider = ({ children }: { children: ReactNode }) => {
+  const mfaUtils = useMFAUtils();
+
+  return <MFAContext.Provider value={mfaUtils}>{children}</MFAContext.Provider>;
+};
+
 export const useMFA = () => {
+  const context = useContext(MFAContext);
+  if (context === undefined) {
+    throw new Error('useMFA must be used within a MFAProvider');
+  }
+  return context;
+};
+
+const useMFAUtils = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [factors, setFactors] = useState<any[]>([]);
   const [factorId, setFactorId] = useState('');
@@ -73,6 +112,7 @@ export const useMFA = () => {
   const verifyMFA = async (code: string) => {
     setError('');
     try {
+      console.log('useMFA verifyMFA');
       const { data: challengeData, error: challengeError } =
         await supabase.auth.mfa.challenge({ factorId });
       if (challengeError) throw challengeError;
