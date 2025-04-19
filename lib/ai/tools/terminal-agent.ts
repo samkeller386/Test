@@ -162,7 +162,6 @@ export async function executeTerminalAgent({
     console.error('[TerminalAgent] Error:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       model: selectedChatModel,
-      plugin: selectedPlugin,
     });
     dataStream.writeData({
       type: 'error',

@@ -15,7 +15,7 @@ import { PluginID } from '@/types/plugins';
 import { useRouter } from 'next/navigation';
 import { useContext, useEffect, useRef } from 'react';
 import { LLM_LIST } from '../../../lib/models/llm-list';
-
+import { v4 as uuidv4 } from 'uuid';
 import { useUIContext } from '@/context/ui-context';
 import { createMessageFeedback } from '@/db/message-feedback';
 import {
@@ -432,7 +432,8 @@ export const useChatHandler = () => {
         agentMode: getStoredAutoRunPreference(),
         confirmTerminalCommand,
       };
-      const chatMetadata: ChatMetadata = { newChat: !currentChat };
+      const chatId = currentChat?.id ?? uuidv4();
+      const chatMetadata: ChatMetadata = { id: chatId, newChat: !currentChat };
 
       let generatedText = '';
       let thinkingText = '';
@@ -442,7 +443,6 @@ export const useChatHandler = () => {
       let ragId = null;
       let assistantGeneratedImages: string[] = [];
       let citations: string[] = [];
-      let chatTitle: string | null = null;
 
       const {
         fullText,
@@ -454,7 +454,8 @@ export const useChatHandler = () => {
         selectedPlugin: updatedSelectedPlugin,
         assistantGeneratedImages: assistantGeneratedImagesFromResponse,
         citations: citationsFromResponse,
-        chatTitle: chatTitleFromResponse,
+        chatTitle,
+        isChatSavedInBackend,
       } = await handleHostedChat(
         payload,
         tempAssistantChatMessage,
@@ -480,7 +481,6 @@ export const useChatHandler = () => {
       selectedPlugin = updatedSelectedPlugin;
       assistantGeneratedImages = assistantGeneratedImagesFromResponse;
       citations = citationsFromResponse;
-      chatTitle = chatTitleFromResponse;
 
       if (isTemporaryChat) {
         // Update temporary chat messages with the generated response
@@ -509,17 +509,30 @@ export const useChatHandler = () => {
             finishReason,
             setSelectedChat,
             setChats,
+            chatId,
             chatTitle,
+            isChatSavedInBackend,
           );
 
           // Update URL without triggering a page reload or new history entry
-          window.history.replaceState({}, '', `/c/${currentChat.id}`);
+          window.history.replaceState({}, '', `/c/${chatId}`);
         } else {
-          const updatedChat = await updateChat(currentChat.id, {
-            updated_at: new Date().toISOString(),
-            finish_reason: finishReason,
-            model: chatSettings?.model,
-          });
+          let updatedChat: Tables<'chats'>;
+
+          if (isChatSavedInBackend) {
+            updatedChat = {
+              ...currentChat,
+              updated_at: new Date().toISOString(),
+              finish_reason: finishReason,
+              model: chatSettings?.model || currentChat.model,
+            };
+          } else {
+            updatedChat = await updateChat(currentChat.id, {
+              updated_at: new Date().toISOString(),
+              finish_reason: finishReason,
+              model: chatSettings?.model,
+            });
+          }
 
           setChats((prevChats) => {
             const updatedChats = prevChats.map((prevChat) =>

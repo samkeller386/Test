@@ -13,7 +13,12 @@ import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
 import { processRag } from '@/lib/ai/rag-processor';
 import { processChatMessages } from '@/lib/ai/message-utils';
 import type { LLMID } from '@/types';
-import { generateTitleFromUserMessage } from '@/lib/ai/actions';
+import {
+  generateTitleFromUserMessage,
+  handleChatWithMetadata,
+} from '@/lib/ai/actions';
+import { createClient } from '@/lib/supabase/server';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export const maxDuration = 600;
 
@@ -123,10 +128,33 @@ export async function POST(request: Request) {
         : 'chat-model-gpt-small-with-tools';
     }
 
+    let generatedTitle = '';
+    let supabase: SupabaseClient | null = null;
+    let toolCalled: boolean = false;
+
     try {
       return createDataStreamResponse({
         execute: async (dataStream) => {
           dataStream.writeData({ ragUsed, ragId });
+
+          if (chatMetadata.id) {
+            supabase = await createClient();
+          }
+
+          // TODO: should be used for saving chat in backend on abort
+          // request.signal.addEventListener('abort', async () => {
+          //   if (supabase && !toolCalled && !ragUsed) {
+          //     await handleChatWithMetadata({
+          //       supabase,
+          //       chatMetadata,
+          //       profile,
+          //       model,
+          //       title: generatedTitle,
+          //       messages: validatedMessages,
+          //       finishReason: 'stop',
+          //     });
+          //   }
+          // });
 
           const baseConfig = {
             model: myProvider.languageModel(finalSelectedModel),
@@ -135,6 +163,25 @@ export async function POST(request: Request) {
             maxTokens: 2048,
             abortSignal: request.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),
+            onChunk: async (chunk: any) => {
+              if (chunk.chunk.type === 'tool-call') {
+                toolCalled = true;
+              }
+            },
+            onFinish: async ({ finishReason }: { finishReason: string }) => {
+              if (supabase && !toolCalled) {
+                await handleChatWithMetadata({
+                  supabase,
+                  chatMetadata,
+                  profile,
+                  model,
+                  title: generatedTitle,
+                  messages: validatedMessages,
+                  finishReason,
+                });
+                dataStream.writeData({ isChatSavedInBackend: true });
+              }
+            },
           };
 
           const toolConfig = {
@@ -164,7 +211,7 @@ export async function POST(request: Request) {
             result.mergeIntoDataStream(dataStream),
             (async () => {
               if (chatMetadata.newChat) {
-                const generatedTitle = await title;
+                generatedTitle = await title;
                 dataStream.writeData({ chatTitle: generatedTitle });
               }
             })(),

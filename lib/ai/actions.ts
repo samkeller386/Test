@@ -3,6 +3,91 @@ import { myProvider } from './providers';
 import { DEFAULT_TITLE_GENERATION_PROMPT_TEMPLATE } from './prompts';
 import { extractTextContent } from './message-utils';
 import { z } from 'zod';
+import { waitUntil } from '@vercel/functions';
+import type { LLMID } from '@/types';
+import { SupabaseClient } from '@supabase/supabase-js';
+import type { TablesUpdate } from '@/supabase/types';
+import type { ChatMetadata } from '@/types/chat';
+
+export async function createChatWithWaitUntil({
+  supabase,
+  chatId,
+  userId,
+  model,
+  title,
+  content,
+  finishReason,
+}: {
+  supabase: SupabaseClient;
+  chatId: string;
+  userId: string;
+  model: LLMID;
+  title?: string;
+  content: string;
+  finishReason: string;
+}) {
+  waitUntil(
+    (async () => {
+      try {
+        const { data: _, error } = await supabase
+          .from('chats')
+          .insert([
+            {
+              id: chatId,
+              user_id: userId,
+              include_profile_context: true,
+              model,
+              name: title || content.substring(0, 100),
+              finish_reason: finishReason,
+            },
+          ])
+          .select('*')
+          .single();
+
+        if (error) {
+          console.error('Error creating chat:', error);
+          return;
+        }
+
+        // console.log('Created chat:', createdChat);
+      } catch (error) {
+        console.error('Error in waitUntil:', error);
+      }
+    })(),
+  );
+}
+
+export async function updateChatWithWaitUntil({
+  supabase,
+  chatId,
+  updates,
+}: {
+  supabase: SupabaseClient;
+  chatId: string;
+  updates: TablesUpdate<'chats'>;
+}) {
+  waitUntil(
+    (async () => {
+      try {
+        const { data: _, error } = await supabase
+          .from('chats')
+          .update(updates)
+          .eq('id', chatId)
+          .select('*')
+          .single();
+
+        if (error) {
+          console.error('Error updating chat:', error);
+          return;
+        }
+
+        // console.log('Updated chat:', updatedChat);
+      } catch (error) {
+        console.error('Error in waitUntil:', error);
+      }
+    })(),
+  );
+}
 
 export async function generateTitleFromUserMessage({
   message,
@@ -31,4 +116,46 @@ export async function generateTitleFromUserMessage({
   });
 
   return title;
+}
+
+export async function handleChatWithMetadata({
+  supabase,
+  chatMetadata,
+  profile,
+  model,
+  title,
+  messages,
+  finishReason,
+}: {
+  supabase: SupabaseClient;
+  chatMetadata: ChatMetadata;
+  profile: { user_id: string };
+  model: LLMID;
+  title?: string;
+  messages: any[];
+  finishReason: string;
+}) {
+  if (!chatMetadata.id) return;
+
+  if (chatMetadata.newChat) {
+    await createChatWithWaitUntil({
+      supabase,
+      chatId: chatMetadata.id,
+      userId: profile.user_id,
+      model,
+      title,
+      content: extractTextContent(messages[messages.length - 1].content),
+      finishReason,
+    });
+  } else {
+    await updateChatWithWaitUntil({
+      supabase,
+      chatId: chatMetadata.id,
+      updates: {
+        updated_at: new Date().toISOString(),
+        finish_reason: finishReason,
+        model,
+      },
+    });
+  }
 }
