@@ -11,7 +11,8 @@ import { type ReactNode, useContext, useEffect, useState } from 'react';
 import Loading from '../loading';
 import { getChatFilesByChatId } from '@/db/chat-files';
 import { getMessagesByChatId } from '@/db/messages';
-import { createStorage } from '@/db/local/db';
+import { cleanStorage, createStorage } from '@/db/local/db';
+import PQueue from 'p-queue';
 
 interface WorkspaceLayoutProps {
   children: ReactNode;
@@ -23,12 +24,27 @@ const fetchWorkspaceData = async (
 ) => {
   try {
     const chats = await getChatsByUserId(userId);
-    for (const chat of chats) {
-      const messages = await getMessagesByChatId(chat.id, 20, undefined, false);
-      const chatFiles = await getChatFilesByChatId(chat.id);
-      createStorage(chat, messages, chatFiles);
-    }
+    const queue = new PQueue({ concurrency: 10 });
+    cleanStorage(
+      userId,
+      chats.map((chat) => chat.id),
+    );
+
+    chats.map((chat) =>
+      queue.add(async () => {
+        const messages = await getMessagesByChatId(
+          chat.id,
+          9999, // Fetch all messages
+          undefined,
+          false,
+        );
+        const chatFiles = await getChatFilesByChatId(chat.id);
+        createStorage(chat, messages, chatFiles);
+      }),
+    );
     setChats(chats);
+
+    await queue.onIdle();
     return true;
   } catch (error) {
     console.error('Error fetching workspace data:', error);

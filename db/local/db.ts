@@ -312,6 +312,14 @@ export const createStorage = async (
   }
 };
 
+export const cleanStorage = async (userId: string, chatIds: string[]) => {
+  const allChats = await getStoredChatsByUserId(userId);
+  const chatsToDelete = allChats.filter((chat) => !chatIds.includes(chat.id));
+  for (const chat of chatsToDelete) {
+    await deleteStoredChat(chat.id);
+  }
+};
+
 export const getStoredMessageById = async (
   messageId: string,
 ): Promise<MessageWithFileItemsAndFeedback | undefined> => {
@@ -466,6 +474,16 @@ export const deleteStoredMessage = async (messageId: string): Promise<void> => {
       ]);
     }
 
+    // Delete the message-image relationships
+    const messageImages = await getItemsByIndex<MessageImage>(
+      STORES.MESSAGE_IMAGES,
+      'message_id',
+      messageId,
+    );
+    for (const image of messageImages) {
+      await deleteItem(STORES.MESSAGE_IMAGES, image.path);
+    }
+
     // Delete the message
     await deleteItem(STORES.MESSAGES, messageId);
 
@@ -615,7 +633,36 @@ export const updateStoredChat = async (
 };
 
 export const deleteStoredChat = async (chatId: string): Promise<void> => {
-  await deleteItem(STORES.CHATS, chatId);
+  try {
+    // Delete all messages associated with this chat
+    const messages = await getItemsByIndex<Tables<'messages'>>(
+      STORES.MESSAGES,
+      'chat_id',
+      chatId,
+    );
+
+    // Delete each message and its related items
+    for (const message of messages) {
+      await deleteStoredMessage(message.id);
+    }
+
+    // Delete any files associated with this chat
+    const files = await getItemsByIndex<Tables<'files'>>(
+      STORES.FILES,
+      'chat_id',
+      chatId,
+    );
+
+    for (const file of files) {
+      await deleteItem(STORES.FILES, file.id);
+    }
+
+    // Finally delete the chat itself
+    await deleteItem(STORES.CHATS, chatId);
+  } catch (error) {
+    console.error('Error deleting chat:', error);
+    throw error;
+  }
 };
 
 export const deleteAllStoredChats = async (userId: string): Promise<void> => {
