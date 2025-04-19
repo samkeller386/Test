@@ -263,10 +263,10 @@ const getItemsByIndex = async <T>(
 
 // Reimplemented database functions using IndexedDB
 
-export const createStorage = async (
+const createStorage = async (
   chat: Tables<'chats'>,
   messages: MessageWithFileItemsAndFeedback[],
-  chatFiles: { files: Tables<'files'>[] } | null,
+  chatFiles: Tables<'files'>[] | null,
 ) => {
   try {
     // Store chat
@@ -301,8 +301,8 @@ export const createStorage = async (
     }
 
     // Store files
-    if (chatFiles?.files) {
-      for (const file of chatFiles.files) {
+    if (chatFiles) {
+      for (const file of chatFiles) {
         await putItem(STORES.FILES, file);
       }
     }
@@ -312,7 +312,7 @@ export const createStorage = async (
   }
 };
 
-export const cleanStorage = async (userId: string, chatIds: string[]) => {
+const cleanStorage = async (userId: string, chatIds: string[]) => {
   const allChats = await getStoredChatsByUserId(userId);
   const chatsToDelete = allChats.filter((chat) => !chatIds.includes(chat.id));
   for (const chat of chatsToDelete) {
@@ -320,7 +320,7 @@ export const cleanStorage = async (userId: string, chatIds: string[]) => {
   }
 };
 
-export const getStoredMessageById = async (
+const getStoredMessageById = async (
   messageId: string,
 ): Promise<MessageWithFileItemsAndFeedback | undefined> => {
   try {
@@ -367,7 +367,29 @@ export const getStoredMessageById = async (
   }
 };
 
-export const getStoredMessagesByChatId = async (
+const getStoredMessageFileItemsByMessageId = async (
+  messageId: string,
+): Promise<Tables<'file_items'>[] | null> => {
+  const message = await getItem<Tables<'messages'>>(STORES.MESSAGES, messageId);
+  if (!message) return null;
+
+  const messageFileItems = await getItemsByIndex<Tables<'message_file_items'>>(
+    STORES.MESSAGE_FILE_ITEMS,
+    'message_id',
+    messageId,
+  );
+  const fileItems = [];
+  for (const mfi of messageFileItems) {
+    const fileItem = await getStoredFileItemById(mfi.file_item_id);
+    if (fileItem) {
+      fileItems.push(fileItem);
+    }
+  }
+
+  return fileItems;
+};
+
+const getStoredMessagesByChatId = async (
   chatId: string,
   limit = 20,
   lastSequenceNumber?: number,
@@ -409,50 +431,13 @@ export const getStoredMessagesByChatId = async (
   }
 };
 
-export const updateStoredChatData = async (
-  chatId: string,
-  args: {
-    chat?: Tables<'chats'>;
-    messages?: MessageWithFileItemsAndFeedback[];
-    chatFiles?: Tables<'files'>[];
-  },
-) => {
-  try {
-    // Update chat if provided
-    if (args.chat) {
-      await putItem(STORES.CHATS, args.chat);
-    }
-
-    // Update messages if provided
-    if (args.messages) {
-      for (const message of args.messages) {
-        await updateStoredMessage({
-          message,
-          fileItems: message.file_items,
-          feedback: message.feedback,
-        });
-      }
-    }
-
-    // Update files if provided
-    if (args.chatFiles) {
-      for (const file of args.chatFiles) {
-        await putItem(STORES.FILES, file);
-      }
-    }
-  } catch (error) {
-    console.error('Error updating chat data:', error);
-    throw error;
-  }
-};
-
 const deleteStoredMessageImagesByMessageId = async (
   messageId: string,
 ): Promise<void> => {
   await deleteItem(STORES.MESSAGE_IMAGES, messageId);
 };
 
-export const deleteStoredMessage = async (messageId: string): Promise<void> => {
+const deleteStoredMessage = async (messageId: string): Promise<void> => {
   try {
     const message = await getItem<Tables<'messages'>>(
       STORES.MESSAGES,
@@ -505,94 +490,19 @@ export const deleteStoredMessage = async (messageId: string): Promise<void> => {
   }
 };
 
-export const updateStoredMessage = async ({
-  message,
-  fileItems,
-  feedback,
-}: {
-  message: Tables<'messages'>;
-  fileItems?: Tables<'file_items'>[];
-  feedback?: Tables<'feedback'>[];
-}): Promise<void> => {
-  try {
-    const messageId = message.id;
-
-    // Update message
-    await putItem(STORES.MESSAGES, message);
-
-    // Update file items if provided
-    if (fileItems) {
-      // Get existing message-file-item relationships
-      const existingRelationships = await getItemsByIndex<{
-        message_id: string;
-        file_item_id: string;
-      }>(STORES.MESSAGE_FILE_ITEMS, 'message_id', messageId);
-
-      const existingFileItemIds = new Set(
-        existingRelationships.map((rel) => rel.file_item_id),
-      );
-      const newFileItemIds = new Set(fileItems.map((item) => item.id));
-
-      // Delete relationships that no longer exist
-      for (const relationship of existingRelationships) {
-        if (!newFileItemIds.has(relationship.file_item_id)) {
-          await deleteItem(STORES.MESSAGE_FILE_ITEMS, [
-            relationship.message_id,
-            relationship.file_item_id,
-          ]);
-        }
-      }
-
-      // Add new file items and relationships
-      for (const item of fileItems) {
-        // Add or update the file item
-        await putItem(STORES.FILE_ITEMS, item);
-
-        // Add relationship if it doesn't exist
-        if (!existingFileItemIds.has(item.id)) {
-          await putItem(STORES.MESSAGE_FILE_ITEMS, {
-            message_id: messageId,
-            file_item_id: item.id,
-            user_id: message.user_id,
-            created_at: new Date().toISOString(),
-            updated_at: null,
-          });
-        }
-      }
-    }
-
-    // Update feedback if provided
-    if (feedback) {
-      // Get existing feedback to determine what to delete
-      const existingFeedback = await getItemsByIndex<Tables<'feedback'>>(
-        STORES.FEEDBACK,
-        'message_id',
-        messageId,
-      );
-      const existingFeedbackIds = new Set(
-        existingFeedback.map((item) => item.id),
-      );
-      const newFeedbackIds = new Set(feedback.map((item) => item.id));
-
-      // Delete feedback that no longer exists
-      for (const item of existingFeedback) {
-        if (!newFeedbackIds.has(item.id)) {
-          await deleteItem(STORES.FEEDBACK, item.id);
-        }
-      }
-
-      // Add or update new feedback
-      for (const item of feedback) {
-        await putItem(STORES.FEEDBACK, item);
-      }
-    }
-  } catch (error) {
-    console.error('Error updating message:', error);
-    throw error;
-  }
+const updateStoredFileItem = async (
+  fileItem: Tables<'file_items'>,
+): Promise<void> => {
+  await putItem(STORES.FILE_ITEMS, fileItem);
 };
 
-export const deleteStoredMessagesIncludingAndAfter = async (
+const updateStoredMessage = async (
+  message: Tables<'messages'>,
+): Promise<void> => {
+  await putItem(STORES.MESSAGES, message);
+};
+
+const deleteStoredMessagesIncludingAndAfter = async (
   userId: string,
   chatId: string,
   sequenceNumber: number,
@@ -620,19 +530,17 @@ export const deleteStoredMessagesIncludingAndAfter = async (
   }
 };
 
-export const getStoredChatById = async (
+const getStoredChatById = async (
   chatId: string,
 ): Promise<Tables<'chats'> | undefined> => {
   return await getItem<Tables<'chats'>>(STORES.CHATS, chatId);
 };
 
-export const updateStoredChat = async (
-  chat: Tables<'chats'>,
-): Promise<void> => {
+const updateStoredChat = async (chat: Tables<'chats'>): Promise<void> => {
   await putItem(STORES.CHATS, chat);
 };
 
-export const deleteStoredChat = async (chatId: string): Promise<void> => {
+const deleteStoredChat = async (chatId: string): Promise<void> => {
   try {
     // Delete all messages associated with this chat
     const messages = await getItemsByIndex<Tables<'messages'>>(
@@ -665,7 +573,7 @@ export const deleteStoredChat = async (chatId: string): Promise<void> => {
   }
 };
 
-export const deleteAllStoredChats = async (userId: string): Promise<void> => {
+const deleteAllStoredChats = async (userId: string): Promise<void> => {
   try {
     // Get all chats for this user
     const chats = await getStoredChatsByUserId(userId);
@@ -680,7 +588,7 @@ export const deleteAllStoredChats = async (userId: string): Promise<void> => {
   }
 };
 
-export const getStoredChatsByUserId = async (
+const getStoredChatsByUserId = async (
   userId: string,
 ): Promise<Tables<'chats'>[]> => {
   try {
@@ -713,15 +621,13 @@ export const getStoredChatsByUserId = async (
   }
 };
 
-export const updateStoredChats = async (
-  chats: Tables<'chats'>[],
-): Promise<void> => {
+const updateStoredChats = async (chats: Tables<'chats'>[]): Promise<void> => {
   for (const chat of chats) {
     await updateStoredChat(chat);
   }
 };
 
-export const getStoredChatFilesByChatId = async (
+const getStoredChatFilesByChatId = async (
   chatId: string,
 ): Promise<Tables<'files'>[]> => {
   return await getItemsByIndex<Tables<'files'>>(
@@ -731,13 +637,13 @@ export const getStoredChatFilesByChatId = async (
   );
 };
 
-export const getStoredFileById = async (
+const getStoredFileById = async (
   fileId: string,
 ): Promise<Tables<'files'> | undefined> => {
   return await getItem<Tables<'files'>>(STORES.FILES, fileId);
 };
 
-export const getStoredFilesCount = async (): Promise<number> => {
+const getStoredFilesCount = async (): Promise<number> => {
   return new Promise(async (resolve, reject) => {
     try {
       const store = await getObjectStore(STORES.FILES);
@@ -757,23 +663,21 @@ export const getStoredFilesCount = async (): Promise<number> => {
   });
 };
 
-export const updateStoredFile = async (
-  file: Tables<'files'>,
-): Promise<void> => {
+const updateStoredFile = async (file: Tables<'files'>): Promise<void> => {
   await putItem(STORES.FILES, file);
 };
 
-export const deleteStoredFile = async (fileId: string): Promise<void> => {
+const deleteStoredFile = async (fileId: string): Promise<void> => {
   await deleteItem(STORES.FILES, fileId);
 };
 
-export const updateStoredFeedback = async (
+const updateStoredFeedback = async (
   feedback: Tables<'feedback'>,
 ): Promise<void> => {
   await putItem(STORES.FEEDBACK, feedback);
 };
 
-export const updateStoredFeedbacks = async (
+const updateStoredFeedbacks = async (
   feedbacks: Tables<'feedback'>[],
 ): Promise<void> => {
   for (const feedback of feedbacks) {
@@ -781,25 +685,16 @@ export const updateStoredFeedbacks = async (
   }
 };
 
-export const getStoredMessageFileItemsByMessageId = async (
-  messageId: string,
-): Promise<Tables<'message_file_items'>[]> => {
-  return await getItemsByIndex<Tables<'message_file_items'>>(
-    STORES.MESSAGE_FILE_ITEMS,
-    'message_id',
-    messageId,
-  );
-};
-
-export const updateStoredMessageFileItems = async (
+const updateStoredMessageFileItems = async (
   messageFileItems: Tables<'message_file_items'>[],
 ): Promise<void> => {
   for (const messageFileItem of messageFileItems) {
     await putItem(STORES.MESSAGE_FILE_ITEMS, messageFileItem);
   }
 };
+
 // New image storage functions
-export const storeMessageImage = async (image: MessageImage): Promise<void> => {
+const storeMessageImage = async (image: MessageImage): Promise<void> => {
   try {
     await putItem(STORES.MESSAGE_IMAGES, image);
   } catch (error) {
@@ -808,8 +703,111 @@ export const storeMessageImage = async (image: MessageImage): Promise<void> => {
   }
 };
 
-export const getStoredMessageImageByPath = async (
+const getStoredMessageImageByPath = async (
   path: string,
 ): Promise<MessageImage | undefined> => {
   return await getItem(STORES.MESSAGE_IMAGES, path);
+};
+
+const updateStoredFileItems = async (
+  fileItems: Tables<'file_items'>[],
+): Promise<void> => {
+  for (const fileItem of fileItems) {
+    await updateStoredFileItem(fileItem);
+  }
+};
+
+const updateStoredChatFiles = async (
+  chatFiles: Tables<'files'>[],
+): Promise<void> => {
+  for (const file of chatFiles) {
+    await updateStoredFile(file);
+  }
+};
+
+const getStoredFileItemById = async (
+  fileItemId: string,
+): Promise<Tables<'file_items'> | undefined> => {
+  return await getItem<Tables<'file_items'>>(STORES.FILE_ITEMS, fileItemId);
+};
+
+const getStoredFileItemsByFileId = async (
+  fileId: string,
+  sortBy?: 'sequence_number',
+): Promise<Tables<'file_items'>[]> => {
+  const fileItems = await getItemsByIndex<Tables<'file_items'>>(
+    STORES.FILE_ITEMS,
+    'file_id',
+    fileId,
+  );
+  if (sortBy === 'sequence_number') {
+    return fileItems.sort((a, b) => a.sequence_number - b.sequence_number);
+  } else {
+    return fileItems;
+  }
+};
+
+// Create an organized database interface object
+export const db = {
+  // General storage functions
+  storage: {
+    create: createStorage,
+    clean: cleanStorage,
+  },
+
+  // Chat related functions
+  chats: {
+    getById: getStoredChatById,
+    getByUserId: getStoredChatsByUserId,
+    update: updateStoredChat,
+    updateMany: updateStoredChats,
+    delete: deleteStoredChat,
+    deleteAll: deleteAllStoredChats,
+  },
+
+  // Message related functions
+  messages: {
+    getById: getStoredMessageById,
+    getByChatId: getStoredMessagesByChatId,
+    update: updateStoredMessage,
+    delete: deleteStoredMessage,
+    deleteIncludingAndAfter: deleteStoredMessagesIncludingAndAfter,
+  },
+
+  // File related functions
+  files: {
+    getById: getStoredFileById,
+    getByChatId: getStoredChatFilesByChatId,
+    getCount: getStoredFilesCount,
+    update: updateStoredFile,
+    updateMany: updateStoredChatFiles,
+    delete: deleteStoredFile,
+  },
+
+  // File items related functions
+  fileItems: {
+    getById: getStoredFileItemById,
+    getByFileId: getStoredFileItemsByFileId,
+    getByMessageId: getStoredMessageFileItemsByMessageId,
+    update: updateStoredFileItem,
+    updateMany: updateStoredFileItems,
+  },
+
+  // Feedback related functions
+  feedback: {
+    update: updateStoredFeedback,
+    updateMany: updateStoredFeedbacks,
+  },
+
+  // Message-FileItem junction related functions
+  messageFileItems: {
+    getByMessageId: getStoredMessageFileItemsByMessageId,
+    updateMany: updateStoredMessageFileItems,
+  },
+
+  // Message images related functions
+  messageImages: {
+    store: storeMessageImage,
+    getByPath: getStoredMessageImageByPath,
+  },
 };

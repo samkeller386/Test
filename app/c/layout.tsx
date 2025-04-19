@@ -11,7 +11,7 @@ import { type ReactNode, useContext, useEffect, useState } from 'react';
 import Loading from '../loading';
 import { getChatFilesByChatId } from '@/db/chat-files';
 import { getMessagesByChatId } from '@/db/messages';
-import { cleanStorage, createStorage } from '@/db/local/db';
+import { db } from '@/db/local/db';
 import PQueue from 'p-queue';
 
 interface WorkspaceLayoutProps {
@@ -25,7 +25,7 @@ const fetchWorkspaceData = async (
   try {
     const chats = await getChatsByUserId(userId);
     const queue = new PQueue({ concurrency: 10 });
-    cleanStorage(
+    db.storage.clean(
       userId,
       chats.map((chat) => chat.id),
     );
@@ -38,8 +38,8 @@ const fetchWorkspaceData = async (
           undefined,
           false,
         );
-        const chatFiles = await getChatFilesByChatId(chat.id);
-        createStorage(chat, messages, chatFiles);
+        const chatFiles = await getChatFilesByChatId(chat.id, false);
+        db.storage.create(chat, messages, chatFiles);
       }),
     );
     setChats(chats);

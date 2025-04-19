@@ -1,13 +1,13 @@
 import { supabase } from '@/lib/supabase/browser-client';
 import type { TablesInsert } from '@/supabase/types';
-import { getStoredMessageById, updateStoredMessageFileItems } from './local/db';
+import { db } from './local/db';
 
 export const getMessageFileItemsByMessageId = async (messageId: string) => {
-  const storedMessage = await getStoredMessageById(messageId);
-  if (storedMessage) {
+  const fileItems = await db.messageFileItems.getByMessageId(messageId);
+  if (fileItems) {
     return {
-      ...storedMessage,
-      file_items: storedMessage.file_items,
+      id: messageId,
+      file_items: fileItems,
     };
   }
 
@@ -31,6 +31,8 @@ export const getMessageFileItemsByMessageId = async (messageId: string) => {
     throw new Error(error.message);
   }
 
+  await db.fileItems.updateMany(messageFileItems.file_items);
+
   return messageFileItems;
 };
 
@@ -46,7 +48,7 @@ export const createMessageFileItems = async (
     throw new Error(error.message);
   }
 
-  await updateStoredMessageFileItems(createdMessageFileItems);
+  await db.messageFileItems.updateMany(createdMessageFileItems);
 
   return createdMessageFileItems;
 };

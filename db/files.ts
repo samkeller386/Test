@@ -1,18 +1,13 @@
 import { supabase } from '@/lib/supabase/browser-client';
-import type { TablesInsert, TablesUpdate } from '@/supabase/types';
+import type { Tables, TablesInsert, TablesUpdate } from '@/supabase/types';
 import mammoth from 'mammoth';
 import { toast } from 'sonner';
 import { uploadFile } from './storage/files';
-import {
-  getStoredFileById,
-  getStoredFilesCount,
-  updateStoredFile,
-  deleteStoredFile,
-} from './local/db';
+import { db } from './local/db';
 
-export const getFileById = async (fileId: string) => {
-  const storedFile = await getStoredFileById(fileId);
-  if (storedFile) {
+export const getFileById = async (fileId: string, useStored = true) => {
+  const storedFile = await db.files.getById(fileId);
+  if (useStored && storedFile) {
     return storedFile;
   }
 
@@ -26,11 +21,13 @@ export const getFileById = async (fileId: string) => {
     throw new Error(error.message);
   }
 
+  await db.files.update(file);
+
   return file;
 };
 
 export const getAllFilesCount = async () => {
-  const storedFilesCount = await getStoredFilesCount();
+  const storedFilesCount = await db.files.getCount();
   if (storedFilesCount) {
     return storedFilesCount;
   }
@@ -98,6 +95,7 @@ export const createFile = async (
   if (error) {
     throw new Error(error.message);
   }
+  await db.files.update(createdFile);
 
   const filePath = await uploadFile(file, {
     name: createdFile.name,
@@ -124,14 +122,16 @@ export const createFile = async (
       `Error processing file:${createdFile.id}, status:${response.status}, response:${json.message}`,
     );
     await deleteFile(createdFile.id);
+    await db.files.delete(createdFile.id);
     throw new Error(
       `Failed to process file (${fileRecord.name}): ${json.message}`,
     );
   }
 
-  const fetchedFile = await getFileById(createdFile.id);
+  const fetchedFile = await getFileById(createdFile.id, false);
 
-  await updateStoredFile(fetchedFile);
+  // for the cache
+  await getFileItemsByFileId(createdFile.id, false);
 
   return fetchedFile;
 };
@@ -158,6 +158,7 @@ export const createDocXFile = async (
   if (error) {
     throw new Error(error.message);
   }
+  await db.files.update(createdFile);
 
   const filePath = await uploadFile(file, {
     name: createdFile.name,
@@ -195,8 +196,8 @@ export const createDocXFile = async (
   }
 
   const fetchedFile = await getFileById(createdFile.id);
-
-  await updateStoredFile(fetchedFile);
+  // for the cache
+  await getFileItemsByFileId(createdFile.id, false);
 
   return fetchedFile;
 };
@@ -216,7 +217,7 @@ export const updateFile = async (
     throw new Error(error.message);
   }
 
-  await updateStoredFile(updatedFile);
+  await db.files.update(updatedFile);
 
   return updatedFile;
 };
@@ -228,7 +229,65 @@ export const deleteFile = async (fileId: string) => {
     throw new Error(error.message);
   }
 
-  await deleteStoredFile(fileId);
+  await db.files.delete(fileId);
 
   return true;
+};
+
+export const getFileItemsByFileIds = async (fileIds: string[]) => {
+  if (!fileIds.length) return [];
+
+  const returnData: Tables<'file_items'>[] = [];
+
+  for (const fileId of fileIds) {
+    const storedFileItems = await db.fileItems.getByFileId(fileId);
+    if (storedFileItems) {
+      returnData.push(...storedFileItems);
+    }
+  }
+  const { data, error } = await supabase
+    .from('file_items')
+    .select('*')
+    .in(
+      'file_id',
+      fileIds.filter(
+        (fileId) => !returnData.some((item) => item.file_id === fileId),
+      ),
+    );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  await db.fileItems.updateMany(data);
+  returnData.push(...data);
+
+  return returnData;
+};
+
+export const getFileItemsByFileId = async (
+  fileId: string,
+  useStored = true,
+) => {
+  const storedFileItems = await db.fileItems.getByFileId(
+    fileId,
+    'sequence_number',
+  );
+  if (useStored && storedFileItems) {
+    return storedFileItems;
+  }
+
+  const { data, error } = await supabase
+    .from('file_items')
+    .select('*')
+    .eq('file_id', fileId)
+    .order('sequence_number', { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  await db.fileItems.updateMany(data);
+
+  return data || [];
 };

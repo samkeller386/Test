@@ -1,25 +1,26 @@
 import { supabase } from '@/lib/supabase/browser-client';
-import type { TablesInsert, TablesUpdate } from '@/supabase/types';
-import {
-  deleteAllStoredChats,
-  deleteStoredChat,
-  getStoredChatById,
-  getStoredChatsByUserId,
-  updateStoredChat,
-  updateStoredChats,
-} from './local/db';
+import type { TablesInsert, TablesUpdate, Tables } from '@/supabase/types';
+import { db } from './local/db';
 
 export const getChatById = async (chatId: string) => {
-  const storedChat = await getStoredChatById(chatId);
+  const storedChat = await db.chats.getById(chatId);
   if (storedChat) {
     return storedChat;
   }
 
-  const { data: chat } = await supabase
+  const { data: chat, error } = await supabase
     .from('chats')
     .select('*')
     .eq('id', chatId)
     .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (chat) {
+    await db.chats.update(chat);
+  }
 
   return chat;
 };
@@ -35,7 +36,7 @@ export const createChat = async (chat: TablesInsert<'chats'>) => {
     throw new Error(error.message);
   }
 
-  await updateStoredChat(createdChat);
+  await db.chats.update(createdChat);
 
   return createdChat;
 };
@@ -55,7 +56,7 @@ export const updateChat = async (
     throw new Error(error.message);
   }
 
-  await updateStoredChat(updatedChat);
+  await db.chats.update(updatedChat);
 
   return updatedChat;
 };
@@ -67,7 +68,7 @@ export const deleteChat = async (chatId: string) => {
     throw new Error(error.message);
   }
 
-  await deleteStoredChat(chatId);
+  await db.chats.delete(chatId);
 
   return true;
 };
@@ -82,13 +83,15 @@ export const deleteAllChats = async (userId: string) => {
     throw new Error(chatDeleteError.message);
   }
 
-  await deleteAllStoredChats(userId);
+  await db.chats.deleteAll(userId);
 
   return true;
 };
 
-export const getChatsByUserId = async (userId: string) => {
-  const storedChats = await getStoredChatsByUserId(userId);
+export const getChatsByUserId = async (
+  userId: string,
+): Promise<Tables<'chats'>[]> => {
+  const storedChats = await db.chats.getByUserId(userId);
   if (storedChats) {
     return storedChats;
   }
@@ -103,6 +106,8 @@ export const getChatsByUserId = async (userId: string) => {
   if (error) {
     throw new Error(error.message);
   }
+
+  await db.chats.updateMany(chats);
 
   return chats;
 };
@@ -123,7 +128,42 @@ export const getMoreChatsByUserId = async (
     throw new Error(error.message);
   }
 
-  await updateStoredChats(chats);
+  await db.chats.updateMany(chats);
 
   return chats;
+};
+
+export const getLastSharedMessageId = async (chatId: string) => {
+  const storedChat = await db.chats.getById(chatId);
+  if (storedChat) {
+    return storedChat.last_shared_message_id;
+  }
+
+  const { data, error } = await supabase
+    .from('chats')
+    .select('last_shared_message_id')
+    .eq('id', chatId)
+    .eq('sharing', 'public')
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.last_shared_message_id;
+};
+
+export const getSharedChatsByUserId = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('chats')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('sharing', 'public')
+    .order('shared_at', { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data || [];
 };

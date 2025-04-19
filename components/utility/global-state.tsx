@@ -5,7 +5,7 @@ import { getChatFilesByChatId } from '@/db/chat-files';
 import { getChatById } from '@/db/chats';
 import { getMessagesByChatId } from '@/db/messages';
 import { getProfileByUserId } from '@/db/profile';
-import { getStoredMessageImageByPath, storeMessageImage } from '@/db/local/db';
+import { db } from '@/db/local/db';
 import { getMessageImageFromStorage } from '@/db/storage/message-images';
 import {
   getSubscriptionByTeamId,
@@ -195,7 +195,7 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
         message.image_paths
           ? message.image_paths.map(async (imagePath) => {
               // First try to get the image from IndexedDB
-              const storedImage = await getStoredMessageImageByPath(imagePath);
+              const storedImage = await db.messageImages.getByPath(imagePath);
 
               if (storedImage && storedImage.base64) {
                 return storedImage;
@@ -219,7 +219,7 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
                   };
 
                   // Store the image in IndexedDB for offline use
-                  await storeMessageImage(messageImage);
+                  await db.messageImages.store(messageImage);
 
                   return messageImage;
                 } catch (error) {
@@ -282,9 +282,9 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
       return;
     }
 
-    setChatFiles(chatFiles.files);
+    setChatFiles(chatFiles);
 
-    setUseRetrieval(chatFiles.files.length > 0);
+    setUseRetrieval(chatFiles.length > 0);
     setAllMessagesLoaded(false);
     setIsLoadingMore(false);
 
