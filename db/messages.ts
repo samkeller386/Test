@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase/browser-client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/supabase/types';
-import { db } from './local/db';
+import { localDB } from './local/db';
 
 export type MessageWithFileItemsAndFeedback = Tables<'messages'> & {
   file_items: Tables<'file_items'>[];
@@ -8,7 +8,7 @@ export type MessageWithFileItemsAndFeedback = Tables<'messages'> & {
 };
 
 export const getMessageById = async (messageId: string) => {
-  const storedMessage = await db.messages.getById(messageId);
+  const storedMessage = await localDB.messages.getById(messageId);
   if (storedMessage) {
     return storedMessage;
   }
@@ -32,7 +32,7 @@ export const getMessagesByChatId = async (
   lastSequenceNumber?: number,
   useStored = true,
 ): Promise<MessageWithFileItemsAndFeedback[]> => {
-  const storedMessages = await db.messages.getByChatId(
+  const storedMessages = await localDB.messages.getByChatId(
     chatId,
     limit,
     lastSequenceNumber,
@@ -72,7 +72,7 @@ export const createMessage = async (message: TablesInsert<'messages'>) => {
     throw new Error(error.message);
   }
 
-  db.messages.update(createdMessage);
+  localDB.messages.update(createdMessage);
 
   return createdMessage;
 };
@@ -118,11 +118,11 @@ export const createMessages = async (
       throw new Error(filesError.message);
     }
 
-    db.files.updateMany(files);
+    localDB.files.updateMany(files);
   }
 
   for (const message of createdMessages) {
-    db.messages.update(message);
+    localDB.messages.update(message);
   }
 
   return createdMessages;
@@ -143,7 +143,7 @@ export const updateMessage = async (
     throw new Error(error.message);
   }
 
-  db.messages.update(updatedMessage);
+  localDB.messages.update(updatedMessage);
 
   return updatedMessage;
 };
@@ -158,7 +158,7 @@ export const deleteMessage = async (messageId: string) => {
     throw new Error(error.message);
   }
 
-  db.messages.delete(messageId);
+  localDB.messages.delete(messageId);
 
   return true;
 };
@@ -232,7 +232,7 @@ export async function deleteMessagesIncludingAndAfter(
     files = filesData;
   }
 
-  db.messages.deleteIncludingAndAfter(userId, chatId, sequenceNumber);
+  localDB.messages.deleteIncludingAndAfter(userId, chatId, sequenceNumber);
 
   const { error } = await supabase.rpc('delete_messages_including_and_after', {
     p_user_id: userId,

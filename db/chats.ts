@@ -1,9 +1,9 @@
 import { supabase } from '@/lib/supabase/browser-client';
 import type { TablesInsert, TablesUpdate, Tables } from '@/supabase/types';
-import { db } from './local/db';
+import { localDB } from './local/db';
 
 export const getChatById = async (chatId: string) => {
-  const storedChat = await db.chats.getById(chatId);
+  const storedChat = await localDB.chats.getById(chatId);
   if (storedChat) {
     return storedChat;
   }
@@ -19,7 +19,7 @@ export const getChatById = async (chatId: string) => {
   }
 
   if (chat) {
-    await db.chats.update(chat);
+    await localDB.chats.update(chat);
   }
 
   return chat;
@@ -36,7 +36,7 @@ export const createChat = async (chat: TablesInsert<'chats'>) => {
     throw new Error(error.message);
   }
 
-  await db.chats.update(createdChat);
+  await localDB.chats.update(createdChat);
 
   return createdChat;
 };
@@ -56,7 +56,7 @@ export const updateChat = async (
     throw new Error(error.message);
   }
 
-  await db.chats.update(updatedChat);
+  await localDB.chats.update(updatedChat);
 
   return updatedChat;
 };
@@ -68,7 +68,7 @@ export const deleteChat = async (chatId: string) => {
     throw new Error(error.message);
   }
 
-  await db.chats.delete(chatId);
+  await localDB.chats.delete(chatId);
 
   return true;
 };
@@ -83,7 +83,7 @@ export const deleteAllChats = async (userId: string) => {
     throw new Error(chatDeleteError.message);
   }
 
-  await db.chats.deleteAll(userId);
+  await localDB.chats.deleteAll(userId);
 
   return true;
 };
@@ -92,7 +92,7 @@ export const getChatsByUserId = async (
   userId: string,
   useStored = true,
 ): Promise<Tables<'chats'>[]> => {
-  const storedChats = await db.chats.getByUserId(userId);
+  const storedChats = await localDB.chats.getByUserId(userId);
   if (useStored && storedChats) {
     return storedChats;
   }
@@ -108,7 +108,7 @@ export const getChatsByUserId = async (
     throw new Error(error.message);
   }
 
-  await db.chats.updateMany(chats);
+  await localDB.chats.updateMany(chats);
 
   return chats;
 };
@@ -129,13 +129,13 @@ export const getMoreChatsByUserId = async (
     throw new Error(error.message);
   }
 
-  await db.chats.updateMany(chats);
+  await localDB.chats.updateMany(chats);
 
   return chats;
 };
 
 export const getLastSharedMessageId = async (chatId: string) => {
-  const storedChat = await db.chats.getById(chatId);
+  const storedChat = await localDB.chats.getById(chatId);
   if (storedChat) {
     return storedChat.last_shared_message_id;
   }

@@ -3,10 +3,10 @@ import type { Tables, TablesInsert, TablesUpdate } from '@/supabase/types';
 import mammoth from 'mammoth';
 import { toast } from 'sonner';
 import { uploadFile } from './storage/files';
-import { db } from './local/db';
+import { localDB } from './local/db';
 
 export const getFileById = async (fileId: string, useStored = true) => {
-  const storedFile = await db.files.getById(fileId);
+  const storedFile = await localDB.files.getById(fileId);
   if (useStored && storedFile) {
     return storedFile;
   }
@@ -21,13 +21,13 @@ export const getFileById = async (fileId: string, useStored = true) => {
     throw new Error(error.message);
   }
 
-  await db.files.update(file);
+  await localDB.files.update(file);
 
   return file;
 };
 
 export const getAllFilesCount = async () => {
-  const storedFilesCount = await db.files.getCount();
+  const storedFilesCount = await localDB.files.getCount();
   if (storedFilesCount) {
     return storedFilesCount;
   }
@@ -95,7 +95,7 @@ export const createFile = async (
   if (error) {
     throw new Error(error.message);
   }
-  await db.files.update(createdFile);
+  await localDB.files.update(createdFile);
 
   const filePath = await uploadFile(file, {
     name: createdFile.name,
@@ -122,7 +122,7 @@ export const createFile = async (
       `Error processing file:${createdFile.id}, status:${response.status}, response:${json.message}`,
     );
     await deleteFile(createdFile.id);
-    await db.files.delete(createdFile.id);
+    await localDB.files.delete(createdFile.id);
     throw new Error(
       `Failed to process file (${fileRecord.name}): ${json.message}`,
     );
@@ -158,7 +158,7 @@ export const createDocXFile = async (
   if (error) {
     throw new Error(error.message);
   }
-  await db.files.update(createdFile);
+  await localDB.files.update(createdFile);
 
   const filePath = await uploadFile(file, {
     name: createdFile.name,
@@ -217,7 +217,7 @@ export const updateFile = async (
     throw new Error(error.message);
   }
 
-  await db.files.update(updatedFile);
+  await localDB.files.update(updatedFile);
 
   return updatedFile;
 };
@@ -229,7 +229,7 @@ export const deleteFile = async (fileId: string) => {
     throw new Error(error.message);
   }
 
-  await db.files.delete(fileId);
+  await localDB.files.delete(fileId);
 
   return true;
 };
@@ -240,7 +240,7 @@ export const getFileItemsByFileIds = async (fileIds: string[]) => {
   const returnData: Tables<'file_items'>[] = [];
 
   for (const fileId of fileIds) {
-    const storedFileItems = await db.fileItems.getByFileId(fileId);
+    const storedFileItems = await localDB.fileItems.getByFileId(fileId);
     if (storedFileItems) {
       returnData.push(...storedFileItems);
     }
@@ -259,7 +259,7 @@ export const getFileItemsByFileIds = async (fileIds: string[]) => {
     throw new Error(error.message);
   }
 
-  await db.fileItems.updateMany(data);
+  await localDB.fileItems.updateMany(data);
   returnData.push(...data);
 
   return returnData;
@@ -269,7 +269,7 @@ export const getFileItemsByFileId = async (
   fileId: string,
   useStored = true,
 ) => {
-  const storedFileItems = await db.fileItems.getByFileId(
+  const storedFileItems = await localDB.fileItems.getByFileId(
     fileId,
     'sequence_number',
   );
@@ -287,7 +287,7 @@ export const getFileItemsByFileId = async (
     throw new Error(error.message);
   }
 
-  await db.fileItems.updateMany(data);
+  await localDB.fileItems.updateMany(data);
 
   return data || [];
 };

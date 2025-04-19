@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase/browser-client';
 import type { TablesInsert } from '@/supabase/types';
-import { db } from './local/db';
+import { localDB } from './local/db';
 
 export const createMessageFeedback = async (
   feedback: TablesInsert<'feedback'>,
@@ -14,7 +14,7 @@ export const createMessageFeedback = async (
     throw new Error(error.message);
   }
 
-  await db.feedback.updateMany(createdFeedback);
+  await localDB.feedback.updateMany(createdFeedback);
 
   return createdFeedback;
 };
