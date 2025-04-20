@@ -58,7 +58,6 @@ export const createFileReadTool = (context: ToolContext) => {
     dataStream,
     sandbox: initialSandbox,
     userID,
-    terminalTemplate,
     persistentSandbox: initialPersistentSandbox = true,
     setSandbox,
     isPremiumUser,
@@ -92,7 +91,6 @@ export const createFileReadTool = (context: ToolContext) => {
             userID,
             dataStream,
             isPremiumUser,
-            terminalTemplate,
             setSandbox,
           },
           {

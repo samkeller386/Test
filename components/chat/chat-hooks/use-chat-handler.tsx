@@ -27,7 +27,6 @@ import {
 } from '../chat-helpers';
 import { getMessageFileItemsByMessageId } from '@/db/message-file-items';
 import { useRetrievalLogic } from './retrieval-logic';
-import { isTerminalPlugin } from '@/lib/tools/tool-store/tools-helper';
 
 export const useChatHandler = () => {
   const router = useRouter();
@@ -152,7 +151,7 @@ export const useChatHandler = () => {
       // Update chat's finish reason to 'aborted' when terminal in use
       if (
         selectedChat &&
-        (isTerminalPlugin(toolInUse as PluginID) ||
+        (toolInUse === PluginID.TERMINAL ||
           toolInUse === 'temporary-sandbox' ||
           toolInUse === 'persistent-sandbox')
       ) {

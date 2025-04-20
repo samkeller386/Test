@@ -1,10 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import {
-  type ToolContext,
-  SANDBOX_TEMPLATE,
-  PLUGIN_COMMAND_MAP,
-} from './types';
+import type { ToolContext } from './types';
 import { executeTerminalCommand } from '@/lib/tools/e2b/terminal-executor';
 import {
   streamTerminalOutput,
@@ -12,7 +8,6 @@ import {
 } from '@/lib/ai/terminal-utils';
 import PostHogClient from '@/app/posthog';
 import { ensureSandboxConnection } from './utils/sandbox-utils';
-import { PluginID } from '@/types/plugins';
 
 /**
  * Creates a terminal tool for executing commands in the sandbox environment
@@ -26,7 +21,6 @@ export const createShellExecTool = (context: ToolContext) => {
     userID,
     persistentSandbox: initialPersistentSandbox = true,
     selectedPlugin,
-    terminalTemplate = SANDBOX_TEMPLATE,
     setSandbox,
     isPremiumUser,
   } = context;
@@ -48,18 +42,6 @@ export const createShellExecTool = (context: ToolContext) => {
         command: string;
       };
 
-      // Validate plugin-specific commands
-      if (selectedPlugin && selectedPlugin !== PluginID.NONE) {
-        const expectedCommand = PLUGIN_COMMAND_MAP[selectedPlugin];
-        if (expectedCommand && !command.trim().startsWith(expectedCommand)) {
-          dataStream.writeData({
-            type: 'text-delta',
-            content: `Command must start with "${expectedCommand}" for this plugin`,
-          });
-          return `Command must start with "${expectedCommand}" for this plugin`;
-        }
-      }
-
       // Ensure sandbox connection
       const { sandbox, persistentSandbox } = await ensureSandboxConnection(
         {
@@ -67,7 +49,6 @@ export const createShellExecTool = (context: ToolContext) => {
           dataStream,
           isPremiumUser,
           selectedPlugin,
-          terminalTemplate,
           setSandbox,
         },
         {

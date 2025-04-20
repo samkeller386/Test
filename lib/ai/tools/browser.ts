@@ -5,8 +5,8 @@ import { streamText } from 'ai';
 import { myProvider } from '@/lib/ai/providers';
 import FirecrawlApp, { type ScrapeResponse } from '@mendable/firecrawl-js';
 import PostHogClient from '@/app/posthog';
-import { ChatMetadata, LLMID } from '@/types';
-import { SupabaseClient } from '@supabase/supabase-js';
+import type { ChatMetadata, LLMID } from '@/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   generateTitleFromUserMessage,
   handleChatWithMetadata,

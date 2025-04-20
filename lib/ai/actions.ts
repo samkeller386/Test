@@ -5,7 +5,7 @@ import { extractTextContent } from './message-utils';
 import { z } from 'zod';
 import { waitUntil } from '@vercel/functions';
 import type { BuiltChatMessage, LLMID, ChatMetadata } from '@/types';
-import { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { TablesUpdate } from '@/supabase/types';
 
 export async function createChatWithWaitUntil({

@@ -1,8 +1,5 @@
 import { getAIProfile } from '@/lib/server/server-chat-helpers';
-import {
-  toVercelChatMessages,
-  extractTextContent,
-} from '@/lib/ai/message-utils';
+import { toVercelChatMessages } from '@/lib/ai/message-utils';
 import { handleErrorResponse } from '@/lib/models/api-error';
 import llmConfig from '@/lib/models/llm-config';
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
@@ -21,7 +18,7 @@ import {
   handleChatWithMetadata,
 } from '@/lib/ai/actions';
 import { createClient } from '@/lib/supabase/server';
-import { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const maxDuration = 600;
 
@@ -146,7 +143,7 @@ export async function POST(request: Request) {
         : 'chat-model-gpt-small-with-tools';
     }
 
-    let toolCalled: boolean = false;
+    let toolCalled = false;
 
     try {
       return createDataStreamResponse({

@@ -4,9 +4,9 @@ import llmConfig from '@/lib/models/llm-config';
 import { streamText } from 'ai';
 import { perplexity } from '@ai-sdk/perplexity';
 import PostHogClient from '@/app/posthog';
-import { ChatMetadata, LLMID } from '@/types';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/server';
+import type { ChatMetadata, LLMID } from '@/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 import {
   generateTitleFromUserMessage,
   handleChatWithMetadata,

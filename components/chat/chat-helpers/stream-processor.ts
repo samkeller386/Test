@@ -2,7 +2,6 @@ import type { ChatMessage, DataPartValue } from '@/types';
 import type { AlertAction } from '@/context/alert-context';
 import { processDataStream } from 'ai';
 import { toast } from 'sonner';
-import { getTerminalPlugins } from '@/lib/tools/tool-store/tools-helper';
 import { PluginID } from '@/types/plugins';
 import type { AgentStatusState } from '@/components/messages/agent-status';
 import type { Dispatch, SetStateAction } from 'react';
@@ -299,7 +298,7 @@ export const processResponse = async (
             // Only set finishReason if it hasn't been set before
             if (
               value.finishReason === 'tool-calls' &&
-              getTerminalPlugins().includes(updatedPlugin)
+              updatedPlugin === PluginID.TERMINAL
             ) {
               // To use continue generating for terminal
               finishReason = 'terminal-calls';

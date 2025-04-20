@@ -3,8 +3,8 @@ import { executeTerminalAgent } from './terminal-agent';
 import { executeBrowserTool } from './browser';
 import { z } from 'zod';
 import type { AgentMode, LLMID } from '@/types/llms';
-import { ChatMetadata } from '@/types';
-import { SupabaseClient } from '@supabase/supabase-js';
+import type { ChatMetadata } from '@/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const createToolSchemas = ({
   messages,
