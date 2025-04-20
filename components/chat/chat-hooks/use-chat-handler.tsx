@@ -440,7 +440,6 @@ export const useChatHandler = () => {
       let finishReason = '';
       let ragUsed = false;
       let ragId = null;
-      let assistantGeneratedImages: string[] = [];
       let citations: string[] = [];
 
       const {
@@ -451,10 +450,8 @@ export const useChatHandler = () => {
         ragUsed: ragUsedFromResponse,
         ragId: ragIdFromResponse,
         selectedPlugin: updatedSelectedPlugin,
-        assistantGeneratedImages: assistantGeneratedImagesFromResponse,
         citations: citationsFromResponse,
         chatTitle,
-        isChatSavedInBackend,
       } = await handleHostedChat(
         payload,
         tempAssistantChatMessage,
@@ -478,7 +475,6 @@ export const useChatHandler = () => {
       ragUsed = ragUsedFromResponse;
       ragId = ragIdFromResponse;
       selectedPlugin = updatedSelectedPlugin;
-      assistantGeneratedImages = assistantGeneratedImagesFromResponse;
       citations = citationsFromResponse;
 
       if (isTemporaryChat) {
@@ -501,7 +497,7 @@ export const useChatHandler = () => {
         setTemporaryChatMessages(updatedMessages);
       } else {
         if (!currentChat) {
-          currentChat = await handleCreateChat(
+          currentChat = handleCreateChat(
             baseModel!,
             profile!,
             messageContent || '',
@@ -549,7 +545,6 @@ export const useChatHandler = () => {
           setChatMessages,
           setChatImages,
           selectedPlugin,
-          assistantGeneratedImages,
           editSequenceNumber,
           ragUsed,
           ragId,

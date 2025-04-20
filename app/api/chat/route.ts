@@ -1,24 +1,26 @@
 import { getAIProfile } from '@/lib/server/server-chat-helpers';
-import { toVercelChatMessages } from '@/lib/ai/message-utils';
 import { handleErrorResponse } from '@/lib/models/api-error';
 import llmConfig from '@/lib/models/llm-config';
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
 import { createDataStreamResponse, smoothStream, streamText } from 'ai';
-import { PluginID } from '@/types/plugins';
 import { myProvider } from '@/lib/ai/providers';
 import { terminalPlugins } from '@/lib/ai/terminal-utils';
 import PostHogClient from '@/app/posthog';
 import { handleToolExecution } from '@/lib/ai/tool-handler';
 import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
 import { processRag } from '@/lib/ai/rag-processor';
-import { processChatMessages } from '@/lib/ai/message-utils';
-import type { LLMID } from '@/types';
+import {
+  processChatMessages,
+  toVercelChatMessages,
+} from '@/lib/ai/message-utils';
+import { type LLMID, PluginID } from '@/types';
 import {
   generateTitleFromUserMessage,
   handleChatWithMetadata,
 } from '@/lib/ai/actions';
 import { createClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
 
 export const maxDuration = 600;
 
@@ -150,7 +152,19 @@ export async function POST(request: Request) {
         execute: async (dataStream) => {
           dataStream.writeData({ ragUsed, ragId });
 
-          const baseConfig = {
+          const toolConfig = {
+            messages: validatedMessages,
+            profile,
+            agentMode: modelParams.agentMode,
+            confirmTerminalCommand: modelParams.confirmTerminalCommand,
+            dataStream,
+            abortSignal: request.signal,
+            chatMetadata,
+            model,
+            supabase,
+          };
+
+          const result = streamText({
             model: myProvider.languageModel(finalSelectedModel),
             system: systemPrompt,
             messages: toVercelChatMessages(validatedMessages, supportsImages),
@@ -162,6 +176,15 @@ export async function POST(request: Request) {
                 toolCalled = true;
               }
             },
+            ...(!ragUsed
+              ? {
+                  tools: createToolSchemas(toolConfig).getSelectedSchemas(
+                    config.isLargeModel
+                      ? ['browser', 'webSearch', 'terminal']
+                      : ['browser', 'webSearch'],
+                  ),
+                }
+              : {}),
             onFinish: async ({ finishReason }: { finishReason: string }) => {
               if (supabase && !toolCalled) {
                 await handleChatWithMetadata({
@@ -176,34 +199,8 @@ export async function POST(request: Request) {
                 dataStream.writeData({ isChatSavedInBackend: true });
               }
             },
-          };
-
-          const toolConfig = {
-            messages: validatedMessages,
-            profile,
-            agentMode: modelParams.agentMode,
-            confirmTerminalCommand: modelParams.confirmTerminalCommand,
-            dataStream,
-            abortSignal: request.signal,
-            chatMetadata,
-            model,
-            supabase,
-          };
-
-          const result = streamText({
-            ...baseConfig,
-            ...(!ragUsed
-              ? {
-                  tools: createToolSchemas(toolConfig).getSelectedSchemas(
-                    config.isLargeModel
-                      ? ['browser', 'webSearch', 'terminal']
-                      : ['browser', 'webSearch'],
-                  ),
-                }
-              : {}),
           });
 
-          // Run title generation and streamText in parallel
           await Promise.all([
             result.mergeIntoDataStream(dataStream),
             (async () => {

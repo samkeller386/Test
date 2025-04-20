@@ -63,12 +63,10 @@ export const processResponse = async (
     let isFirstChunk = true;
     let isFirstChunkReceived = false;
     let updatedPlugin = selectedPlugin;
-    const assistantGeneratedImages: string[] = [];
     let toolExecuted = false;
     let citations: string[] = [];
     let shouldSkipFirstChunk = false;
     let chatTitle: string | null = null;
-    let isChatSavedInBackend = false;
 
     try {
       await processDataStream({
@@ -260,11 +258,6 @@ export const processResponse = async (
               chatTitle = firstValue.chatTitle;
             }
 
-            // Handle isChatSavedInBackend
-            if (firstValue?.isChatSavedInBackend) {
-              isChatSavedInBackend = firstValue.isChatSavedInBackend;
-            }
-
             // Handle finishReason
             if (firstValue?.finishReason) {
               if (firstValue.finishReason === 'tool-calls') {
@@ -328,10 +321,8 @@ export const processResponse = async (
       ragUsed,
       ragId,
       selectedPlugin: updatedPlugin,
-      assistantGeneratedImages,
       citations,
       chatTitle,
-      isChatSavedInBackend,
     };
   } else {
     throw new Error('Response body is null');
