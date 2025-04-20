@@ -4,12 +4,20 @@ import llmConfig from '@/lib/models/llm-config';
 import { streamText } from 'ai';
 import { myProvider } from '@/lib/ai/providers';
 import PostHogClient from '@/app/posthog';
+import { handleChatWithMetadata } from '../actions';
+import { ChatMetadata, LLMID } from '@/types';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
+import { generateTitleFromUserMessage } from '@/lib/ai/actions';
 
 interface ReasonLLMConfig {
   messages: any[];
   profile: any;
   dataStream: any;
   isLargeModel: boolean;
+  abortSignal: AbortSignal;
+  chatMetadata?: ChatMetadata;
+  model?: LLMID;
 }
 
 async function getProviderConfig(profile: any) {
@@ -33,7 +41,7 @@ export async function executeReasonLLMTool({
     throw new Error('OpenRouter API key is not set for reason LLM');
   }
 
-  const { messages, profile, dataStream } = config;
+  const { messages, profile, dataStream, abortSignal, chatMetadata } = config;
   const { systemPrompt, model } = await getProviderConfig(profile);
 
   const posthog = PostHogClient();
@@ -47,53 +55,82 @@ export async function executeReasonLLMTool({
     });
   }
 
+  let supabase: SupabaseClient | null = null;
+  let generatedTitle: string;
+  if (chatMetadata?.id) {
+    supabase = await createClient();
+  }
+
   try {
-    const { fullStream } = streamText({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        ...toVercelChatMessages(messages),
-      ],
-      maxTokens: 8192,
-    });
-
-    let thinkingStartTime: number | null = null;
-    let isThinking = false;
-
-    for await (const delta of fullStream) {
-      if (delta.type === 'text-delta') {
-        dataStream.writeData({
-          type: 'text-delta',
-          content: delta.textDelta,
+    await Promise.all([
+      (async () => {
+        const { fullStream } = streamText({
+          model,
+          system: systemPrompt,
+          messages: toVercelChatMessages(messages),
+          maxTokens: 8192,
+          abortSignal: abortSignal,
+          onFinish: async ({ finishReason }: { finishReason: string }) => {
+            if (supabase) {
+              await handleChatWithMetadata({
+                supabase,
+                chatMetadata: config.chatMetadata!,
+                profile,
+                model: config.model!,
+                title: generatedTitle,
+                messages,
+                finishReason,
+              });
+              dataStream.writeData({ isChatSavedInBackend: true });
+            }
+          },
         });
-      }
 
-      if (delta.type === 'reasoning') {
-        if (!isThinking) {
-          isThinking = true;
-          thinkingStartTime = Date.now();
+        let thinkingStartTime: number | null = null;
+        let isThinking = false;
+
+        for await (const delta of fullStream) {
+          if (delta.type === 'text-delta') {
+            dataStream.writeData({
+              type: 'text-delta',
+              content: delta.textDelta,
+            });
+          }
+
+          if (delta.type === 'reasoning') {
+            if (!isThinking) {
+              isThinking = true;
+              thinkingStartTime = Date.now();
+            }
+
+            dataStream.writeData({
+              type: 'reasoning',
+              content: delta.textDelta,
+            });
+          }
         }
 
-        dataStream.writeData({
-          type: 'reasoning',
-          content: delta.textDelta,
-        });
-      }
-    }
-
-    if (isThinking && thinkingStartTime) {
-      isThinking = false;
-      const thinkingElapsedSecs = Math.round(
-        (Date.now() - thinkingStartTime) / 1000,
-      );
-      dataStream.writeData({
-        type: 'thinking-time',
-        elapsed_secs: thinkingElapsedSecs,
-      });
-    }
+        if (isThinking && thinkingStartTime) {
+          isThinking = false;
+          const thinkingElapsedSecs = Math.round(
+            (Date.now() - thinkingStartTime) / 1000,
+          );
+          dataStream.writeData({
+            type: 'thinking-time',
+            elapsed_secs: thinkingElapsedSecs,
+          });
+        }
+      })(),
+      (async () => {
+        if (chatMetadata?.newChat) {
+          generatedTitle = await generateTitleFromUserMessage({
+            messages,
+            abortSignal: config.abortSignal,
+          });
+          dataStream.writeData({ chatTitle: generatedTitle });
+        }
+      })(),
+    ]);
 
     return 'Reason LLM execution completed';
   } catch (error) {

@@ -8,7 +8,7 @@ import { PluginID } from '@/types/plugins';
 import { myProvider } from '@/lib/ai/providers';
 import { terminalPlugins } from '@/lib/ai/terminal-utils';
 import PostHogClient from '@/app/posthog';
-import { handleToolExecution } from '@/lib/ai/tool-handler-v2';
+import { handleToolExecution } from '@/lib/ai/tool-handler';
 import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
 import { processRag } from '@/lib/ai/rag-processor';
 import { processChatMessages } from '@/lib/ai/message-utils';
@@ -73,13 +73,6 @@ export async function POST(request: Request) {
       profile.profile_context,
     );
 
-    const title = generateTitleFromUserMessage({
-      message:
-        messages.find((m: { role: string }) => m.role === 'user') ||
-        messages[messages.length - 1],
-      abortSignal: request.signal,
-    });
-
     const toolResponse = await handleToolExecution({
       messages: validatedMessages,
       profile,
@@ -89,8 +82,9 @@ export async function POST(request: Request) {
       agentMode: modelParams.agentMode,
       confirmTerminalCommand: modelParams.confirmTerminalCommand,
       abortSignal: request.signal,
+      // For saving the chat on backend
       chatMetadata,
-      title,
+      model,
     });
     if (toolResponse) {
       return toolResponse;
@@ -128,7 +122,7 @@ export async function POST(request: Request) {
         : 'chat-model-gpt-small-with-tools';
     }
 
-    let generatedTitle = '';
+    let generatedTitle: string;
     let supabase: SupabaseClient | null = null;
     let toolCalled: boolean = false;
 
@@ -191,6 +185,8 @@ export async function POST(request: Request) {
             confirmTerminalCommand: modelParams.confirmTerminalCommand,
             dataStream,
             abortSignal: request.signal,
+            chatMetadata,
+            model,
           };
 
           const result = streamText({
@@ -211,7 +207,10 @@ export async function POST(request: Request) {
             result.mergeIntoDataStream(dataStream),
             (async () => {
               if (chatMetadata.newChat) {
-                generatedTitle = await title;
+                generatedTitle = await generateTitleFromUserMessage({
+                  messages,
+                  abortSignal: request.signal,
+                });
                 dataStream.writeData({ chatTitle: generatedTitle });
               }
             })(),

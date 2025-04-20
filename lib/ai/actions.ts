@@ -1,13 +1,12 @@
-import { type CoreUserMessage, generateObject } from 'ai';
+import { generateObject } from 'ai';
 import { myProvider } from './providers';
 import { DEFAULT_TITLE_GENERATION_PROMPT_TEMPLATE } from './prompts';
 import { extractTextContent } from './message-utils';
 import { z } from 'zod';
 import { waitUntil } from '@vercel/functions';
-import type { LLMID } from '@/types';
+import type { BuiltChatMessage, LLMID, ChatMetadata } from '@/types';
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { TablesUpdate } from '@/supabase/types';
-import type { ChatMetadata } from '@/types/chat';
 
 export async function createChatWithWaitUntil({
   supabase,
@@ -90,12 +89,15 @@ export async function updateChatWithWaitUntil({
 }
 
 export async function generateTitleFromUserMessage({
-  message,
+  messages,
   abortSignal,
 }: {
-  message: CoreUserMessage;
-  abortSignal?: AbortSignal;
+  messages: BuiltChatMessage[];
+  abortSignal: AbortSignal;
 }) {
+  const message =
+    messages.find((m: { role: string }) => m.role === 'user') ||
+    messages[messages.length - 1];
   const textContent = extractTextContent(message.content);
 
   const {
