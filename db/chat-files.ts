@@ -28,3 +28,16 @@ export const getChatFilesByChatId = async (
 
   return chatFiles;
 };
+
+export const getChatFilesByMultipleChatIds = async (chatIds: string[]) => {
+  const { data: chatFiles, error } = await supabase
+    .from('files')
+    .select('*')
+    .in('chat_id', chatIds);
+
+  if (error) {
+    throw new Error(`Error fetching chat files: ${error.message}`);
+  }
+
+  await localDB.files.updateMany(chatFiles);
+};

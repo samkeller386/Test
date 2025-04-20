@@ -61,6 +61,19 @@ export const getMessagesByChatId = async (
   return messages.reverse();
 };
 
+export const getMessagesByMultipleChatIds = async (chatIds: string[]) => {
+  const { data: messages } = await supabase
+    .from('messages')
+    .select('*')
+    .in('chat_id', chatIds);
+
+  if (!messages) {
+    throw new Error('Messages not found');
+  }
+
+  localDB.messages.updateMany(messages);
+};
+
 export const createMessage = async (message: TablesInsert<'messages'>) => {
   const { data: createdMessage, error } = await supabase
     .from('messages')

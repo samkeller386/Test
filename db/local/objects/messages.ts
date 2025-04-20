@@ -188,11 +188,18 @@ const deleteStoredMessagesIncludingAndAfter = async (
   }
 };
 
+const updateStoredMessages = async (messages: Tables<'messages'>[]) => {
+  for (const message of messages) {
+    await updateStoredMessage(message);
+  }
+};
+
 export const messages = {
   // Message related functions
   getById: getStoredMessageById,
   getByChatId: getStoredMessagesByChatId,
   update: updateStoredMessage,
+  updateMany: updateStoredMessages,
   delete: deleteStoredMessage,
   deleteIncludingAndAfter: deleteStoredMessagesIncludingAndAfter,
 };

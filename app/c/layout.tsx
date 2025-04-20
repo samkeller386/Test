@@ -3,16 +3,15 @@
 import { Dashboard } from '@/components/ui/dashboard';
 import { PentestGPTContext } from '@/context/context';
 import { useUIContext } from '@/context/ui-context';
+import { getChatFilesByMultipleChatIds } from '@/db/chat-files';
 import { getChatsByUserId } from '@/db/chats';
+import { localDB } from '@/db/local/db';
+import { getMessagesByMultipleChatIds } from '@/db/messages';
 import { getSubscriptionByUserId } from '@/db/subscriptions';
 import { LargeModel, SmallModel } from '@/lib/models/hackerai-llm-list';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useContext, useEffect, useState } from 'react';
 import Loading from '../loading';
-import { getChatFilesByChatId } from '@/db/chat-files';
-import { getMessagesByChatId } from '@/db/messages';
-import { localDB } from '@/db/local/db';
-import PQueue from 'p-queue';
 
 interface WorkspaceLayoutProps {
   children: ReactNode;
@@ -24,27 +23,15 @@ const fetchWorkspaceData = async (
 ) => {
   try {
     const chats = await getChatsByUserId(userId, false);
-    const queue = new PQueue({ concurrency: 10 });
     await localDB.storage.clean(
       userId,
       chats.map((chat) => chat.id),
     );
 
-    chats.map((chat) =>
-      queue.add(async () => {
-        const messages = await getMessagesByChatId(
-          chat.id,
-          9999, // Fetch all messages
-          undefined,
-          false,
-        );
-        const chatFiles = await getChatFilesByChatId(chat.id, false);
-        localDB.storage.create(chat, messages, chatFiles);
-      }),
-    );
-    setChats(chats);
+    await getChatFilesByMultipleChatIds(chats.map((chat) => chat.id));
+    await getMessagesByMultipleChatIds(chats.map((chat) => chat.id));
 
-    await queue.onIdle();
+    setChats(chats);
     return true;
   } catch (error) {
     console.error('Error fetching workspace data:', error);
