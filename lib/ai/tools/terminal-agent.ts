@@ -30,8 +30,9 @@ interface TerminalToolConfig {
   selectedPlugin?: PluginID;
   abortSignal: AbortSignal;
   // For saving the chat on backend
-  chatMetadata?: ChatMetadata;
-  model?: LLMID;
+  chatMetadata: ChatMetadata;
+  model: LLMID;
+  supabase: SupabaseClient | null;
 }
 
 export async function executeTerminalAgent({
@@ -46,6 +47,8 @@ export async function executeTerminalAgent({
     selectedPlugin,
     abortSignal,
     chatMetadata,
+    model,
+    supabase,
   } = config;
   let messages = config.messages;
 
@@ -109,12 +112,8 @@ export async function executeTerminalAgent({
       messages = result.messages;
     }
 
-    let supabase: SupabaseClient | null = null;
     let generatedTitle: string;
     let customFinishReason: string | null = null;
-    if (chatMetadata?.id) {
-      supabase = await createClient();
-    }
 
     await Promise.all([
       (async () => {
@@ -141,9 +140,9 @@ export async function executeTerminalAgent({
             if (supabase) {
               await handleChatWithMetadata({
                 supabase,
-                chatMetadata: config.chatMetadata!,
+                chatMetadata,
                 profile,
-                model: config.model!,
+                model,
                 title: generatedTitle,
                 messages,
                 finishReason: customFinishReason

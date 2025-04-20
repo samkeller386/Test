@@ -16,8 +16,9 @@ interface ReasonLLMConfig {
   dataStream: any;
   isLargeModel: boolean;
   abortSignal: AbortSignal;
-  chatMetadata?: ChatMetadata;
-  model?: LLMID;
+  chatMetadata: ChatMetadata;
+  model: LLMID;
+  supabase: SupabaseClient | null;
 }
 
 async function getProviderConfig(profile: any) {
@@ -41,8 +42,17 @@ export async function executeReasonLLMTool({
     throw new Error('OpenRouter API key is not set for reason LLM');
   }
 
-  const { messages, profile, dataStream, abortSignal, chatMetadata } = config;
-  const { systemPrompt, model } = await getProviderConfig(profile);
+  const {
+    messages,
+    profile,
+    dataStream,
+    abortSignal,
+    chatMetadata,
+    model,
+    supabase,
+  } = config;
+  const { systemPrompt, model: selectedModel } =
+    await getProviderConfig(profile);
 
   const posthog = PostHogClient();
   if (posthog) {
@@ -50,22 +60,18 @@ export async function executeReasonLLMTool({
       distinctId: profile.user_id,
       event: 'reason_llm_executed',
       properties: {
-        model: model,
+        model: selectedModel,
       },
     });
   }
 
-  let supabase: SupabaseClient | null = null;
   let generatedTitle: string;
-  if (chatMetadata?.id) {
-    supabase = await createClient();
-  }
 
   try {
     await Promise.all([
       (async () => {
         const { fullStream } = streamText({
-          model,
+          model: selectedModel,
           system: systemPrompt,
           messages: toVercelChatMessages(messages),
           maxTokens: 8192,
@@ -74,9 +80,9 @@ export async function executeReasonLLMTool({
             if (supabase) {
               await handleChatWithMetadata({
                 supabase,
-                chatMetadata: config.chatMetadata!,
+                chatMetadata,
                 profile,
-                model: config.model!,
+                model,
                 title: generatedTitle,
                 messages,
                 finishReason,

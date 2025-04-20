@@ -19,8 +19,9 @@ interface WebSearchConfig {
   isLargeModel: boolean;
   directToolCall?: boolean;
   abortSignal: AbortSignal;
-  chatMetadata?: ChatMetadata;
-  model?: LLMID;
+  chatMetadata: ChatMetadata;
+  model: LLMID;
+  supabase: SupabaseClient | null;
 }
 
 async function getProviderConfig(isLargeModel: boolean, profile: any) {
@@ -57,6 +58,7 @@ export async function executeWebSearchTool({
     directToolCall,
     abortSignal,
     chatMetadata,
+    model,
   } = config;
   const { systemPrompt, selectedModel } = await getProviderConfig(
     isLargeModel,
@@ -83,7 +85,7 @@ export async function executeWebSearchTool({
 
   let supabase: SupabaseClient | null = null;
   let generatedTitle: string;
-  if (chatMetadata?.id) {
+  if (chatMetadata?.id && model) {
     supabase = await createClient();
   }
 
@@ -100,9 +102,9 @@ export async function executeWebSearchTool({
             if (supabase) {
               await handleChatWithMetadata({
                 supabase,
-                chatMetadata: config.chatMetadata!,
+                chatMetadata,
                 profile,
-                model: config.model!,
+                model,
                 title: generatedTitle,
                 messages,
                 finishReason,

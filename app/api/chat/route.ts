@@ -75,7 +75,7 @@ export async function POST(request: Request) {
 
     let supabase: SupabaseClient | null = null;
     let generatedTitle: string;
-    if (chatMetadata.id) {
+    if (chatMetadata.id && model) {
       supabase = await createClient();
     }
 
@@ -105,6 +105,7 @@ export async function POST(request: Request) {
       // For saving the chat on backend
       chatMetadata,
       model,
+      supabase,
     });
     if (toolResponse) {
       return toolResponse;
@@ -186,6 +187,7 @@ export async function POST(request: Request) {
             abortSignal: request.signal,
             chatMetadata,
             model,
+            supabase,
           };
 
           const result = streamText({

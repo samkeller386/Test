@@ -5,7 +5,7 @@ import { executeReasonLLMTool } from '@/lib/ai/tools/reason-llm';
 import { terminalPlugins } from '@/lib/ai/terminal-utils';
 import { createStreamResponse } from '@/lib/ai-helper';
 import { ChatMetadata, BuiltChatMessage, AgentMode, LLMID } from '@/types';
-
+import { SupabaseClient } from '@supabase/supabase-js';
 interface ToolHandlerConfig {
   messages: BuiltChatMessage[];
   profile: any;
@@ -15,8 +15,9 @@ interface ToolHandlerConfig {
   agentMode: AgentMode;
   confirmTerminalCommand: boolean;
   abortSignal: AbortSignal;
-  chatMetadata?: ChatMetadata;
-  model?: LLMID;
+  chatMetadata: ChatMetadata;
+  model: LLMID;
+  supabase: SupabaseClient | null;
 }
 
 export async function handleToolExecution(config: ToolHandlerConfig) {
@@ -31,6 +32,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
     abortSignal,
     chatMetadata,
     model,
+    supabase,
   } = config;
 
   switch (selectedPlugin) {
@@ -46,22 +48,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
             abortSignal,
             chatMetadata,
             model,
-          },
-        });
-      });
-
-    case PluginID.TERMINAL:
-      return createStreamResponse(async (dataStream) => {
-        await executeTerminalAgent({
-          config: {
-            messages,
-            profile,
-            dataStream,
-            agentMode,
-            confirmTerminalCommand,
-            abortSignal,
-            chatMetadata,
-            model,
+            supabase,
           },
         });
       });
@@ -77,6 +64,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
             abortSignal,
             chatMetadata,
             model,
+            supabase,
           },
         });
       });
@@ -85,7 +73,8 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
       if (
         isTerminalContinuation ||
         confirmTerminalCommand ||
-        terminalPlugins.includes(selectedPlugin as PluginID)
+        terminalPlugins.includes(selectedPlugin as PluginID) ||
+        selectedPlugin === PluginID.TERMINAL
       ) {
         return createStreamResponse(async (dataStream) => {
           await executeTerminalAgent({
@@ -99,6 +88,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
               abortSignal,
               chatMetadata,
               model,
+              supabase,
             },
           });
         });
