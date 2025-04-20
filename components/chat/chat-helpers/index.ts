@@ -146,35 +146,21 @@ export const handleCreateChat = async (
   setChats: Dispatch<SetStateAction<Tables<'chats'>[]>>,
   chatId: string,
   chatTitle?: string | null,
-  isChatSavedInBackend?: boolean,
 ) => {
-  let createdChat: Tables<'chats'>;
-
-  if (isChatSavedInBackend) {
-    createdChat = {
-      id: chatId,
-      user_id: profile.user_id,
-      include_profile_context: true,
-      model,
-      name: chatTitle || messageContent.substring(0, 100),
-      finish_reason: finishReason,
-      created_at: new Date().toISOString(),
-      updated_at: null,
-      last_shared_message_id: null,
-      shared_at: null,
-      shared_by: null,
-      sharing: 'private',
-    };
-  } else {
-    createdChat = await createChat({
-      id: chatId,
-      user_id: profile.user_id,
-      include_profile_context: true,
-      model,
-      name: chatTitle || messageContent.substring(0, 100),
-      finish_reason: finishReason,
-    });
-  }
+  const createdChat = {
+    id: chatId,
+    user_id: profile.user_id,
+    include_profile_context: true,
+    model,
+    name: chatTitle || messageContent.substring(0, 100),
+    finish_reason: finishReason,
+    created_at: new Date().toISOString(),
+    updated_at: null,
+    last_shared_message_id: null,
+    shared_at: null,
+    shared_by: null,
+    sharing: 'private',
+  };
 
   setSelectedChat(createdChat);
   setChats((chats) => [createdChat, ...chats]);

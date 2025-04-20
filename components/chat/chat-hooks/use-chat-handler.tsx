@@ -154,7 +154,7 @@ export const useChatHandler = () => {
         selectedChat &&
         (isTerminalPlugin(toolInUse as PluginID) ||
           toolInUse === 'temporary-sandbox' ||
-          toolInUse === 'permanent-sandbox')
+          toolInUse === 'persistent-sandbox')
       ) {
         const updatedChat = await updateChat(selectedChat.id, {
           updated_at: new Date().toISOString(),
@@ -511,28 +511,17 @@ export const useChatHandler = () => {
             setChats,
             chatId,
             chatTitle,
-            isChatSavedInBackend,
           );
 
           // Update URL without triggering a page reload or new history entry
           window.history.replaceState({}, '', `/c/${chatId}`);
         } else {
-          let updatedChat: Tables<'chats'>;
-
-          if (isChatSavedInBackend) {
-            updatedChat = {
-              ...currentChat,
-              updated_at: new Date().toISOString(),
-              finish_reason: finishReason,
-              model: chatSettings?.model || currentChat.model,
-            };
-          } else {
-            updatedChat = await updateChat(currentChat.id, {
-              updated_at: new Date().toISOString(),
-              finish_reason: finishReason,
-              model: chatSettings?.model,
-            });
-          }
+          const updatedChat = {
+            ...currentChat,
+            updated_at: new Date().toISOString(),
+            finish_reason: finishReason,
+            model: chatSettings?.model || currentChat.model,
+          };
 
           setChats((prevChats) => {
             const updatedChats = prevChats.map((prevChat) =>

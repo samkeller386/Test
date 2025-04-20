@@ -73,6 +73,26 @@ export async function POST(request: Request) {
       profile.profile_context,
     );
 
+    let supabase: SupabaseClient | null = null;
+    let generatedTitle: string;
+    if (chatMetadata.id) {
+      supabase = await createClient();
+    }
+
+    request.signal.addEventListener('abort', async () => {
+      if (supabase) {
+        await handleChatWithMetadata({
+          supabase,
+          chatMetadata,
+          profile,
+          model,
+          title: generatedTitle,
+          messages: validatedMessages,
+          finishReason: 'stop',
+        });
+      }
+    });
+
     const toolResponse = await handleToolExecution({
       messages: validatedMessages,
       profile,
@@ -122,33 +142,12 @@ export async function POST(request: Request) {
         : 'chat-model-gpt-small-with-tools';
     }
 
-    let generatedTitle: string;
-    let supabase: SupabaseClient | null = null;
     let toolCalled: boolean = false;
 
     try {
       return createDataStreamResponse({
         execute: async (dataStream) => {
           dataStream.writeData({ ragUsed, ragId });
-
-          if (chatMetadata.id) {
-            supabase = await createClient();
-          }
-
-          // TODO: should be used for saving chat in backend on abort
-          // request.signal.addEventListener('abort', async () => {
-          //   if (supabase && !toolCalled && !ragUsed) {
-          //     await handleChatWithMetadata({
-          //       supabase,
-          //       chatMetadata,
-          //       profile,
-          //       model,
-          //       title: generatedTitle,
-          //       messages: validatedMessages,
-          //       finishReason: 'stop',
-          //     });
-          //   }
-          // });
 
           const baseConfig = {
             model: myProvider.languageModel(finalSelectedModel),
