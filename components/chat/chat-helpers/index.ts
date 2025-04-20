@@ -137,7 +137,7 @@ export const fetchChatResponse = async (
   return response;
 };
 
-export const handleCreateChat = async (
+export const handleCreateChat = (
   model: LLMID,
   profile: Tables<'profiles'>,
   messageContent: string,
