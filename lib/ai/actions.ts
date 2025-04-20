@@ -93,13 +93,25 @@ export async function updateChatWithWaitUntil({
           .single();
 
         if (error) {
-          console.error('Error updating chat:', error);
+          console.error('Error updating chat:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            chatId,
+            updates,
+          });
           return;
         }
 
         // console.log('Updated chat:', updatedChat);
       } catch (error) {
-        console.error('Error in waitUntil:', error);
+        console.error('Error in waitUntil:', {
+          error,
+          chatId,
+          updates,
+          stack: error instanceof Error ? error.stack : undefined,
+        });
       }
     })(),
   );
