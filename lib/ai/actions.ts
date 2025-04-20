@@ -44,6 +44,23 @@ export async function createChatWithWaitUntil({
           .single();
 
         if (error) {
+          // If it's a duplicate key error, update instead
+          if (error.code === '23505') {
+            const { error: updateError } = await supabase
+              .from('chats')
+              .update({
+                updated_at: new Date().toISOString(),
+                finish_reason: finishReason,
+                model,
+              })
+              .eq('id', chatId);
+
+            if (updateError) {
+              console.error('Error updating chat:', updateError);
+            }
+            return;
+          }
+
           console.error('Error creating chat:', error);
           return;
         }
