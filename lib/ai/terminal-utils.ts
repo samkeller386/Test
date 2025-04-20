@@ -1,7 +1,8 @@
 import { encode, decode } from 'gpt-tokenizer';
 import { PluginID } from '@/types/plugins';
-const MAX_TOKENS = 4000;
-const INITIAL_TOKENS = 1000;
+
+const STREAM_MAX_TOKENS = 2048;
+const AGENT_MAX_TOKENS = 32000;
 
 export async function streamTerminalOutput(
   terminalStream: ReadableStream<Uint8Array>,
@@ -9,22 +10,55 @@ export async function streamTerminalOutput(
 ): Promise<string> {
   const reader = terminalStream.getReader();
   let terminalOutput = '';
+  let truncationMessageSent = false;
+  const maxTokens = STREAM_MAX_TOKENS;
+  let currentTokens = 0;
+
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
+
     const chunk = new TextDecoder().decode(value);
-    terminalOutput += chunk;
-    enqueueChunk(chunk);
+    const newTokens = encode(chunk).length;
+
+    if (currentTokens >= maxTokens) {
+      if (!truncationMessageSent) {
+        enqueueChunk('...\n\n[Output truncated because too long]\n```');
+        truncationMessageSent = true;
+      }
+      continue;
+    }
+
+    const remainingTokens = maxTokens - currentTokens;
+    if (newTokens > remainingTokens) {
+      // Truncate the chunk to fit within remaining tokens
+      const tokens = encode(chunk);
+      const truncatedTokens = tokens.slice(0, remainingTokens);
+      const truncatedChunk = decode(truncatedTokens);
+
+      enqueueChunk(truncatedChunk);
+      terminalOutput += truncatedChunk;
+      currentTokens += truncatedTokens.length;
+
+      if (!truncationMessageSent) {
+        enqueueChunk('...\n\n[Output truncated because too long]\n```');
+        truncationMessageSent = true;
+      }
+    } else {
+      enqueueChunk(chunk);
+      terminalOutput += chunk;
+      currentTokens += newTokens;
+    }
   }
+
   return terminalOutput;
 }
 
 export function reduceTerminalOutput(output: string): string {
   const tokens = encode(output);
-  if (tokens.length > MAX_TOKENS) {
-    const initial = tokens.slice(0, INITIAL_TOKENS);
-    const remaining = tokens.slice(-(MAX_TOKENS - INITIAL_TOKENS));
-    return `${decode(initial)}\n...\n${decode(remaining)}`;
+  if (tokens.length > AGENT_MAX_TOKENS) {
+    const initial = tokens.slice(0, AGENT_MAX_TOKENS);
+    return `${decode(initial)}...\n\n[Output truncated because too long]\n\`\`\``;
   }
   return output;
 }
