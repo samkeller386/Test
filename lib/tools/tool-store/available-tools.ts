@@ -36,7 +36,7 @@ export const availablePlugins: PluginSummary[] = [
   },
   {
     id: 1,
-    name: 'Enhanced Search',
+    name: 'RAG Search',
     value: PluginID.ENHANCED_SEARCH,
     categories: ['utils'],
     icon: 'https://cdn-icons-png.flaticon.com/128/11751/11751689.png',
