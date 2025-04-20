@@ -84,7 +84,7 @@ export async function executeWebSearchTool({
   }
 
   let supabase: SupabaseClient | null = null;
-  let generatedTitle: string;
+  let generatedTitle: string | undefined;
   if (chatMetadata?.id && model) {
     supabase = await createClient();
   }

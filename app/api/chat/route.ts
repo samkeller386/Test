@@ -1,5 +1,8 @@
 import { getAIProfile } from '@/lib/server/server-chat-helpers';
-import { toVercelChatMessages } from '@/lib/ai/message-utils';
+import {
+  toVercelChatMessages,
+  extractTextContent,
+} from '@/lib/ai/message-utils';
 import { handleErrorResponse } from '@/lib/models/api-error';
 import llmConfig from '@/lib/models/llm-config';
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
@@ -74,7 +77,7 @@ export async function POST(request: Request) {
     );
 
     let supabase: SupabaseClient | null = null;
-    let generatedTitle: string;
+    let generatedTitle: string | undefined;
     if (chatMetadata.id && model) {
       supabase = await createClient();
     }

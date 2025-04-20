@@ -112,7 +112,7 @@ export async function executeTerminalAgent({
       messages = result.messages;
     }
 
-    let generatedTitle: string;
+    let generatedTitle: string | undefined;
     let customFinishReason: string | null = null;
 
     await Promise.all([

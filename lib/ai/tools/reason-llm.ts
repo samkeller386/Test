@@ -65,7 +65,7 @@ export async function executeReasonLLMTool({
     });
   }
 
-  let generatedTitle: string;
+  let generatedTitle: string | undefined;
 
   try {
     await Promise.all([

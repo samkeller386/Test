@@ -95,29 +95,39 @@ export async function generateTitleFromUserMessage({
   messages: BuiltChatMessage[];
   abortSignal: AbortSignal;
 }) {
-  const message =
-    messages.find((m: { role: string }) => m.role === 'user') ||
-    messages[messages.length - 1];
-  const textContent = extractTextContent(message.content);
+  try {
+    const message =
+      messages.find((m: { role: string }) => m.role === 'user') ||
+      messages[messages.length - 1];
+    const textContent = extractTextContent(message.content);
 
-  const {
-    object: { title },
-  } = await generateObject({
-    model: myProvider.languageModel('chat-model-small'),
-    schema: z.object({
-      title: z.string().describe('The generated title (3-5 words)'),
-    }),
-    messages: [
-      {
-        role: 'user',
-        content: DEFAULT_TITLE_GENERATION_PROMPT_TEMPLATE(textContent),
-      },
-    ],
-    abortSignal,
-    maxTokens: 50,
-  });
+    const {
+      object: { title },
+    } = await generateObject({
+      model: myProvider.languageModel('chat-model-small'),
+      schema: z.object({
+        title: z.string().describe('The generated title (3-5 words)'),
+      }),
+      messages: [
+        {
+          role: 'user',
+          content: DEFAULT_TITLE_GENERATION_PROMPT_TEMPLATE(textContent),
+        },
+      ],
+      abortSignal,
+      maxTokens: 50,
+    });
 
-  return title;
+    return title;
+  } catch (error) {
+    console.error('[Title Generation] Error:', error);
+    // Return a fallback title based on the first message content
+    const message =
+      messages.find((m: { role: string }) => m.role === 'user') ||
+      messages[messages.length - 1];
+    const textContent = extractTextContent(message.content);
+    return textContent.substring(0, 100).trim();
+  }
 }
 
 export async function handleChatWithMetadata({
