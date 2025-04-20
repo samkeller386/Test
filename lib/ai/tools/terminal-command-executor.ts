@@ -2,7 +2,7 @@ import PostHogClient from '@/app/posthog';
 import { executeTerminalCommand } from '@/lib/tools/e2b/terminal-executor';
 import {
   streamTerminalOutput,
-  reduceTerminalOutput,
+  truncateContentByTokens,
 } from '@/lib/ai/terminal-utils';
 import type { Sandbox } from '@e2b/code-interpreter';
 import type { PluginID } from '@/types/plugins';
@@ -100,7 +100,7 @@ export async function executeTerminalCommandWithConfig({
     terminalOutput += chunk;
   });
 
-  const reducedOutput = reduceTerminalOutput(terminalOutput);
+  const reducedOutput = truncateContentByTokens(terminalOutput);
 
   const updatedMessages = [...messages];
   const lastMessage = updatedMessages[updatedMessages.length - 1];

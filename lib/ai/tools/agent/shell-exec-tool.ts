@@ -4,7 +4,7 @@ import type { ToolContext } from './types';
 import { executeTerminalCommand } from '@/lib/tools/e2b/terminal-executor';
 import {
   streamTerminalOutput,
-  reduceTerminalOutput,
+  truncateContentByTokens,
 } from '@/lib/ai/terminal-utils';
 import PostHogClient from '@/app/posthog';
 import { ensureSandboxConnection } from './utils/sandbox-utils';
@@ -98,7 +98,7 @@ export const createShellExecTool = (context: ToolContext) => {
         terminalOutput += chunk;
       });
 
-      return reduceTerminalOutput(terminalOutput);
+      return truncateContentByTokens(terminalOutput);
     },
   });
 };
