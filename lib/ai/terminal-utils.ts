@@ -6,12 +6,11 @@ const AGENT_MAX_TOKENS = 32000;
 
 export async function streamTerminalOutput(
   terminalStream: ReadableStream<Uint8Array>,
-  enqueueChunk: (chunk: string) => void,
+  dataStream: any,
 ): Promise<string> {
   const reader = terminalStream.getReader();
   let terminalOutput = '';
   let truncationMessageSent = false;
-  const maxTokens = STREAM_MAX_TOKENS;
   let currentTokens = 0;
 
   while (true) {
@@ -21,34 +20,56 @@ export async function streamTerminalOutput(
     const chunk = new TextDecoder().decode(value);
     const newTokens = encode(chunk).length;
 
-    if (currentTokens >= maxTokens) {
+    // Always add to full output
+    terminalOutput += chunk;
+
+    // Only truncate UI display
+    if (currentTokens >= STREAM_MAX_TOKENS) {
       if (!truncationMessageSent) {
-        enqueueChunk('...\n\n[Output truncated because too long]\n```');
+        dataStream.writeData({
+          type: 'text-delta',
+          content: '...\n\n[Output truncated because too long]\n```',
+        });
         truncationMessageSent = true;
       }
       continue;
     }
 
-    const remainingTokens = maxTokens - currentTokens;
+    const remainingTokens = STREAM_MAX_TOKENS - currentTokens;
     if (newTokens > remainingTokens) {
-      // Truncate the chunk to fit within remaining tokens
+      // Truncate the chunk to fit within remaining tokens for UI
       const tokens = encode(chunk);
       const truncatedTokens = tokens.slice(0, remainingTokens);
       const truncatedChunk = decode(truncatedTokens);
 
-      enqueueChunk(truncatedChunk);
-      terminalOutput += truncatedChunk;
+      dataStream.writeData({
+        type: 'text-delta',
+        content: truncatedChunk,
+      });
       currentTokens += truncatedTokens.length;
 
       if (!truncationMessageSent) {
-        enqueueChunk('...\n\n[Output truncated because too long]\n```');
+        dataStream.writeData({
+          type: 'text-delta',
+          content: '...\n\n[Output truncated because too long]\n```',
+        });
         truncationMessageSent = true;
       }
     } else {
-      enqueueChunk(chunk);
-      terminalOutput += chunk;
+      dataStream.writeData({
+        type: 'text-delta',
+        content: chunk,
+      });
       currentTokens += newTokens;
     }
+  }
+
+  // Truncate the final output if it exceeds AGENT_MAX_TOKENS
+  const tokens = encode(terminalOutput);
+  if (tokens.length > AGENT_MAX_TOKENS) {
+    const truncatedTokens = tokens.slice(0, AGENT_MAX_TOKENS);
+    terminalOutput =
+      decode(truncatedTokens) + '\n\n[Output truncated because too long]';
   }
 
   return terminalOutput;

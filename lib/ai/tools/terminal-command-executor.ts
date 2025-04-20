@@ -91,21 +91,12 @@ export async function executeTerminalCommandWithConfig({
     sandbox,
   });
 
-  let terminalOutput = '';
-  await streamTerminalOutput(terminalStream, (chunk) => {
-    dataStream.writeData({
-      type: 'text-delta',
-      content: chunk,
-    });
-    terminalOutput += chunk;
-  });
-
-  const reducedOutput = truncateContentByTokens(terminalOutput);
+  const terminalOutput = await streamTerminalOutput(terminalStream, dataStream);
 
   const updatedMessages = [...messages];
   const lastMessage = updatedMessages[updatedMessages.length - 1];
   if (lastMessage) {
-    lastMessage.content = `${lastMessage.content || ''}\n\n${reducedOutput}`;
+    lastMessage.content = `${lastMessage.content || ''}\n\n${terminalOutput}`;
   }
 
   return { messages: updatedMessages };

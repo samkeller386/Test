@@ -2,10 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import type { ToolContext } from './types';
 import { executeTerminalCommand } from '@/lib/tools/e2b/terminal-executor';
-import {
-  streamTerminalOutput,
-  truncateContentByTokens,
-} from '@/lib/ai/terminal-utils';
+import { streamTerminalOutput } from '@/lib/ai/terminal-utils';
 import PostHogClient from '@/app/posthog';
 import { ensureSandboxConnection } from './utils/sandbox-utils';
 
@@ -89,16 +86,11 @@ export const createShellExecTool = (context: ToolContext) => {
         sandbox,
       });
 
-      let terminalOutput = '';
-      await streamTerminalOutput(terminalStream, (chunk) => {
-        dataStream.writeData({
-          type: 'text-delta',
-          content: chunk,
-        });
-        terminalOutput += chunk;
-      });
-
-      return truncateContentByTokens(terminalOutput);
+      const terminalOutput = await streamTerminalOutput(
+        terminalStream,
+        dataStream,
+      );
+      return terminalOutput;
     },
   });
 };
