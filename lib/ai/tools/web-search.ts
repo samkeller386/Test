@@ -59,6 +59,7 @@ export async function executeWebSearchTool({
     abortSignal,
     chatMetadata,
     model,
+    supabase,
   } = config;
   const { systemPrompt, selectedModel } = await getProviderConfig(
     isLargeModel,
@@ -83,11 +84,7 @@ export async function executeWebSearchTool({
     });
   }
 
-  let supabase: SupabaseClient | null = null;
   let generatedTitle: string | undefined;
-  if (chatMetadata?.id && model) {
-    supabase = await createClient();
-  }
 
   try {
     await Promise.all([

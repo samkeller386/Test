@@ -51,7 +51,15 @@ Always ensure URLs start with 'https://' and contain a valid domain name (e.g., 
       execute: async ({ open_url }: { open_url: string | string[] }) => {
         return executeBrowserTool({
           open_url,
-          config: { profile, messages, dataStream },
+          config: {
+            profile,
+            messages,
+            dataStream,
+            abortSignal,
+            chatMetadata,
+            model,
+            supabase,
+          },
         });
       },
     },
