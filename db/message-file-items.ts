@@ -88,5 +88,7 @@ export const getMessageFileItemsByMultipleMessageIds = async (
     throw new Error(error.message);
   }
 
+  await localDB.messageFileItems.updateMany(messageFileItems);
+
   return messageFileItems;
 };
