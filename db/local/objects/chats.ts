@@ -1,4 +1,4 @@
-import { Tables } from '@/supabase/types';
+import type { Tables } from '@/supabase/types';
 import {
   deleteItem,
   getItem,
@@ -6,6 +6,7 @@ import {
   putItem,
 } from '../core/indexedDB';
 import { STORES } from '../schema/schema';
+import { files as fileDb } from './files';
 import { messages as messageDb } from './messages';
 
 const getStoredChatById = async (
@@ -15,7 +16,12 @@ const getStoredChatById = async (
 };
 
 const updateStoredChat = async (chat: Tables<'chats'>): Promise<void> => {
-  await putItem(STORES.CHATS, chat);
+  try {
+    await putItem(STORES.CHATS, chat);
+  } catch (error) {
+    console.error('Error updating chat:', error);
+    throw error;
+  }
 };
 
 const deleteStoredChat = async (chatId: string): Promise<void> => {
@@ -40,7 +46,7 @@ const deleteStoredChat = async (chatId: string): Promise<void> => {
     );
 
     for (const file of files) {
-      await deleteItem(STORES.FILES, file.id);
+      await fileDb.delete(file.id);
     }
 
     // Finally delete the chat itself
@@ -81,10 +87,10 @@ const getStoredChatsByUserId = async (
       new Map(chats.map((chat) => [chat.id, chat])).values(),
     );
 
-    // Sort by updated_at (most recent first)
+    // Sort by created_at (most recent first)
     uniqueChats.sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
       return dateB - dateA;
     });
 
@@ -96,8 +102,13 @@ const getStoredChatsByUserId = async (
 };
 
 const updateStoredChats = async (chats: Tables<'chats'>[]): Promise<void> => {
-  for (const chat of chats) {
-    await updateStoredChat(chat);
+  try {
+    for (const chat of chats) {
+      await updateStoredChat(chat);
+    }
+  } catch (error) {
+    console.error('Error updating chats:', error);
+    throw error;
   }
 };
 

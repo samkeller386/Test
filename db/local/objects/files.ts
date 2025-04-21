@@ -1,12 +1,11 @@
+import { Tables } from '@/supabase/types';
 import {
-  getObjectStore,
-  getItemsByIndex,
-  getItem,
   deleteItem,
+  getItem,
+  getItemsByIndex,
   putItem,
 } from '../core/indexedDB';
 import { STORES } from '../schema/schema';
-import { Tables } from '@/supabase/types';
 
 const getStoredChatFilesByChatId = async (
   chatId: string,
@@ -34,11 +33,21 @@ const getStoredFilesCount = async (userId: string) => {
 };
 
 const updateStoredFile = async (file: Tables<'files'>): Promise<void> => {
-  await putItem(STORES.FILES, file);
+  try {
+    await putItem(STORES.FILES, file);
+  } catch (error) {
+    console.error('Error updating file:', error);
+    throw error;
+  }
 };
 
 const deleteStoredFile = async (fileId: string): Promise<void> => {
-  await deleteItem(STORES.FILES, fileId);
+  try {
+    await deleteItem(STORES.FILES, fileId);
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    throw error;
+  }
 };
 
 const updateStoredChatFiles = async (
