@@ -137,7 +137,7 @@ export const fetchChatResponse = async (
   return response;
 };
 
-export const handleCreateChat = (
+export const handleCreateChat = async (
   model: LLMID,
   profile: Tables<'profiles'>,
   messageContent: string,
@@ -164,6 +164,8 @@ export const handleCreateChat = (
     last_file_update: new Date().toISOString(),
     last_message_update: new Date().toISOString(),
   };
+
+  await localDB.chats.update(createdChat);
 
   setSelectedChat(createdChat);
   setChats((chats) => [createdChat, ...chats]);
