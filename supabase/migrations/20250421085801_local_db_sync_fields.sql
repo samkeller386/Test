@@ -48,18 +48,18 @@ CREATE OR REPLACE FUNCTION update_chat_last_file_update()
 RETURNS TRIGGER AS $$
 BEGIN
     IF TG_OP = 'DELETE' THEN
-        -- For file_items table, which has a relation to messages and thus to chats
-        UPDATE chats
-        SET last_file_update = NOW()
-        FROM messages
-        WHERE messages.id = OLD.message_id AND chats.id = messages.chat_id;
+        IF OLD.chat_id IS NOT NULL THEN
+            UPDATE chats
+            SET last_file_update = NOW()
+            WHERE id = OLD.chat_id;
+        END IF;
         RETURN OLD;
     ELSE
-        -- For file_items table, which has a relation to messages and thus to chats
-        UPDATE chats
-        SET last_file_update = NOW()
-        FROM messages
-        WHERE messages.id = NEW.message_id AND chats.id = messages.chat_id;
+        IF NEW.chat_id IS NOT NULL THEN
+            UPDATE chats
+            SET last_file_update = NOW()
+            WHERE id = NEW.chat_id;
+        END IF;
         RETURN NEW;
     END IF;
 END;
@@ -77,9 +77,9 @@ AFTER INSERT OR UPDATE OR DELETE ON feedback
 FOR EACH ROW
 EXECUTE FUNCTION update_chat_last_feedback_update();
 
--- Create triggers on file_items table
+-- Create triggers on files table
 CREATE TRIGGER update_chat_file_timestamp
-AFTER INSERT OR UPDATE OR DELETE ON file_items
+AFTER INSERT OR UPDATE OR DELETE ON files
 FOR EACH ROW
 EXECUTE FUNCTION update_chat_last_file_update();
 
