@@ -1,10 +1,10 @@
 import { getItemsByIndex, putItem } from '../core/indexedDB';
 
-import { Tables } from '@/supabase/types';
+import type { Tables } from '@/supabase/types';
 import { STORES } from '../schema/schema';
-import { MessageWithFileItemsAndFeedback } from '../../messages';
+import type { MessageWithFileItemsAndFeedback } from '../../messages';
 import { getItem, deleteItem } from '../core/indexedDB';
-import { MessageImage } from '@/types/images/message-image';
+import type { MessageImage } from '@/types/images/message-image';
 
 const getStoredMessageById = async (
   messageId: string,
@@ -98,7 +98,12 @@ const getStoredMessagesByChatId = async (
 const deleteStoredMessageImagesByMessageId = async (
   messageId: string,
 ): Promise<void> => {
-  await deleteItem(STORES.MESSAGE_IMAGES, messageId);
+  try {
+    await deleteItem(STORES.MESSAGE_IMAGES, messageId);
+  } catch (error) {
+    console.error('Error deleting message images:', error);
+    throw error;
+  }
 };
 
 const deleteStoredMessage = async (messageId: string): Promise<void> => {
@@ -157,7 +162,12 @@ const deleteStoredMessage = async (messageId: string): Promise<void> => {
 const updateStoredMessage = async (
   message: Tables<'messages'>,
 ): Promise<void> => {
-  await putItem(STORES.MESSAGES, message);
+  try {
+    await putItem(STORES.MESSAGES, message);
+  } catch (error) {
+    console.error('Error updating message:', error);
+    throw error;
+  }
 };
 
 const deleteStoredMessagesIncludingAndAfter = async (
@@ -189,8 +199,13 @@ const deleteStoredMessagesIncludingAndAfter = async (
 };
 
 const updateStoredMessages = async (messages: Tables<'messages'>[]) => {
-  for (const message of messages) {
-    await updateStoredMessage(message);
+  try {
+    for (const message of messages) {
+      await updateStoredMessage(message);
+    }
+  } catch (error) {
+    console.error('Error updating messages:', error);
+    throw error;
   }
 };
 
