@@ -1,6 +1,6 @@
 // IndexedDB setup
 const DB_NAME = 'pentest_gpt_db';
-const DB_VERSION = 8;
+const DB_VERSION = 9;
 
 const STORES = {
   CHATS: 'chats',
@@ -10,6 +10,7 @@ const STORES = {
   FILES: 'files',
   MESSAGE_FILE_ITEMS: 'messageFileItems',
   MESSAGE_IMAGES: 'messageImages',
+  SYNC_DATA: 'syncData',
 };
 
 // Initialize database
@@ -142,7 +143,7 @@ const initDB = (): Promise<IDBDatabase> => {
         const messageImagesStore = db.createObjectStore(STORES.MESSAGE_IMAGES, {
           keyPath: 'path', // Use image path as the key
         });
-        messageImagesStore.createIndex('message_id', 'messageId', {
+        messageImagesStore.createIndex('message_id', 'message_id', {
           unique: false,
         });
         messageImagesStore.createIndex('path', 'path', { unique: true });
@@ -151,13 +152,19 @@ const initDB = (): Promise<IDBDatabase> => {
           STORES.MESSAGE_IMAGES,
         );
         if (!messageImagesStore.indexNames.contains('message_id')) {
-          messageImagesStore.createIndex('message_id', 'messageId', {
+          messageImagesStore.createIndex('message_id', 'message_id', {
             unique: false,
           });
         }
         if (!messageImagesStore.indexNames.contains('path')) {
           messageImagesStore.createIndex('path', 'path', { unique: true });
         }
+      }
+
+      if (!db.objectStoreNames.contains(STORES.SYNC_DATA)) {
+        db.createObjectStore(STORES.SYNC_DATA, {
+          keyPath: 'id',
+        });
       }
 
       console.log('IndexedDB upgraded to version', DB_VERSION);

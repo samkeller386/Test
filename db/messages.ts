@@ -62,6 +62,10 @@ export const getMessagesByChatId = async (
 };
 
 export const getMessagesByMultipleChatIds = async (chatIds: string[]) => {
+  if (chatIds.length === 0) {
+    return [];
+  }
+
   const { data: messages } = await supabase
     .from('messages')
     .select('*')

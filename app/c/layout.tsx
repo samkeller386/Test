@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { type ReactNode, useContext, useEffect, useState } from 'react';
 import Loading from '../loading';
 import { supabase } from '@/lib/supabase/browser-client';
+import { refreshLocalData } from '@/db/refresh-local-data';
 
 interface WorkspaceLayoutProps {
   children: ReactNode;
@@ -26,13 +27,7 @@ const fetchWorkspaceData = async (
 ) => {
   try {
     const chats = await getChatsByUserId(userId, false);
-
-    const files = await getChatFilesByMultipleChatIds(
-      chats.map((chat) => chat.id),
-    );
-    await getMessagesByMultipleChatIds(chats.map((chat) => chat.id));
-    await getFeedbackByMultipleChatIds(chats.map((chat) => chat.id));
-    await getFileItemsByMultipleFileIds(files.map((file) => file.id));
+    await refreshLocalData(chats);
 
     setChats(chats);
     return true;

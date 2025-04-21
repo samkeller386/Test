@@ -20,6 +20,10 @@ export const createMessageFeedback = async (
 };
 
 export const getFeedbackByMultipleChatIds = async (chatIds: string[]) => {
+  if (chatIds.length === 0) {
+    return [];
+  }
+
   const { data: feedback } = await supabase
     .from('feedback')
     .select('*')

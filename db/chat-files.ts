@@ -30,6 +30,10 @@ export const getChatFilesByChatId = async (
 };
 
 export const getChatFilesByMultipleChatIds = async (chatIds: string[]) => {
+  if (chatIds.length === 0) {
+    return [];
+  }
+
   const { data: chatFiles, error } = await supabase
     .from('files')
     .select('*')

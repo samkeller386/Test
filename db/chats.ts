@@ -5,6 +5,7 @@ import { getChatFilesByMultipleChatIds } from './chat-files';
 import { getFileItemsByMultipleFileIds } from './message-file-items';
 import { getMessagesByMultipleChatIds } from './messages';
 import { getFeedbackByMultipleChatIds } from './message-feedback';
+import { refreshLocalData } from './refresh-local-data';
 
 export const getChatById = async (chatId: string) => {
   const storedChat = await localDB.chats.getById(chatId);
@@ -133,12 +134,7 @@ export const getMoreChatsByUserId = async (
     throw new Error(error.message);
   }
 
-  const files = await getChatFilesByMultipleChatIds(
-    chats.map((chat) => chat.id),
-  );
-  await getMessagesByMultipleChatIds(chats.map((chat) => chat.id));
-  await getFeedbackByMultipleChatIds(chats.map((chat) => chat.id));
-  await getFileItemsByMultipleFileIds(files.map((file) => file.id));
+  await refreshLocalData(chats);
 
   await localDB.chats.updateMany(chats);
 
