@@ -83,12 +83,8 @@ const getStoredChatsByUserId = async (
 
     // Sort by updated_at (most recent first)
     uniqueChats.sort((a, b) => {
-      const dateA = a.updated_at
-        ? new Date(a.updated_at).getTime()
-        : new Date(a.created_at).getTime();
-      const dateB = b.updated_at
-        ? new Date(b.updated_at).getTime()
-        : new Date(b.created_at).getTime();
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
       return dateB - dateA;
     });
 

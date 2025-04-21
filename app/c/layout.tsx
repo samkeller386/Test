@@ -26,10 +26,6 @@ const fetchWorkspaceData = async (
 ) => {
   try {
     const chats = await getChatsByUserId(userId, false);
-    await localDB.storage.clean(
-      userId,
-      chats.map((chat) => chat.id),
-    );
 
     const files = await getChatFilesByMultipleChatIds(
       chats.map((chat) => chat.id),

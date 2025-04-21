@@ -1,6 +1,10 @@
 import { supabase } from '@/lib/supabase/browser-client';
 import type { TablesInsert, TablesUpdate, Tables } from '@/supabase/types';
 import { localDB } from './local/db';
+import { getChatFilesByMultipleChatIds } from './chat-files';
+import { getFileItemsByMultipleFileIds } from './message-file-items';
+import { getMessagesByMultipleChatIds } from './messages';
+import { getFeedbackByMultipleChatIds } from './message-feedback';
 
 export const getChatById = async (chatId: string) => {
   const storedChat = await localDB.chats.getById(chatId);
@@ -128,6 +132,13 @@ export const getMoreChatsByUserId = async (
   if (error) {
     throw new Error(error.message);
   }
+
+  const files = await getChatFilesByMultipleChatIds(
+    chats.map((chat) => chat.id),
+  );
+  await getMessagesByMultipleChatIds(chats.map((chat) => chat.id));
+  await getFeedbackByMultipleChatIds(chats.map((chat) => chat.id));
+  await getFileItemsByMultipleFileIds(files.map((file) => file.id));
 
   await localDB.chats.updateMany(chats);
 
