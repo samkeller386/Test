@@ -74,8 +74,14 @@ const getSyncData = async (id: string) => {
   return syncData?.value;
 };
 
-const setSyncData = async (id: string, value: string) => {
-  await putItem(STORES.SYNC_DATA, { id, value });
+const setSyncData = async (ids: string | string[], value: string) => {
+  if (Array.isArray(ids)) {
+    for (const id of ids) {
+      await putItem(STORES.SYNC_DATA, { id, value });
+    }
+  } else {
+    await putItem(STORES.SYNC_DATA, { id: ids, value });
+  }
 };
 
 const deleteSyncData = async (id: string) => {

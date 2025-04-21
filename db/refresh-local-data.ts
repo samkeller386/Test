@@ -1,3 +1,4 @@
+import { Tables } from '@/supabase/types';
 import { getChatFilesByMultipleChatIds } from './chat-files';
 import { localDB } from './local/db';
 import { getFeedbackByMultipleChatIds } from './message-feedback';
@@ -5,51 +6,90 @@ import {
   getFileItemsByMultipleFileIds,
   getMessageFileItemsByMultipleMessageIds,
 } from './message-file-items';
-import { getMessagesByChatId, getMessagesByMultipleChatIds } from './messages';
-import { Tables } from '@/supabase/types';
+import { getMessagesByMultipleChatIds } from './messages';
+
+const LAST_MESSAGE_SYNC = 'lastMessageSync';
+const LAST_FEEDBACK_SYNC = 'lastFeedbackSync';
+const LAST_FILE_SYNC = 'lastFileSync';
+
+const buildKey = (key: string, chatId: string) => `${key}-${chatId}`;
 
 export const refreshLocalData = async (chats: Tables<'chats'>[]) => {
-  console.log('Refreshing local data');
-  const chatIds = chats.map((chat) => chat.id);
+  const currentSyncDate = new Date().toISOString();
 
-  const lastSync = await localDB.storage.getSyncData('lastSync');
+  const resyncMessages = [];
+  const resyncFeedback = [];
+  const resyncFiles = [];
 
-  if (!lastSync) {
-    await getMessagesByMultipleChatIds(chatIds);
-    await getFeedbackByMultipleChatIds(chatIds);
-    await refreshFiles(chatIds);
-    await localDB.storage.setSyncData('lastSync', new Date().toISOString());
-    return;
+  for (const chat of chats) {
+    const lastMessageSync = await localDB.storage.getSyncData(
+      buildKey(LAST_MESSAGE_SYNC, chat.id),
+    );
+
+    if (
+      !lastMessageSync ||
+      new Date(lastMessageSync) < new Date(chat.last_message_update)
+    ) {
+      resyncMessages.push(chat.id);
+    }
+
+    const lastFeedbackSync = await localDB.storage.getSyncData(
+      buildKey(LAST_FEEDBACK_SYNC, chat.id),
+    );
+    if (
+      !lastFeedbackSync ||
+      new Date(lastFeedbackSync) < new Date(chat.last_feedback_update)
+    ) {
+      resyncFeedback.push(chat.id);
+    }
+
+    const lastFileSync = await localDB.storage.getSyncData(
+      buildKey(LAST_FILE_SYNC, chat.id),
+    );
+    if (
+      !lastFileSync ||
+      new Date(lastFileSync) < new Date(chat.last_file_update)
+    ) {
+      resyncFiles.push(chat.id);
+    }
   }
 
-  const lastSyncDate = new Date(lastSync);
-
   // for messages
-  const chatsWithNewMessages = chats
-    .filter((chat) => new Date(chat.last_message_update) > lastSyncDate)
-    .map((chat) => chat.id);
-  const messages = await getMessagesByMultipleChatIds(chatsWithNewMessages);
+  await refreshMessages(resyncMessages, currentSyncDate);
+
+  // for feedback
+  await refreshFeedback(resyncFeedback, currentSyncDate);
+
+  // for files
+  await refreshFiles(resyncFiles, currentSyncDate);
+};
+
+const refreshMessages = async (chatIds: string[], currentSyncDate: string) => {
+  const uniqueChatIds = [...new Set(chatIds)];
+  const messages = await getMessagesByMultipleChatIds(uniqueChatIds);
   await getMessageFileItemsByMultipleMessageIds(
     messages.map((message) => message.id),
   );
-
-  // for feedback
-  const chatsWithNewFeedback = chats
-    .filter((chat) => new Date(chat.last_feedback_update) > lastSyncDate)
-    .map((chat) => chat.id);
-  await getFeedbackByMultipleChatIds(chatsWithNewFeedback);
-
-  // for files
-  const chatsWithNewFiles = chats
-    .filter((chat) => new Date(chat.last_file_update) > lastSyncDate)
-    .map((chat) => chat.id);
-  await refreshFiles(chatsWithNewFiles);
-
-  await localDB.storage.setSyncData('lastSync', new Date().toISOString());
+  await localDB.storage.setSyncData(
+    uniqueChatIds.map((chatId) => buildKey(LAST_MESSAGE_SYNC, chatId)),
+    currentSyncDate,
+  );
 };
 
-const refreshFiles = async (chatIds: string[]) => {
+const refreshFeedback = async (chatIds: string[], currentSyncDate: string) => {
+  await getFeedbackByMultipleChatIds(chatIds);
+  await localDB.storage.setSyncData(
+    chatIds.map((chatId) => buildKey(LAST_FEEDBACK_SYNC, chatId)),
+    currentSyncDate,
+  );
+};
+
+const refreshFiles = async (chatIds: string[], currentSyncDate: string) => {
   const uniqueChatIds = [...new Set(chatIds)];
   const files = await getChatFilesByMultipleChatIds(uniqueChatIds);
   await getFileItemsByMultipleFileIds(files.map((file) => file.id));
+  await localDB.storage.setSyncData(
+    uniqueChatIds.map((chatId) => buildKey(LAST_FILE_SYNC, chatId)),
+    currentSyncDate,
+  );
 };
