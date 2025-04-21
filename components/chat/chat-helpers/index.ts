@@ -16,6 +16,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
 import { processResponse } from './stream-processor';
 import type { AgentStatusState } from '@/components/messages/agent-status';
+import { localDB } from '@/db/local/db';
 
 export * from './create-messages';
 export * from './create-temp-messages';
@@ -159,9 +160,9 @@ export const handleCreateChat = (
     shared_at: null,
     shared_by: null,
     sharing: 'private',
-    last_feedback_update: '',
-    last_file_update: '',
-    last_message_update: '',
+    last_feedback_update: new Date().toISOString(),
+    last_file_update: new Date().toISOString(),
+    last_message_update: new Date().toISOString(),
   };
 
   setSelectedChat(createdChat);
