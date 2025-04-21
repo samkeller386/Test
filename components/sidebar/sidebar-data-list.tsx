@@ -28,6 +28,7 @@ export const SidebarDataList: FC<SidebarDataListProps> = ({
 
   const divRef = useRef<HTMLDivElement>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
+  const firstLoad = useRef(true);
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreChats, setHasMoreChats] = useState(true);
@@ -45,6 +46,7 @@ export const SidebarDataList: FC<SidebarDataListProps> = ({
         lastChat.user_id,
         lastChat.created_at,
       );
+
       if (moreChats.length > 0) {
         setChats((prevChats: Tables<'chats'>[]) => {
           // Create a map of existing chats by ID for quick lookup
@@ -64,6 +66,7 @@ export const SidebarDataList: FC<SidebarDataListProps> = ({
         setHasMoreChats(false);
       }
       setIsLoadingMore(false);
+      firstLoad.current = false;
     }
   }, [contentType, data, isLoadingMore, hasMoreChats, setChats]);
 
@@ -76,7 +79,13 @@ export const SidebarDataList: FC<SidebarDataListProps> = ({
 
     const observer = new IntersectionObserver((entries) => {
       const [entry] = entries;
-      if (entry.isIntersecting && !isLoadingMore && hasMoreChats) {
+      // Skip the first load if it's the first chat
+      if (
+        entry.isIntersecting &&
+        !isLoadingMore &&
+        hasMoreChats &&
+        !firstLoad.current
+      ) {
         fetchMoreChats();
       }
     }, options);
@@ -91,6 +100,13 @@ export const SidebarDataList: FC<SidebarDataListProps> = ({
       }
     };
   }, [loaderRef, isLoadingMore, hasMoreChats, fetchMoreChats]);
+
+  // Reset firstLoad when data changes
+  useEffect(() => {
+    if (data.length === 0) {
+      firstLoad.current = true;
+    }
+  }, [data.length]);
 
   const getDataListComponent = (
     contentType: ContentType,
