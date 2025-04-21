@@ -79,6 +79,21 @@ const deleteItem = async (
   }
 };
 
+const deleteAll = async (storeName: string): Promise<void> => {
+  const store = await getObjectStore(storeName, 'readwrite');
+  return new Promise((resolve, reject) => {
+    const request = store.clear();
+
+    request.onsuccess = () => {
+      resolve();
+    };
+
+    request.onerror = () => {
+      reject(request.error);
+    };
+  });
+};
+
 const getItemsByIndex = async <T>(
   storeName: string,
   indexName: string,
@@ -106,4 +121,11 @@ const getItemsByIndex = async <T>(
   });
 };
 
-export { getObjectStore, getItem, putItem, deleteItem, getItemsByIndex };
+export {
+  getObjectStore,
+  getItem,
+  putItem,
+  deleteItem,
+  getItemsByIndex,
+  deleteAll,
+};

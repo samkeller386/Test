@@ -1,5 +1,5 @@
 import { Tables } from '@/supabase/types';
-import { putItem } from '../core/indexedDB';
+import { deleteAll, deleteItem, putItem } from '../core/indexedDB';
 import { STORES } from '../schema/schema';
 import { MessageWithFileItemsAndFeedback } from '../../messages';
 import { chats as chatDb } from './chats';
@@ -60,4 +60,14 @@ const cleanStorage = async (userId: string, chatIds: string[]) => {
   }
 };
 
-export const storage = { create: createStorage, clean: cleanStorage };
+const clearAll = async () => {
+  for (const store of Object.values(STORES)) {
+    await deleteAll(store);
+  }
+};
+
+export const storage = {
+  create: createStorage,
+  clean: cleanStorage,
+  clearAll: clearAll,
+};
