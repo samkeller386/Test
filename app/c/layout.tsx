@@ -14,6 +14,7 @@ import { LargeModel, SmallModel } from '@/lib/models/hackerai-llm-list';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useContext, useEffect, useState } from 'react';
 import Loading from '../loading';
+import { supabase } from '@/lib/supabase/browser-client';
 
 interface WorkspaceLayoutProps {
   children: ReactNode;
@@ -110,7 +111,36 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
     };
 
     initializeWorkspace();
-  }, [router]); // Only depend on router
+  }, [router]);
+
+  // Check authentication status and refresh token if needed
+  async function checkAuthStatus() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      await localDB.storage.clearAll();
+      router.push('/login');
+    }
+    return !!user;
+  }
+
+  useEffect(() => {
+    // Set up periodic checks
+    function setupPeriodicChecks(intervalMinutes: number) {
+      const intervalId = setInterval(
+        async () => {
+          await checkAuthStatus();
+        },
+        intervalMinutes * 60 * 1000,
+      );
+
+      // Clean up interval on component unmount
+      return () => clearInterval(intervalId);
+    }
+
+    return setupPeriodicChecks(15); // Check every 15 minutes
+  }, [router]);
 
   if (loading) {
     return <Loading />;
