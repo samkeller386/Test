@@ -52,3 +52,36 @@ export const createMessageFileItems = async (
 
   return createdMessageFileItems;
 };
+
+export const getFileItemsByMultipleFileIds = async (fileIds: string[]) => {
+  const { data: fileItems, error } = await supabase
+    .from('file_items')
+    .select('*')
+    .in('file_id', fileIds);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  await localDB.fileItems.updateMany(fileItems);
+
+  const { data: messageFileItems, error: messageFileItemsError } =
+    await supabase
+      .from('message_file_items')
+      .select('*')
+      .in(
+        'file_item_id',
+        fileItems.map((fileItem) => fileItem.id),
+      );
+
+  if (messageFileItemsError) {
+    throw new Error(messageFileItemsError.message);
+  }
+
+  await localDB.messageFileItems.updateMany(messageFileItems);
+
+  return {
+    file_items: fileItems,
+    message_file_items: messageFileItems,
+  };
+};

@@ -71,7 +71,9 @@ export const getMessagesByMultipleChatIds = async (chatIds: string[]) => {
     throw new Error('Messages not found');
   }
 
-  localDB.messages.updateMany(messages);
+  await localDB.messages.updateMany(messages);
+
+  return messages;
 };
 
 export const createMessage = async (message: TablesInsert<'messages'>) => {
@@ -85,7 +87,7 @@ export const createMessage = async (message: TablesInsert<'messages'>) => {
     throw new Error(error.message);
   }
 
-  localDB.messages.update(createdMessage);
+  await localDB.messages.update(createdMessage);
 
   return createdMessage;
 };
@@ -131,11 +133,11 @@ export const createMessages = async (
       throw new Error(filesError.message);
     }
 
-    localDB.files.updateMany(files);
+    await localDB.files.updateMany(files);
   }
 
   for (const message of createdMessages) {
-    localDB.messages.update(message);
+    await localDB.messages.update(message);
   }
 
   return createdMessages;
@@ -156,7 +158,7 @@ export const updateMessage = async (
     throw new Error(error.message);
   }
 
-  localDB.messages.update(updatedMessage);
+  await localDB.messages.update(updatedMessage);
 
   return updatedMessage;
 };
@@ -171,7 +173,7 @@ export const deleteMessage = async (messageId: string) => {
     throw new Error(error.message);
   }
 
-  localDB.messages.delete(messageId);
+  await localDB.messages.delete(messageId);
 
   return true;
 };
@@ -245,7 +247,11 @@ export async function deleteMessagesIncludingAndAfter(
     files = filesData;
   }
 
-  localDB.messages.deleteIncludingAndAfter(userId, chatId, sequenceNumber);
+  await localDB.messages.deleteIncludingAndAfter(
+    userId,
+    chatId,
+    sequenceNumber,
+  );
 
   const { error } = await supabase.rpc('delete_messages_including_and_after', {
     p_user_id: userId,

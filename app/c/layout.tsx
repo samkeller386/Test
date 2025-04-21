@@ -6,6 +6,8 @@ import { useUIContext } from '@/context/ui-context';
 import { getChatFilesByMultipleChatIds } from '@/db/chat-files';
 import { getChatsByUserId } from '@/db/chats';
 import { localDB } from '@/db/local/db';
+import { getFeedbackByMultipleChatIds } from '@/db/message-feedback';
+import { getFileItemsByMultipleFileIds } from '@/db/message-file-items';
 import { getMessagesByMultipleChatIds } from '@/db/messages';
 import { getSubscriptionByUserId } from '@/db/subscriptions';
 import { LargeModel, SmallModel } from '@/lib/models/hackerai-llm-list';
@@ -28,8 +30,12 @@ const fetchWorkspaceData = async (
       chats.map((chat) => chat.id),
     );
 
-    await getChatFilesByMultipleChatIds(chats.map((chat) => chat.id));
+    const files = await getChatFilesByMultipleChatIds(
+      chats.map((chat) => chat.id),
+    );
     await getMessagesByMultipleChatIds(chats.map((chat) => chat.id));
+    await getFeedbackByMultipleChatIds(chats.map((chat) => chat.id));
+    await getFileItemsByMultipleFileIds(files.map((file) => file.id));
 
     setChats(chats);
     return true;

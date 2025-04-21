@@ -40,4 +40,6 @@ export const getChatFilesByMultipleChatIds = async (chatIds: string[]) => {
   }
 
   await localDB.files.updateMany(chatFiles);
+
+  return chatFiles;
 };

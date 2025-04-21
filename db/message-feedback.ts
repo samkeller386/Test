@@ -18,3 +18,18 @@ export const createMessageFeedback = async (
 
   return createdFeedback;
 };
+
+export const getFeedbackByMultipleChatIds = async (chatIds: string[]) => {
+  const { data: feedback } = await supabase
+    .from('feedback')
+    .select('*')
+    .in('chat_id', chatIds);
+
+  if (!feedback) {
+    throw new Error('Feedback not found');
+  }
+
+  await localDB.feedback.updateMany(feedback);
+
+  return feedback;
+};
