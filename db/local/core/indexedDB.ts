@@ -61,18 +61,18 @@ const deleteItem = async (
   storeName: string,
   key: string | [string, string],
 ): Promise<void> => {
-    const store = await getObjectStore(storeName, 'readwrite');
-    return new Promise((resolve, reject) => {
-      const request = store.delete(key);
+  const store = await getObjectStore(storeName, 'readwrite');
+  return new Promise((resolve, reject) => {
+    const request = store.delete(key);
 
-      request.onsuccess = () => {
-        resolve();
-      };
+    request.onsuccess = () => {
+      resolve();
+    };
 
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    request.onerror = () => {
+      reject(request.error);
+    };
+  });
 };
 
 const deleteAll = async (storeName: string): Promise<void> => {
