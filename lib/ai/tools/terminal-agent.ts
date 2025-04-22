@@ -53,11 +53,8 @@ export async function executeTerminalAgent({
 
   try {
     // Check rate limit
-    console.log('isPremiumUser', isPremiumUser);
-    console.log('autoSelected', autoSelected);
     if (autoSelected) {
       const rateLimitResult = await ratelimit(userID, 'terminal');
-      console.log('rateLimitResult', rateLimitResult);
       if (!rateLimitResult.allowed) {
         const waitTime = epochTimeToNaturalLanguage(
           rateLimitResult.timeRemaining!,

@@ -119,33 +119,6 @@ function _getLimit(model: string, subscriptionInfo: SubscriptionInfo): number {
   const isPaid = subscriptionInfo.isPremium || subscriptionInfo.isTeam;
   const suffix = isPaid ? '_PREMIUM' : '_FREE';
 
-  // Pro queries group (reasoning and web search related plugins)
-  const proQueryModels = [
-    'reasoning',
-    'websearch',
-    'reasoning-web-search',
-    'web-search',
-  ];
-
-  if (proQueryModels.includes(model)) {
-    // Try consolidated limit first
-    const consolidatedKey = `RATELIMITER_LIMIT_PRO_QUERIES${suffix}`;
-    let limit = getValidatedLimit(process.env[consolidatedKey], -1);
-
-    // Fall back to model-specific limit if consolidated isn't set
-    if (limit < 0) {
-      const modelKey = `RATELIMITER_LIMIT_${_getFixedModelName(model)}${suffix}`;
-      limit = getValidatedLimit(process.env[modelKey], isPaid ? 25 : 5);
-    }
-
-    if (subscriptionInfo.isTeam) {
-      const teamMultiplier = Number(process.env.TEAM_LIMIT_MULTIPLIER) || 1.8;
-      return Math.floor(limit * teamMultiplier);
-    }
-
-    return limit;
-  }
-
   // Standard model handling
   const fixedModelName = _getFixedModelName(model);
   const limitKey = `RATELIMITER_LIMIT_${fixedModelName}${suffix}`;
@@ -208,15 +181,7 @@ function _getFixedModelName(model: string): string {
 }
 
 function _makeStorageKey(userId: string, model: string): string {
-  // Pro queries group (reasoning and web search related plugins)
-  const proQueryModels = ['websearch', 'web-search'];
-
-  // Use a common key for all pro query models
-  if (proQueryModels.includes(model)) {
-    return `ratelimit:${userId}:PRO_QUERIES`;
-  }
-
-  // For other models, use the model-specific key
+  // For all models, use the model-specific key
   const fixedModelName = _getFixedModelName(model);
   return `ratelimit:${userId}:${fixedModelName}`;
 }
