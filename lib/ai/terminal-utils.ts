@@ -68,7 +68,7 @@ export async function streamTerminalOutput(
   if (tokens.length > AGENT_MAX_TOKENS) {
     const truncatedTokens = tokens.slice(0, AGENT_MAX_TOKENS);
     terminalOutput =
-      decode(truncatedTokens) + '\n\n[Output truncated because too long]';
+      `${decode(truncatedTokens)}\n\n[Output truncated because too long]`;
   }
 
   return terminalOutput;

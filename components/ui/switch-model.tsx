@@ -6,7 +6,7 @@ import React, {
   useEffect,
   useRef,
 } from 'react';
-import { IconChevronDown, IconRepeat, IconWorld } from '@tabler/icons-react';
+import { IconChevronDown, IconRepeat, } from '@tabler/icons-react';
 import { WithTooltip } from './with-tooltip';
 import { GPT4 } from '@/lib/models/openai-llm-list';
 import { SmallModel, LargeModel } from '@/lib/models/hackerai-llm-list';
