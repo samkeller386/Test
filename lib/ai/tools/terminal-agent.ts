@@ -107,7 +107,7 @@ export async function executeTerminalAgent({
             isPremiumUser,
             agentMode,
           }),
-          maxSteps: 5,
+          maxSteps: 10,
           toolChoice: 'required',
           abortSignal,
           onFinish: async ({ finishReason }: { finishReason: string }) => {
