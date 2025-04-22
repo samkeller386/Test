@@ -287,12 +287,7 @@ export const useChatHandler = () => {
     const isRagEnabled = selectedPlugin === PluginID.ENHANCED_SEARCH;
 
     // Simpler model handling
-    const baseModel = (model?.split(':')[0] as LLMID) || chatSettings?.model;
-    const isWebSearch = model?.includes(':websearch');
-
-    if (isWebSearch) {
-      selectedPlugin = PluginID.WEB_SEARCH;
-    }
+    const baseModel = (model as LLMID) || chatSettings?.model;
 
     try {
       if (!isRegeneration) {
@@ -438,8 +433,6 @@ export const useChatHandler = () => {
       let thinkingText = '';
       let thinkingElapsedSecs: number | null = null;
       let finishReason = '';
-      let ragUsed = false;
-      let ragId = null;
       let citations: string[] = [];
 
       const {
@@ -447,8 +440,6 @@ export const useChatHandler = () => {
         thinkingText: thinkingTextFromResponse,
         thinkingElapsedSecs: thinkingElapsedSecsFromResponse,
         finishReason: finishReasonFromResponse,
-        ragUsed: ragUsedFromResponse,
-        ragId: ragIdFromResponse,
         selectedPlugin: updatedSelectedPlugin,
         citations: citationsFromResponse,
         chatTitle,
@@ -472,8 +463,6 @@ export const useChatHandler = () => {
       thinkingText = thinkingTextFromResponse;
       thinkingElapsedSecs = thinkingElapsedSecsFromResponse;
       finishReason = finishReasonFromResponse;
-      ragUsed = ragUsedFromResponse;
-      ragId = ragIdFromResponse;
       selectedPlugin = updatedSelectedPlugin;
       citations = citationsFromResponse;
 
@@ -546,8 +535,6 @@ export const useChatHandler = () => {
           setChatImages,
           selectedPlugin,
           editSequenceNumber,
-          ragUsed,
-          ragId,
           isTemporaryChat,
           citations,
           thinkingText,

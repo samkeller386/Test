@@ -72,17 +72,6 @@ export async function buildFinalMessages(
   const truncatedMessages: any[] = [];
 
   for (let i = processedChatMessages.length - 1; i >= 0; i--) {
-    const messageSizeLimit = Number(process.env.MESSAGE_SIZE_LIMIT || 12000);
-    if (
-      processedChatMessages[i].message.role === 'assistant' &&
-      processedChatMessages[i].message.content.length > messageSizeLimit
-    ) {
-      const messageSizeKeep = Number(process.env.MESSAGE_SIZE_KEEP || 2000);
-      processedChatMessages[i].message = {
-        ...processedChatMessages[i].message,
-        content: `${processedChatMessages[i].message.content.slice(0, messageSizeKeep)}\n... [output truncated]`,
-      };
-    }
     const message = processedChatMessages[i].message;
 
     const messageTokens = countTokens(message.content);

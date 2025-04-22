@@ -129,7 +129,6 @@ export async function POST(request: Request) {
 
     // Process RAG
     let ragUsed = false;
-    let ragId: string | null = null;
     if (modelParams.isRagEnabled) {
       const ragResult = await processRag({
         messages,
@@ -139,7 +138,6 @@ export async function POST(request: Request) {
       });
 
       ragUsed = ragResult.ragUsed;
-      ragId = ragResult.ragId;
       if (ragResult.systemPrompt) {
         systemPrompt = ragResult.systemPrompt;
       }
