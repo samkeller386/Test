@@ -44,8 +44,7 @@ export const preferredRegion = [
 
 export async function POST(request: Request) {
   try {
-    const { messages, attachments, model, modelParams, chatMetadata } =
-      await request.json();
+    const { messages, model, modelParams, chatMetadata } = await request.json();
 
     const profile = await getAIProfile();
     const config = await getProviderConfig(
@@ -72,7 +71,6 @@ export async function POST(request: Request) {
       systemPrompt,
     } = await processChatMessages(
       messages,
-      attachments,
       config.selectedModel,
       modelParams.selectedPlugin,
       modelParams.isContinuation,

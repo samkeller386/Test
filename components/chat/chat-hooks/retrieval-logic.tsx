@@ -59,9 +59,6 @@ export const useRetrievalLogic = () => {
       allFileItems = [...allFileItems, ...batchResults.flat()];
     }
 
-    // Log result summary
-    console.log(`Retrieved ${allFileItems.length} file items directly`);
-
     // Update chat files
     setChatFiles([
       ...existingFiles,

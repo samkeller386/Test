@@ -10,7 +10,6 @@ import type { BuiltChatMessage } from '@/types/chat-message';
 import { PluginID } from '@/types/plugins';
 import { getModerationResult } from '@/lib/server/moderation';
 import { getSystemPrompt } from './prompts';
-import type { Tables } from '@/supabase/types';
 import { processMessageContentWithAttachments } from '../build-prompt-backend';
 
 /**
@@ -229,7 +228,6 @@ export function validateMessages(messages: any[]) {
  */
 export async function processChatMessages(
   messages: BuiltChatMessage[],
-  attachments: Tables<'file_items'>[],
   selectedModel: string,
   selectedPlugin: PluginID,
   isContinuation: boolean,
@@ -266,7 +264,6 @@ export async function processChatMessages(
   // Process attachments and file content for the last message
   messages = await processMessageContentWithAttachments(
     messages,
-    attachments,
     profile?.user_id,
   );
 

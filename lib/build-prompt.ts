@@ -5,33 +5,49 @@ import type {
   MessageImage,
   LLMID,
 } from '@/types';
-import type { Tables } from '@/supabase/types';
 import { countTokens } from 'gpt-tokenizer';
 import { SmallModel, LargeModel } from './models/hackerai-llm-list';
 import { toast } from 'sonner';
+
+// Helper function to find the last user message
+function findLastUserMessage(
+  chatMessages: ChatMessage[],
+): ChatMessage | undefined {
+  for (let i = chatMessages.length - 1; i >= 0; i--) {
+    if (chatMessages[i].message.role === 'user') {
+      return chatMessages[i];
+    }
+  }
+  return undefined;
+}
 
 export async function buildFinalMessages(
   payload: ChatPayload,
   model: LLMID,
   chatImages: MessageImage[],
 ): Promise<BuiltChatMessage[]> {
-  const { chatMessages } = payload;
+  const { chatMessages, retrievedFileItems } = payload;
 
   let CHUNK_SIZE = 12000;
   if (model === LargeModel.modelId) {
-    CHUNK_SIZE = 32000 - 4000; // -4000 for the system prompt, custom instructions, and more
+    CHUNK_SIZE = 32000;
   } else if (model === SmallModel.modelId) {
-    CHUNK_SIZE = 12000 - 4000; // -4000 for the system prompt, custom instructions, and more
+    CHUNK_SIZE = 12000;
   }
 
   let remainingTokens = CHUNK_SIZE;
 
-  const lastUserMessage = chatMessages[chatMessages.length - 2].message.content;
-  const lastUserMessageContent = Array.isArray(lastUserMessage)
-    ? lastUserMessage
+  // Find the last user message
+  const lastUserMessage = findLastUserMessage(chatMessages);
+  if (!lastUserMessage) {
+    throw new Error('No user message found in chat');
+  }
+
+  const lastUserMessageContent = Array.isArray(lastUserMessage.message.content)
+    ? lastUserMessage.message.content
         .map((item) => (item.type === 'text' ? item.text : ''))
         .join(' ')
-    : lastUserMessage;
+    : lastUserMessage.message.content;
   const lastUserMessageTokens = countTokens(lastUserMessageContent);
 
   if (lastUserMessageTokens > CHUNK_SIZE) {
@@ -41,44 +57,59 @@ export async function buildFinalMessages(
     throw new Error(errorMessage);
   }
 
-  const processedChatMessages = chatMessages.map((chatMessage, index) => {
-    const nextChatMessage = chatMessages[index + 1];
-
-    if (nextChatMessage === undefined) {
-      return chatMessage;
-    }
-
-    const returnMessage: ChatMessage = {
-      ...chatMessage,
-    };
-
-    if (
-      chatMessage.fileItems.length > 0 &&
-      chatMessage.message.role === 'user'
-    ) {
-      // Create a structured document format for file content
-      const documentsText = buildDocumentsText(chatMessage.fileItems);
-
-      returnMessage.message = {
-        ...returnMessage.message,
-        content: `${documentsText}\n\n${chatMessage.message.content}`,
-      };
-      returnMessage.fileItems = [];
-    }
-
-    return returnMessage;
-  });
-
   const truncatedMessages: any[] = [];
 
-  for (let i = processedChatMessages.length - 1; i >= 0; i--) {
-    const message = processedChatMessages[i].message;
+  for (let i = chatMessages.length - 1; i >= 0; i--) {
+    const message = chatMessages[i].message;
+    const fileItems = chatMessages[i].fileItems;
+    const isLastUserMessage = chatMessages[i] === lastUserMessage;
 
-    const messageTokens = countTokens(message.content);
+    let messageTokens = countTokens(message.content);
+
+    // Add tokens from file items if they exist
+    if (fileItems && fileItems.length > 0) {
+      messageTokens += fileItems.reduce(
+        (acc, item) => acc + (item.tokens || 0),
+        0,
+      );
+    }
+
+    // Add tokens from retrieved file items for the last user message
+    if (
+      isLastUserMessage &&
+      retrievedFileItems &&
+      retrievedFileItems.length > 0
+    ) {
+      messageTokens += retrievedFileItems.reduce(
+        (acc, item) => acc + (item.tokens || 0),
+        0,
+      );
+    }
 
     if (messageTokens <= remainingTokens) {
       remainingTokens -= messageTokens;
-      truncatedMessages.unshift(message);
+      truncatedMessages.unshift({
+        ...message,
+        // Transform fileItems to attachments format
+        ...(fileItems && fileItems.length > 0
+          ? {
+              attachments: fileItems.map((item) => ({ file_id: item.file_id })),
+            }
+          : {}),
+        // Add retrievedFileItems to last user message if they exist
+        ...(isLastUserMessage &&
+        retrievedFileItems &&
+        retrievedFileItems.length > 0
+          ? {
+              attachments: [
+                ...(fileItems || []).map((item) => ({ file_id: item.file_id })),
+                ...retrievedFileItems.map((item) => ({
+                  file_id: item.file_id,
+                })),
+              ],
+            }
+          : {}),
+      });
     } else {
       break;
     }
@@ -87,7 +118,11 @@ export async function buildFinalMessages(
   const finalMessages: BuiltChatMessage[] = truncatedMessages.map((message) => {
     let content;
 
-    if (message.image_paths.length > 0 && message.role !== 'assistant') {
+    if (
+      message.image_paths &&
+      message.image_paths.length > 0 &&
+      message.role !== 'assistant'
+    ) {
       content = [
         {
           type: 'text',
@@ -121,42 +156,9 @@ export async function buildFinalMessages(
     return {
       role: message.role,
       content,
+      ...(message.attachments ? { attachments: message.attachments } : {}),
     };
   });
 
   return finalMessages;
-}
-
-function buildDocumentsText(fileItems: Tables<'file_items'>[]) {
-  const fileGroups: Record<
-    string,
-    { id: string; name: string; content: string[] }
-  > = fileItems.reduce(
-    (
-      acc: Record<string, { id: string; name: string; content: string[] }>,
-      item: Tables<'file_items'>,
-    ) => {
-      if (!acc[item.file_id]) {
-        acc[item.file_id] = {
-          id: item.file_id,
-          name: item.name || 'unnamed file',
-          content: [],
-        };
-      }
-      acc[item.file_id].content.push(item.content);
-      return acc;
-    },
-    {},
-  );
-
-  const documents = Object.values(fileGroups)
-    .map((file: any) => {
-      return `<document id="${file.id}">
-<source>${file.name}</source>
-<document_content>${file.content.join('\n\n')}</document_content>
-</document>`;
-    })
-    .join('\n\n');
-
-  return `<documents>\n${documents}\n</documents>`;
 }

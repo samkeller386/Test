@@ -51,7 +51,6 @@ export const useChatHandler = () => {
     setNewMessageFiles,
     newMessageFiles,
     useRetrieval,
-    sourceCount,
     setChatSettings,
     setUseRetrieval,
     isTemporaryChat,
@@ -394,12 +393,12 @@ export const useChatHandler = () => {
       }
 
       let retrievedFileItems: Tables<'file_items'>[] = [];
-
+      let retrievalUsed = false;
       if (
         (newMessageFiles.length > 0 || chatFiles.length > 0) &&
         useRetrieval
       ) {
-        setToolInUse('retrieval');
+        retrievalUsed = true;
 
         if (!isContinuation) {
           retrievedFileItems = await retrievalLogic(
@@ -433,6 +432,15 @@ export const useChatHandler = () => {
       let thinkingElapsedSecs: number | null = null;
       let finishReason = '';
       let citations: string[] = [];
+
+      setToolInUse(
+        modelParams.selectedPlugin &&
+          modelParams.selectedPlugin !== PluginID.NONE
+          ? modelParams.selectedPlugin
+          : retrievalUsed
+            ? 'retrieval'
+            : PluginID.NONE,
+      );
 
       const {
         fullText,
