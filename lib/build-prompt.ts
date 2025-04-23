@@ -90,25 +90,29 @@ export async function buildFinalMessages(
       remainingTokens -= messageTokens;
       truncatedMessages.unshift({
         ...message,
-        // Transform fileItems to attachments format
-        ...(fileItems && fileItems.length > 0
-          ? {
-              attachments: fileItems.map((item) => ({ file_id: item.file_id })),
-            }
-          : {}),
-        // Add retrievedFileItems to last user message if they exist
-        ...(isLastUserMessage &&
-        retrievedFileItems &&
-        retrievedFileItems.length > 0
-          ? {
-              attachments: [
-                ...(fileItems || []).map((item) => ({ file_id: item.file_id })),
-                ...retrievedFileItems.map((item) => ({
-                  file_id: item.file_id,
-                })),
-              ],
-            }
-          : {}),
+        // Consolidate and deduplicate attachments from both sources
+        ...(() => {
+          const baseAttachments = (fileItems ?? []).map((fi) => ({
+            file_id: fi.file_id,
+          }));
+          const retrievedAttachments =
+            isLastUserMessage && retrievedFileItems
+              ? retrievedFileItems.map((ri) => ({ file_id: ri.file_id }))
+              : [];
+
+          const uniqueAttachments = Array.from(
+            new Map(
+              [...baseAttachments, ...retrievedAttachments].map((obj) => [
+                obj.file_id,
+                obj,
+              ]),
+            ).values(),
+          );
+
+          return uniqueAttachments.length
+            ? { attachments: uniqueAttachments }
+            : {};
+        })(),
       });
     } else {
       break;

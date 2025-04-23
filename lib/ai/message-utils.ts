@@ -11,7 +11,6 @@ import { PluginID } from '@/types/plugins';
 import { getModerationResult } from '@/lib/server/moderation';
 import { getSystemPrompt } from './prompts';
 import { processMessageContentWithAttachments } from '../build-prompt-backend';
-import { Tables } from '@/supabase/types';
 
 /**
  * Removes the last assistant message if it's empty.
@@ -261,13 +260,13 @@ export async function processChatMessages(
   filterEmptyAssistantMessages(messages);
 
   // Process attachments and file content for the last message
-  messages = await processMessageContentWithAttachments(
+  const messagesWithAttachments = await processMessageContentWithAttachments(
     messages,
     profile?.user_id,
   );
 
   // Remove invalid message exchanges
-  const validatedMessages = validateMessages(messages);
+  const validatedMessages = validateMessages(messagesWithAttachments);
 
   const systemPrompt = getSystemPrompt({
     selectedChatModel: selectedModel,

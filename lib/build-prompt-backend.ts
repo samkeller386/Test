@@ -40,11 +40,13 @@ export function buildDocumentsText(fileItems: Tables<'file_items'>[]) {
 
 /**
  * Process PDF file items directly to get file contents
+ * @param supabaseAdmin - The Supabase admin client
  * @param fileItem - The file item to process
  * @param userId - User ID for authorization
  * @returns PDF file object or null
  */
 export async function processPdfFileItem(
+  supabaseAdmin: ReturnType<typeof createSupabaseAdminClient>,
   fileItem: Tables<'file_items'>,
   userId: string,
 ) {
@@ -53,9 +55,6 @@ export async function processPdfFileItem(
     if (!fileItem.name || !fileItem.name.toLowerCase().endsWith('.pdf')) {
       return null;
     }
-
-    // Create admin client to access database
-    const supabaseAdmin = createSupabaseAdminClient();
 
     // Get the full file metadata
     const { data: fileMetadata, error: metadataError } = await supabaseAdmin
@@ -176,7 +175,11 @@ export async function processMessageContentWithAttachments(
             if (!fileItem) continue;
 
             // Check if it's a PDF
-            const pdfFile = await processPdfFileItem(fileItem, userId);
+            const pdfFile = await processPdfFileItem(
+              supabaseAdmin,
+              fileItem,
+              userId,
+            );
             if (pdfFile) {
               processedContent.push(pdfFile as FilePart);
               hasPdfAttachments = true;
