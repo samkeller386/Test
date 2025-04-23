@@ -165,7 +165,7 @@ export async function processMessageAttachments(
       // Handle PDF files
       if (
         fileMetadata.type === 'application/pdf' ||
-        (fileMetadata.name?.toLowerCase().endsWith('.pdf'))
+        fileMetadata.name?.toLowerCase().endsWith('.pdf')
       ) {
         // Fetch PDF data
         const { data: file, error: fileError } = await supabaseAdmin.storage
