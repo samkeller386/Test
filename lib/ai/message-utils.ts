@@ -234,7 +234,7 @@ export async function processChatMessages(
   isTerminalContinuation: boolean,
   apiKey: string | undefined,
   isLargeModel: boolean,
-  profile: any,
+  profile: Tables<'profiles'> | null,
 ): Promise<{
   messages: BuiltChatMessage[];
   selectedModel: string;
