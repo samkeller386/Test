@@ -15,7 +15,7 @@ export async function buildFinalMessages(
   model: LLMID,
   chatImages: MessageImage[],
 ): Promise<BuiltChatMessage[]> {
-  const { chatMessages, retrievedFileItems } = payload;
+  const { chatMessages } = payload;
 
   let CHUNK_SIZE = 12000;
   if (model === LargeModel.modelId) {
@@ -123,15 +123,6 @@ export async function buildFinalMessages(
       content,
     };
   });
-
-  if (retrievedFileItems.length > 0) {
-    const documentsText = buildDocumentsText(retrievedFileItems);
-
-    finalMessages[finalMessages.length - 2] = {
-      ...finalMessages[finalMessages.length - 2],
-      content: `${documentsText}\n\n${finalMessages[finalMessages.length - 2].content}`,
-    };
-  }
 
   return finalMessages;
 }

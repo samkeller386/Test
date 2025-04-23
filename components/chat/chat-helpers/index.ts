@@ -53,6 +53,7 @@ export const handleHostedChat = async (
 
   const requestBody = {
     messages: formattedMessages,
+    attachments: payload.retrievedFileItems,
     model,
     modelParams,
     chatMetadata,

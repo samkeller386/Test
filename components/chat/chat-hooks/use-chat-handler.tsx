@@ -406,7 +406,6 @@ export const useChatHandler = () => {
             sentChatMessages,
             editedMessageFiles,
             chatFiles,
-            sourceCount,
           );
         } else {
           // Get the last message's retrieved file items

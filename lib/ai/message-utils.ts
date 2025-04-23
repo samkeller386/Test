@@ -10,6 +10,8 @@ import type { BuiltChatMessage } from '@/types/chat-message';
 import { PluginID } from '@/types/plugins';
 import { getModerationResult } from '@/lib/server/moderation';
 import { getSystemPrompt } from './prompts';
+import type { Tables } from '@/supabase/types';
+import { processMessageContentWithAttachments } from '../build-prompt-backend';
 
 /**
  * Removes the last assistant message if it's empty.
@@ -214,32 +216,32 @@ export function validateMessages(messages: any[]) {
 /**
  * Processes chat messages and handles model selection, uncensoring, and validation
  * @param messages - Array of messages to process
+ * @param attachments - Array of file items
  * @param selectedModel - The initially selected model
  * @param selectedPlugin - The selected plugin ID
- * @param isRagEnabled - Whether RAG is enabled
  * @param isContinuation - Whether this is a continuation request
  * @param isTerminalContinuation - Whether this is a terminal continuation request
- * @param region - The request region
  * @param apiKey - The OpenAI API key
  * @param isLargeModel - Whether the model is large
+ * @param profileContext - The user profile context
+ * @param userId - The user ID for authorization
  * @returns Object containing the processed messages and model information
  */
 export async function processChatMessages(
   messages: BuiltChatMessage[],
+  attachments: Tables<'file_items'>[],
   selectedModel: string,
   selectedPlugin: PluginID,
   isContinuation: boolean,
   isTerminalContinuation: boolean,
   apiKey: string | undefined,
   isLargeModel: boolean,
-  profileContext: string,
+  profile: any,
 ): Promise<{
   messages: BuiltChatMessage[];
   selectedModel: string;
-  supportsImages: boolean;
   systemPrompt: string;
 }> {
-  const supportsImages = true;
   let shouldUncensor = false;
 
   // Check if we should uncensor the response
@@ -261,18 +263,24 @@ export async function processChatMessages(
 
   filterEmptyAssistantMessages(messages);
 
+  // Process attachments and file content for the last message
+  messages = await processMessageContentWithAttachments(
+    messages,
+    attachments,
+    profile?.user_id,
+  );
+
   // Remove invalid message exchanges
   const validatedMessages = validateMessages(messages);
 
   const systemPrompt = getSystemPrompt({
     selectedChatModel: selectedModel,
-    profileContext: profileContext,
+    profileContext: profile?.profile_context,
   });
 
   return {
     messages: validatedMessages,
     selectedModel,
-    supportsImages,
     systemPrompt,
   };
 }

@@ -44,7 +44,8 @@ export const preferredRegion = [
 
 export async function POST(request: Request) {
   try {
-    const { messages, model, modelParams, chatMetadata } = await request.json();
+    const { messages, attachments, model, modelParams, chatMetadata } =
+      await request.json();
 
     const profile = await getAIProfile();
     const config = await getProviderConfig(
@@ -65,21 +66,20 @@ export async function POST(request: Request) {
         { status: 429 },
       );
     }
-
     let {
       messages: validatedMessages,
       selectedModel: finalSelectedModel,
-      supportsImages,
       systemPrompt,
     } = await processChatMessages(
       messages,
+      attachments,
       config.selectedModel,
       modelParams.selectedPlugin,
       modelParams.isContinuation,
       modelParams.isTerminalContinuation,
       llmConfig.openai.apiKey,
       config.isLargeModel,
-      profile.profile_context,
+      profile,
     );
 
     let supabase: SupabaseClient | null = null;
@@ -181,7 +181,7 @@ export async function POST(request: Request) {
           const result = streamText({
             model: myProvider.languageModel(finalSelectedModel),
             system: systemPrompt,
-            messages: toVercelChatMessages(validatedMessages, supportsImages),
+            messages: toVercelChatMessages(validatedMessages, true),
             maxTokens: 2048,
             abortSignal: request.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),
