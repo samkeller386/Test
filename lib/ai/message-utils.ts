@@ -11,6 +11,7 @@ import { PluginID } from '@/types/plugins';
 import { getModerationResult } from '@/lib/server/moderation';
 import { getSystemPrompt } from './prompts';
 import { processMessageContentWithAttachments } from '../build-prompt-backend';
+import { Tables } from '@/supabase/types';
 
 /**
  * Removes the last assistant message if it's empty.
@@ -215,15 +216,13 @@ export function validateMessages(messages: any[]) {
 /**
  * Processes chat messages and handles model selection, uncensoring, and validation
  * @param messages - Array of messages to process
- * @param attachments - Array of file items
  * @param selectedModel - The initially selected model
  * @param selectedPlugin - The selected plugin ID
  * @param isContinuation - Whether this is a continuation request
  * @param isTerminalContinuation - Whether this is a terminal continuation request
  * @param apiKey - The OpenAI API key
  * @param isLargeModel - Whether the model is large
- * @param profileContext - The user profile context
- * @param userId - The user ID for authorization
+ * @param profile - Object containing user_id and profile_context
  * @returns Object containing the processed messages and model information
  */
 export async function processChatMessages(
@@ -234,7 +233,7 @@ export async function processChatMessages(
   isTerminalContinuation: boolean,
   apiKey: string | undefined,
   isLargeModel: boolean,
-  profile: Tables<'profiles'> | null,
+  profile: { user_id: string; profile_context: string },
 ): Promise<{
   messages: BuiltChatMessage[];
   selectedModel: string;

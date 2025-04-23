@@ -130,20 +130,28 @@ export async function processMessageContentWithAttachments(
     // Create admin client to access database
     const supabaseAdmin = createSupabaseAdminClient();
 
+    // Collect all file IDs from all messages first
+    const allFileIds = processedMessages
+      .flatMap((m) => (m.attachments ?? []).map((a) => a.file_id))
+      .filter(Boolean);
+
+    // Make a single batch query for all file items
+    const { data: allFileItems } = await supabaseAdmin
+      .from('file_items')
+      .select('*')
+      .in('file_id', allFileIds);
+
     // Process each message
     for (const message of processedMessages) {
       // Process attachments if they exist in the message
       if (message.attachments && Array.isArray(message.attachments)) {
-        // First, get all file items from the database
-        const { data: fileItems } = await supabaseAdmin
-          .from('file_items')
-          .select('*')
-          .in(
-            'file_id',
-            message.attachments.map((att) => att.file_id).filter(Boolean),
-          );
+        // Filter file items for this specific message
+        const fileItems =
+          allFileItems?.filter((fi) =>
+            (message.attachments ?? []).some((a) => a.file_id === fi.file_id),
+          ) ?? [];
 
-        if (fileItems && fileItems.length > 0) {
+        if (fileItems.length > 0) {
           // Process files in the order they appear in attachments
           const processedContent: MessageContent[] = [];
           let hasPdfAttachments = false;
