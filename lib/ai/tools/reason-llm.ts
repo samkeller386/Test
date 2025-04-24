@@ -1,4 +1,5 @@
 import { buildSystemPrompt } from '@/lib/ai/prompts';
+import { toVercelChatMessages } from '@/lib/ai/message-utils';
 import llmConfig from '@/lib/models/llm-config';
 import { streamText } from 'ai';
 import { myProvider } from '@/lib/ai/providers';
@@ -7,7 +8,6 @@ import { handleChatWithMetadata } from '../actions';
 import type { ChatMetadata, LLMID } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { generateTitleFromUserMessage } from '@/lib/ai/actions';
-import { openai } from '@ai-sdk/openai';
 
 interface ReasonLLMConfig {
   messages: any[];
@@ -70,14 +70,11 @@ export async function executeReasonLLMTool({
     await Promise.all([
       (async () => {
         const { fullStream } = streamText({
-          model: openai.responses('o4-mini'),
-          prompt: 'Tell me about the Mission burrito debate in San Francisco.',
-          providerOptions: {
-            openai: {
-              reasoningSummary: 'none',
-              reasoningEffort: 'low',
-            },
-          },
+          model: selectedModel,
+          system: systemPrompt,
+          messages: toVercelChatMessages(messages),
+          maxTokens: 8192,
+          abortSignal: abortSignal,
           onFinish: async ({ finishReason }: { finishReason: string }) => {
             if (supabase) {
               await handleChatWithMetadata({
@@ -98,7 +95,6 @@ export async function executeReasonLLMTool({
         let isThinking = false;
 
         for await (const delta of fullStream) {
-          console.log('delta', delta);
           if (delta.type === 'text-delta') {
             dataStream.writeData({
               type: 'text-delta',
