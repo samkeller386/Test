@@ -124,7 +124,11 @@ function prepareInput(
 function calculateModerationLevel(
   categoryScores: OpenAI.Moderations.Moderation.CategoryScores,
 ): number {
-  const maxScore = Math.max(...Object.values(categoryScores));
+  const maxScore = Math.max(
+    ...Object.values(categoryScores).filter(
+      (score): score is number => typeof score === 'number',
+    ),
+  );
   return Math.min(Math.max(maxScore, 0), 1);
 }
 
