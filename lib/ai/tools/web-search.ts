@@ -93,6 +93,11 @@ export async function executeWebSearchTool({
           model: perplexity(selectedModel),
           system: systemPrompt,
           messages: toVercelChatMessages(messages),
+          providerOptions: {
+            perplexity: {
+              search_context_size: 'medium',
+            },
+          },
           maxTokens: 2048,
           abortSignal,
           onFinish: async ({ finishReason }: { finishReason: string }) => {
@@ -106,7 +111,6 @@ export async function executeWebSearchTool({
                 messages,
                 finishReason,
               });
-              dataStream.writeData({ isChatSavedInBackend: true });
             }
           },
         });
