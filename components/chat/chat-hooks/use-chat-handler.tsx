@@ -425,7 +425,9 @@ export const useChatHandler = () => {
         confirmTerminalCommand,
       };
       const chatId = currentChat?.id ?? uuidv4();
-      const chatMetadata: ChatMetadata = { id: chatId, newChat: !currentChat };
+      const chatMetadata: ChatMetadata = isTemporaryChat
+        ? { newChat: !currentChat }
+        : { id: chatId, newChat: !currentChat };
 
       let generatedText = '';
       let thinkingText = '';

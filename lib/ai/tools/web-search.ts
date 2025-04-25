@@ -148,7 +148,7 @@ export async function executeWebSearchTool({
         }
       })(),
       (async () => {
-        if (chatMetadata?.newChat) {
+        if (chatMetadata.id && chatMetadata.newChat) {
           generatedTitle = await generateTitleFromUserMessage({
             messages,
             abortSignal: config.abortSignal,

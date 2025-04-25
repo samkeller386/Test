@@ -215,7 +215,7 @@ export async function POST(request: Request) {
           await Promise.all([
             result.mergeIntoDataStream(dataStream),
             (async () => {
-              if (chatMetadata.newChat) {
+              if (chatMetadata.id && chatMetadata.newChat) {
                 generatedTitle = await generateTitleFromUserMessage({
                   messages,
                   abortSignal: request.signal,
