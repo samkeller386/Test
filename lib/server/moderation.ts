@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import llmConfig from '../models/llm-config';
 
 const MODERATION_CHAR_LIMIT = 1000;
 
@@ -10,11 +11,10 @@ interface MessageContentItem {
 
 export async function getModerationResult(
   messages: any[],
-  openaiApiKey: string,
   messageMinLength: number,
   isLargeModel: boolean,
 ): Promise<{ shouldUncensorResponse: boolean }> {
-  const openai = new OpenAI({ apiKey: openaiApiKey });
+  const openai = new OpenAI({ apiKey: llmConfig.openai.apiKey });
 
   // Find the last user message that exceeds the minimum length
   const targetMessage = findTargetMessage(messages, messageMinLength);

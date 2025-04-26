@@ -283,7 +283,6 @@ export const useChatHandler = () => {
     confirmTerminalCommand = false,
   ) => {
     const isEdit = editSequenceNumber !== undefined;
-    const isRagEnabled = selectedPlugin === PluginID.ENHANCED_SEARCH;
 
     // Simpler model handling
     const baseModel = (model as LLMID) || chatSettings?.model;
@@ -419,7 +418,6 @@ export const useChatHandler = () => {
       const modelParams: ModelParams = {
         isContinuation,
         isTerminalContinuation,
-        isRagEnabled,
         selectedPlugin,
         agentMode: getStoredAutoRunPreference(),
         confirmTerminalCommand,
