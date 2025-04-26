@@ -2,29 +2,26 @@ import { executeWebSearchTool } from './web-search';
 import { executeTerminalAgent } from './terminal-agent';
 import { executeBrowserTool } from './browser';
 import { z } from 'zod';
-import type { AgentMode, LLMID } from '@/types/llms';
-import type { ChatMetadata } from '@/types';
+import type { ChatMetadata, LLMID, ModelParams } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const createToolSchemas = ({
   messages,
+  modelParams,
+  chatMetadata,
   profile,
-  agentMode,
-  confirmTerminalCommand,
   dataStream,
   abortSignal,
-  chatMetadata,
   model,
   supabase,
   isPremiumUser,
 }: {
   messages: any;
+  modelParams: ModelParams;
+  chatMetadata: ChatMetadata;
   profile: any;
-  agentMode: AgentMode;
-  confirmTerminalCommand: boolean;
   dataStream: any;
   abortSignal: AbortSignal;
-  chatMetadata: ChatMetadata;
   model: LLMID;
   supabase: SupabaseClient | null;
   isPremiumUser: boolean;
@@ -63,11 +60,12 @@ beneficial for the user's needs.
           open_url,
           format_output,
           config: {
-            profile,
             messages,
+            modelParams,
+            chatMetadata,
+            profile,
             dataStream,
             abortSignal,
-            chatMetadata,
             model,
             supabase,
           },
@@ -89,11 +87,12 @@ Do not use this tool if the user is merely asking about the possibility of searc
         return executeWebSearchTool({
           config: {
             messages,
+            modelParams,
+            chatMetadata,
             profile,
             dataStream,
             isLargeModel: true,
             abortSignal,
-            chatMetadata,
             model,
             supabase,
           },
@@ -120,12 +119,11 @@ This tool executes terminal commands in a Ubuntu environment with root privilege
         return executeTerminalAgent({
           config: {
             messages,
+            modelParams,
+            chatMetadata,
             profile,
-            agentMode,
-            confirmTerminalCommand,
             dataStream,
             abortSignal,
-            chatMetadata,
             model,
             supabase,
             isPremiumUser,

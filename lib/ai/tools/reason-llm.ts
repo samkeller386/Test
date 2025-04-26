@@ -2,19 +2,20 @@ import { getSystemPrompt } from '@/lib/ai/prompts';
 import { toVercelChatMessages } from '@/lib/ai/message-utils';
 import { streamText } from 'ai';
 import PostHogClient from '@/app/posthog';
-import { handleChatWithMetadata } from '../actions';
-import type { ChatMetadata, LLMID } from '@/types';
+import type { ChatMetadata, LLMID, ModelParams } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { generateTitleFromUserMessage } from '@/lib/ai/actions';
 import { myProvider } from '../providers';
+import { handleChatAndMessages } from '../chat-message-actions';
 
 interface ReasonLLMConfig {
   messages: any[];
+  modelParams: ModelParams;
+  chatMetadata: ChatMetadata;
   profile: any;
   dataStream: any;
   isLargeModel: boolean;
   abortSignal: AbortSignal;
-  chatMetadata: ChatMetadata;
   model: LLMID;
   supabase: SupabaseClient | null;
 }
@@ -43,10 +44,11 @@ export async function executeReasonLLMTool({
 
   const {
     messages,
+    modelParams,
+    chatMetadata,
     profile,
     dataStream,
     abortSignal,
-    chatMetadata,
     model,
     supabase,
   } = config;
@@ -81,18 +83,22 @@ export async function executeReasonLLMTool({
               reasoningEffort: 'high',
             },
           },
-          onFinish: async ({ finishReason }: { finishReason: string }) => {
+          onFinish: async ({
+            finishReason,
+            text,
+          }: { finishReason: string; text: string }) => {
             if (supabase) {
-              await handleChatWithMetadata({
+              await handleChatAndMessages({
                 supabase,
+                modelParams,
                 chatMetadata,
                 profile,
                 model,
                 title: generatedTitle,
                 messages,
                 finishReason,
+                generatedText: text,
               });
-              dataStream.writeData({ isChatSavedInBackend: true });
             }
           },
         });
