@@ -427,6 +427,23 @@ export const useChatHandler = () => {
         ? { newChat: !currentChat }
         : { id: chatId, newChat: !currentChat };
 
+      // Create chat early if it doesn't exist
+      if (!currentChat && !isTemporaryChat) {
+        currentChat = await handleCreateChat(
+          baseModel!,
+          profile!,
+          messageContent || '',
+          'stop',
+          setSelectedChat,
+          setChats,
+          chatId,
+          '',
+        );
+
+        // Update URL without triggering a page reload or new history entry
+        window.history.replaceState({}, '', `/c/${chatId}`);
+      }
+
       let generatedText = '';
       let thinkingText = '';
       let thinkingElapsedSecs: number | null = null;
@@ -491,40 +508,25 @@ export const useChatHandler = () => {
             : msg,
         );
         setTemporaryChatMessages(updatedMessages);
-      } else {
-        if (!currentChat) {
-          currentChat = await handleCreateChat(
-            baseModel!,
-            profile!,
-            messageContent || '',
-            finishReason,
-            setSelectedChat,
-            setChats,
-            chatId,
-            chatTitle,
+      } else if (currentChat) {
+        const updatedChat: Tables<'chats'> = {
+          ...currentChat,
+          ...(chatTitle ? { name: chatTitle } : {}),
+          updated_at: new Date().toISOString(),
+          finish_reason: finishReason,
+          model: chatSettings?.model || currentChat.model,
+        };
+
+        setChats((prevChats) => {
+          const updatedChats = prevChats.map((prevChat) =>
+            prevChat.id === updatedChat.id ? updatedChat : prevChat,
           );
 
-          // Update URL without triggering a page reload or new history entry
-          window.history.replaceState({}, '', `/c/${chatId}`);
-        } else {
-          const updatedChat = {
-            ...currentChat,
-            updated_at: new Date().toISOString(),
-            finish_reason: finishReason,
-            model: chatSettings?.model || currentChat.model,
-          };
+          return updatedChats;
+        });
 
-          setChats((prevChats) => {
-            const updatedChats = prevChats.map((prevChat) =>
-              prevChat.id === updatedChat.id ? updatedChat : prevChat,
-            );
-
-            return updatedChats;
-          });
-
-          if (selectedChat?.id === updatedChat.id) {
-            setSelectedChat(updatedChat);
-          }
+        if (selectedChat?.id === updatedChat.id) {
+          setSelectedChat(updatedChat);
         }
 
         await handleCreateMessages(
