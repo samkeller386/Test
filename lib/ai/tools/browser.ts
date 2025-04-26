@@ -1,25 +1,23 @@
 import { buildSystemPrompt } from '@/lib/ai/prompts';
-import {
-  extractTextContent,
-  toVercelChatMessages,
-} from '@/lib/ai/message-utils';
+import { toVercelChatMessages } from '@/lib/ai/message-utils';
 import llmConfig from '@/lib/models/llm-config';
 import { streamText } from 'ai';
 import { myProvider } from '@/lib/ai/providers';
 import FirecrawlApp, { type ScrapeResponse } from '@mendable/firecrawl-js';
 import PostHogClient from '@/app/posthog';
-import type { ChatMetadata, LLMID, ModelParams } from '@/types';
+import type { ChatMetadata, LLMID } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { generateTitleFromUserMessage } from '@/lib/ai/actions';
-import { handleChatAndMessages } from '../chat-message-actions';
+import {
+  generateTitleFromUserMessage,
+  handleChatWithMetadata,
+} from '@/lib/ai/actions';
 
 interface BrowserToolConfig {
   profile: any;
   messages: any[];
-  modelParams: ModelParams;
-  chatMetadata: ChatMetadata;
   dataStream: any;
   abortSignal: AbortSignal;
+  chatMetadata: ChatMetadata;
   model: LLMID;
   supabase: SupabaseClient | null;
 }
@@ -32,8 +30,14 @@ async function getProviderConfig(profile: any) {
 
   return {
     systemPrompt,
-    finalSelectedModel: myProvider.languageModel('chat-model-small'),
+    model: myProvider.languageModel('chat-model-small'),
   };
+}
+
+export function getLastUserMessage(messages: any[]): string {
+  return (
+    messages.findLast((msg) => msg.role === 'user')?.content || 'Unknown query'
+  );
 }
 
 export async function browsePage(
@@ -187,16 +191,8 @@ export async function executeBrowserTool({
     );
   }
 
-  const {
-    model,
-    profile,
-    messages,
-    modelParams,
-    chatMetadata,
-    dataStream,
-    supabase,
-  } = config;
-  const { systemPrompt, finalSelectedModel } = await getProviderConfig(profile);
+  const { profile, messages, dataStream, chatMetadata, supabase } = config;
+  const { systemPrompt, model } = await getProviderConfig(profile);
 
   const posthog = PostHogClient();
   if (posthog) {
@@ -204,15 +200,13 @@ export async function executeBrowserTool({
       distinctId: profile.user_id,
       event: 'browser_executed',
       properties: {
-        model: finalSelectedModel,
+        model: model,
       },
     });
   }
 
   try {
-    const lastUserMessage = extractTextContent(
-      messages[messages.length - 1].content,
-    );
+    const lastUserMessage = getLastUserMessage(messages);
     dataStream.writeData({ type: 'tool-call', content: 'browser' });
 
     const browserResult = await browsePage(open_url, format_output);
@@ -227,28 +221,23 @@ export async function executeBrowserTool({
     await Promise.all([
       (async () => {
         const { fullStream } = streamText({
-          model: finalSelectedModel,
+          model,
           system: systemPrompt,
           messages: [
             ...toVercelChatMessages(messages.slice(0, -1)),
             { role: 'user', content: browserPrompt },
           ],
           maxTokens: 2048,
-          onFinish: async ({
-            finishReason,
-            text,
-          }: { finishReason: string; text: string }) => {
+          onFinish: async ({ finishReason }: { finishReason: string }) => {
             if (supabase) {
-              await handleChatAndMessages({
+              await handleChatWithMetadata({
                 supabase,
-                modelParams,
                 chatMetadata,
                 profile,
-                model,
+                model: config.model,
                 title: generatedTitle,
                 messages,
                 finishReason,
-                generatedText: text,
               });
             }
           },

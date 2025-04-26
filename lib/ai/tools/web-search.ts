@@ -4,19 +4,21 @@ import llmConfig from '@/lib/models/llm-config';
 import { streamText } from 'ai';
 import { perplexity } from '@ai-sdk/perplexity';
 import PostHogClient from '@/app/posthog';
-import type { ChatMetadata, LLMID, ModelParams } from '@/types';
+import type { ChatMetadata, LLMID } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { generateTitleFromUserMessage } from '../actions';
-import { handleChatAndMessages } from '../chat-message-actions';
+import {
+  generateTitleFromUserMessage,
+  handleChatWithMetadata,
+} from '../actions';
 
 interface WebSearchConfig {
   messages: any[];
-  modelParams: ModelParams;
-  chatMetadata: ChatMetadata;
   profile: any;
   dataStream: any;
   isLargeModel: boolean;
+  directToolCall?: boolean;
   abortSignal: AbortSignal;
+  chatMetadata: ChatMetadata;
   model: LLMID;
   supabase: SupabaseClient | null;
 }
@@ -48,14 +50,14 @@ export async function executeWebSearchTool({
   }
 
   const {
-    model,
     messages,
-    modelParams,
-    chatMetadata,
     profile,
     dataStream,
     isLargeModel,
+    directToolCall,
     abortSignal,
+    chatMetadata,
+    model,
     supabase,
   } = config;
   const { systemPrompt, selectedModel } = await getProviderConfig(
@@ -74,10 +76,12 @@ export async function executeWebSearchTool({
     });
   }
 
-  dataStream.writeData({
-    type: 'tool-call',
-    content: 'websearch',
-  });
+  if (!directToolCall) {
+    dataStream.writeData({
+      type: 'tool-call',
+      content: 'websearch',
+    });
+  }
 
   let generatedTitle: string | undefined;
 
@@ -95,21 +99,16 @@ export async function executeWebSearchTool({
           },
           maxTokens: 2048,
           abortSignal,
-          onFinish: async ({
-            finishReason,
-            text,
-          }: { finishReason: string; text: string }) => {
+          onFinish: async ({ finishReason }: { finishReason: string }) => {
             if (supabase) {
-              await handleChatAndMessages({
+              await handleChatWithMetadata({
                 supabase,
-                modelParams,
                 chatMetadata,
                 profile,
                 model,
                 title: generatedTitle,
                 messages,
                 finishReason,
-                generatedText: text,
               });
             }
           },
@@ -130,6 +129,18 @@ export async function executeWebSearchTool({
               // Send citations after first text-delta
               dataStream.writeData({ citations });
               hasFirstTextDelta = true;
+
+              if (!directToolCall) {
+                dataStream.writeData({
+                  type: 'tool-call',
+                  content: 'none',
+                });
+
+                dataStream.writeData({
+                  type: 'text-delta',
+                  content: '\n\n',
+                });
+              }
             }
 
             dataStream.writeData({

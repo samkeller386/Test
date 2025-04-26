@@ -8,18 +8,21 @@ import { createAgentTools } from '@/lib/ai/tools/agent';
 import { PENTESTGPT_AGENT_SYSTEM_PROMPT } from '@/lib/models/agent-prompts';
 import { myProvider } from '@/lib/ai/providers';
 import { executeTerminalCommandWithConfig } from './terminal-command-executor';
-import { generateTitleFromUserMessage } from '@/lib/ai/actions';
-import { handleChatAndMessages } from '@/lib/ai/chat-message-actions';
-import type { ChatMetadata, LLMID, ModelParams } from '@/types';
+import {
+  generateTitleFromUserMessage,
+  handleChatWithMetadata,
+} from '@/lib/ai/actions';
+import type { ChatMetadata, LLMID, AgentMode } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 interface TerminalToolConfig {
   messages: any[];
-  modelParams: ModelParams;
-  chatMetadata: ChatMetadata;
   profile: any;
   dataStream: any;
+  agentMode: AgentMode;
+  confirmTerminalCommand: boolean;
   abortSignal: AbortSignal;
+  chatMetadata: ChatMetadata;
   model: LLMID;
   supabase: SupabaseClient | null;
   isPremiumUser: boolean;
@@ -32,11 +35,11 @@ export async function executeTerminalAgent({
   config: TerminalToolConfig;
 }) {
   const {
-    modelParams,
-    chatMetadata,
     profile,
     dataStream,
+    agentMode,
     abortSignal,
+    chatMetadata,
     model,
     supabase,
     isPremiumUser,
@@ -70,7 +73,7 @@ export async function executeTerminalAgent({
     };
 
     // Try to execute terminal command if confirmTerminalCommand is true
-    if (modelParams.confirmTerminalCommand) {
+    if (config.confirmTerminalCommand) {
       const result = await executeTerminalCommandWithConfig({
         userID,
         dataStream,
@@ -102,27 +105,25 @@ export async function executeTerminalAgent({
             persistentSandbox,
             setSandbox,
             isPremiumUser,
-            agentMode: modelParams.agentMode,
+            agentMode,
           }),
           maxSteps: 10,
           toolChoice: 'required',
           abortSignal,
-          onFinish: async ({
-            finishReason,
-            text,
-          }: { finishReason: string; text: string }) => {
+          onFinish: async ({ finishReason }: { finishReason: string }) => {
             if (supabase) {
-              await handleChatAndMessages({
+              await handleChatWithMetadata({
                 supabase,
-                modelParams,
                 chatMetadata,
                 profile,
                 model,
                 title: generatedTitle,
                 messages,
-                finishReason,
-                generatedText: text,
+                finishReason: customFinishReason
+                  ? customFinishReason
+                  : finishReason,
               });
+              dataStream.writeData({ isChatSavedInBackend: true });
             }
           },
         });
@@ -149,7 +150,7 @@ export async function executeTerminalAgent({
               customFinishReason = 'message_ask_user';
               shouldStop = true;
             } else if (
-              modelParams.agentMode === 'ask-every-time' &&
+              agentMode === 'ask-every-time' &&
               chunk.toolName === 'shell_exec'
             ) {
               const { exec_dir, command } = chunk.args;
