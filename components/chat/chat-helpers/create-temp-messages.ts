@@ -1,6 +1,7 @@
 import { CONTINUE_PROMPT } from '@/lib/models/llm-prompting';
 import { lastSequenceNumber } from '@/lib/utils';
-import type { ChatMessage, LLMID, PluginID } from '@/types';
+import type { ChatMessage, LLMID } from '@/types';
+import { PluginID } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 export const createTempMessages = ({
@@ -26,22 +27,27 @@ export const createTempMessages = ({
     message: {
       chat_id: '',
       content: messageContentInternal,
-      thinking_content: '',
-      thinking_elapsed_secs: null,
-      thinking_enabled: false,
-      created_at: '',
-      id: uuidv4(),
-      image_paths: b64Images,
+      reasoning: null,
       model,
-      plugin: selectedPlugin,
+      model_params: {
+        plugin: selectedPlugin,
+      },
+      provider_metadata:
+        selectedPlugin === PluginID.REASONING
+          ? {
+              thinking_enabled: true,
+              thinking_elapsed_secs: null,
+              citations: [],
+            }
+          : {},
       role: 'user',
       sequence_number: lastSequenceNumber(chatMessages) + 1,
-      updated_at: '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      id: uuidv4(),
+      image_paths: b64Images,
       user_id: '',
-      rag_used: false,
-      rag_id: null,
-      citations: [],
-      fragment: null,
+      attachments: [],
     },
     fileItems: [],
   };
@@ -50,22 +56,27 @@ export const createTempMessages = ({
     message: {
       chat_id: '',
       content: '',
-      thinking_content: '',
-      thinking_elapsed_secs: null,
-      thinking_enabled: false,
-      created_at: '',
-      id: uuidv4(),
-      image_paths: [],
+      reasoning: null,
       model,
-      plugin: selectedPlugin,
+      model_params: {
+        plugin: selectedPlugin,
+      },
+      provider_metadata:
+        selectedPlugin === PluginID.REASONING
+          ? {
+              thinking_enabled: true,
+              thinking_elapsed_secs: null,
+              citations: [],
+            }
+          : {},
       role: 'assistant',
       sequence_number: lastSequenceNumber(chatMessages) + 2,
-      updated_at: '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      id: uuidv4(),
+      image_paths: [],
       user_id: '',
-      rag_used: false,
-      rag_id: null,
-      citations: [],
-      fragment: null,
+      attachments: [],
     },
     fileItems: [],
   };

@@ -1,5 +1,9 @@
 import type { Tables } from '@/supabase/types';
-import { PluginID } from '@/types/plugins';
+import {
+  PluginID,
+  type ProviderMetadata,
+  type MessageModelParams,
+} from '@/types';
 import type { FC } from 'react';
 import { MessageMarkdown } from './message-markdown';
 import { MessageTerminal } from './terminal-messages/message-terminal';
@@ -12,7 +16,7 @@ interface MessageTypeResolverProps {
   toolInUse: string;
 }
 
-export const allTerminalPlugins = [
+export const allTerminalPlugins: string[] = [
   PluginID.TERMINAL,
   PluginID.WAF_DETECTOR,
   PluginID.WHOIS_LOOKUP,
@@ -21,14 +25,30 @@ export const allTerminalPlugins = [
   'temporary-sandbox',
 ];
 
+const isTerminalPlugin = (plugin: string | null | undefined): boolean => {
+  return (
+    plugin !== null &&
+    plugin !== undefined &&
+    allTerminalPlugins.includes(plugin)
+  );
+};
+
+const hasCitations = (metadata: ProviderMetadata | null): boolean => {
+  return metadata?.citations !== undefined && metadata.citations.length > 0;
+};
+
 export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
   message,
   isLastMessage,
   toolInUse,
 }) => {
+  const modelParams = message.model_params as MessageModelParams | null;
+  const metadata = message.provider_metadata as ProviderMetadata | null;
+  const plugin = modelParams?.plugin;
+
   const isPluginOutput =
-    message.plugin !== null &&
-    message.plugin !== PluginID.NONE.toString() &&
+    plugin !== null &&
+    plugin !== PluginID.NONE.toString() &&
     message.role === 'assistant';
 
   // console.log({
@@ -38,9 +58,8 @@ export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
   // })
 
   if (
-    (isPluginOutput &&
-      allTerminalPlugins.includes(message.plugin as PluginID)) ||
-    allTerminalPlugins.includes(toolInUse as PluginID)
+    (isPluginOutput && isTerminalPlugin(plugin)) ||
+    isTerminalPlugin(toolInUse)
   ) {
     return (
       <MessageTerminal
@@ -54,29 +73,29 @@ export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
   if (
     toolInUse === PluginID.REASONING ||
     toolInUse === PluginID.REASONING_WEB_SEARCH ||
-    message.thinking_content
+    message.reasoning
   ) {
     return (
       <MessageThinking
         content={message.content}
-        thinking_content={message.thinking_content}
-        thinking_elapsed_secs={message.thinking_elapsed_secs}
+        thinking_content={message.reasoning}
+        thinking_elapsed_secs={metadata?.thinking_elapsed_secs}
         isAssistant={message.role === 'assistant'}
-        citations={message.citations || []}
+        citations={metadata?.citations || []}
       />
     );
   }
 
   if (
-    message.plugin === PluginID.WEB_SEARCH ||
+    plugin === PluginID.WEB_SEARCH ||
     toolInUse === PluginID.WEB_SEARCH ||
-    message.citations?.length > 0
+    hasCitations(metadata)
   ) {
     return (
       <MessageCitations
         content={message.content}
         isAssistant={message.role === 'assistant'}
-        citations={message.citations || []}
+        citations={metadata?.citations || []}
       />
     );
   }
