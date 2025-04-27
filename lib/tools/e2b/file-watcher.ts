@@ -13,7 +13,7 @@ export class FileWatcher {
   private sandbox: Sandbox;
   private options: FileWatcherOptions;
   private watcher: any;
-  private isWatching: boolean = false;
+  private isWatching = false;
 
   constructor(sandbox: Sandbox, options: FileWatcherOptions) {
     this.sandbox = sandbox;

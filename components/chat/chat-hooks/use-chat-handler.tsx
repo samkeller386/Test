@@ -9,7 +9,6 @@ import type {
   ModelParams,
   ModelWithWebSearch,
   AgentMode,
-  MessageModelParams,
 } from '@/types';
 import { PluginID } from '@/types/plugins';
 import { useRouter } from 'next/navigation';
@@ -501,12 +500,10 @@ export const useChatHandler = () => {
                 message: {
                   ...msg.message,
                   content: generatedText,
-                  reasoning: thinkingText,
-                  provider_metadata: {
-                    thinking_enabled: !!thinkingText,
-                    thinking_elapsed_secs: thinkingElapsedSecs,
-                    citations: citations || [],
-                  },
+                  thinking_content: thinkingText,
+                  thinking_enabled: !!thinkingText,
+                  thinking_elapsed_secs: thinkingElapsedSecs,
+                  citations: citations || [],
                 },
               }
             : msg,

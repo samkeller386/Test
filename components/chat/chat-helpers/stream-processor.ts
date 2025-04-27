@@ -1,11 +1,10 @@
 import type { ChatMessage, DataPartValue, FileAttachment } from '@/types';
 import type { AlertAction } from '@/context/alert-context';
-import { processDataStream, type ProviderMetadata } from 'ai';
+import { processDataStream } from 'ai';
 import { toast } from 'sonner';
 import { PluginID } from '@/types/plugins';
 import type { AgentStatusState } from '@/components/messages/agent-status';
 import type { Dispatch, SetStateAction } from 'react';
-import { convertToJsonAttachments } from '@/lib/utils/type-converters';
 
 export const processResponse = async (
   response: Response,
@@ -186,7 +185,7 @@ export const processResponse = async (
                           ...chatMessage,
                           message: {
                             ...chatMessage.message,
-                            reasoning: thinkingText,
+                            thinking_content: thinkingText,
                           },
                         }
                       : chatMessage,
@@ -207,11 +206,7 @@ export const processResponse = async (
                           ...chatMessage,
                           message: {
                             ...chatMessage.message,
-                            provider_metadata: {
-                              ...(chatMessage.message
-                                .provider_metadata as ProviderMetadata),
-                              thinking_elapsed_secs: thinkingElapsedSecs,
-                            },
+                            thinking_elapsed_secs: thinkingElapsedSecs,
                           },
                         }
                       : chatMessage,

@@ -1,9 +1,5 @@
 import type { Tables } from '@/supabase/types';
-import {
-  PluginID,
-  type ProviderMetadata,
-  type MessageModelParams,
-} from '@/types';
+import { PluginID } from '@/types/plugins';
 import type { FC } from 'react';
 import { MessageMarkdown } from './message-markdown';
 import { MessageTerminal } from './terminal-messages/message-terminal';
@@ -16,7 +12,7 @@ interface MessageTypeResolverProps {
   toolInUse: string;
 }
 
-export const allTerminalPlugins: string[] = [
+export const allTerminalPlugins = [
   PluginID.TERMINAL,
   PluginID.WAF_DETECTOR,
   PluginID.WHOIS_LOOKUP,
@@ -25,25 +21,11 @@ export const allTerminalPlugins: string[] = [
   'temporary-sandbox',
 ];
 
-const isTerminalPlugin = (plugin: string | null | undefined): boolean => {
-  return (
-    plugin !== null &&
-    plugin !== undefined &&
-    allTerminalPlugins.includes(plugin)
-  );
-};
-
-const hasCitations = (metadata: ProviderMetadata | null): boolean => {
-  return metadata?.citations !== undefined && metadata.citations.length > 0;
-};
-
 export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
   message,
   isLastMessage,
   toolInUse,
 }) => {
-  const metadata = message.provider_metadata as ProviderMetadata | null;
-
   const isPluginOutput =
     message.plugin !== null &&
     message.plugin !== PluginID.NONE.toString() &&
@@ -56,8 +38,9 @@ export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
   // })
 
   if (
-    (isPluginOutput && isTerminalPlugin(message.plugin)) ||
-    isTerminalPlugin(toolInUse)
+    (isPluginOutput &&
+      allTerminalPlugins.includes(message.plugin as PluginID)) ||
+    allTerminalPlugins.includes(toolInUse as PluginID)
   ) {
     return (
       <MessageTerminal
@@ -71,15 +54,15 @@ export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
   if (
     toolInUse === PluginID.REASONING ||
     toolInUse === PluginID.REASONING_WEB_SEARCH ||
-    message.reasoning
+    message.thinking_content
   ) {
     return (
       <MessageThinking
         content={message.content}
-        thinking_content={message.reasoning}
-        thinking_elapsed_secs={metadata?.thinking_elapsed_secs}
+        thinking_content={message.thinking_content}
+        thinking_elapsed_secs={message.thinking_elapsed_secs}
         isAssistant={message.role === 'assistant'}
-        citations={metadata?.citations || []}
+        citations={message.citations || []}
       />
     );
   }
@@ -87,13 +70,13 @@ export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
   if (
     message.plugin === PluginID.WEB_SEARCH ||
     toolInUse === PluginID.WEB_SEARCH ||
-    hasCitations(metadata)
+    message.citations?.length > 0
   ) {
     return (
       <MessageCitations
         content={message.content}
         isAssistant={message.role === 'assistant'}
-        citations={metadata?.citations || []}
+        citations={message.citations || []}
       />
     );
   }

@@ -19,25 +19,6 @@ import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { convertToJsonAttachments } from '@/lib/utils/type-converters';
 
-const getProviderMetadata = (
-  selectedPlugin: PluginID,
-  thinkingElapsedSecs: number | null | undefined,
-  citations: string[] | undefined,
-) => {
-  const hasThinking = selectedPlugin === PluginID.REASONING;
-  const hasCitations = citations && citations.length > 0;
-
-  if (!hasThinking && !hasCitations) {
-    return {};
-  }
-
-  return {
-    thinking_enabled: hasThinking,
-    thinking_elapsed_secs: hasThinking ? thinkingElapsedSecs || null : null,
-    citations: citations || [],
-  };
-};
-
 export const handleCreateMessages = async (
   chatMessages: ChatMessage[],
   currentChat: Tables<'chats'> | null,
@@ -70,17 +51,19 @@ export const handleCreateMessages = async (
         id: uuidv4(),
         chat_id: '',
         content: messageContent || '',
+        thinking_content: null,
+        thinking_enabled: selectedPlugin === PluginID.REASONING,
+        thinking_elapsed_secs: null,
         role: 'user',
-        reasoning: null,
         model: modelData.modelId,
         plugin: selectedPlugin,
-        provider_metadata: getProviderMetadata(selectedPlugin, null, []),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         sequence_number: lastSequenceNumber(chatMessages) + 1,
         user_id: profile.user_id,
         image_paths: newMessageImages.map((image) => image.path),
         attachments: [],
+        citations: [],
       },
       fileItems: retrievedFileItems,
     };
@@ -90,20 +73,18 @@ export const handleCreateMessages = async (
         id: uuidv4(),
         chat_id: '',
         content: generatedText,
-        reasoning: thinkingText || null,
+        thinking_content: thinkingText || null,
+        thinking_enabled: selectedPlugin === PluginID.REASONING,
+        thinking_elapsed_secs: thinkingElapsedSecs || null,
         model: modelData.modelId,
         plugin: selectedPlugin,
-        provider_metadata: getProviderMetadata(
-          selectedPlugin,
-          thinkingElapsedSecs,
-          citations,
-        ),
         role: 'assistant',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         sequence_number: lastSequenceNumber(chatMessages) + 2,
         user_id: profile.user_id,
         image_paths: [],
+        citations: citations || [],
         attachments: fileAttachments
           ? convertToJsonAttachments(fileAttachments)
           : [],
@@ -119,13 +100,15 @@ export const handleCreateMessages = async (
     chat_id: currentChat.id,
     user_id: profile.user_id,
     content: messageContent || '',
-    reasoning: null,
+    thinking_content: null,
+    thinking_enabled: selectedPlugin === PluginID.REASONING,
+    thinking_elapsed_secs: null,
     model: modelData.modelId,
     plugin: selectedPlugin,
-    provider_metadata: getProviderMetadata(selectedPlugin, null, []),
     role: 'user',
     sequence_number: lastSequenceNumber(chatMessages) + 1,
     image_paths: [],
+    citations: [],
     attachments: [],
   };
 
@@ -133,17 +116,15 @@ export const handleCreateMessages = async (
     chat_id: currentChat.id,
     user_id: profile.user_id,
     content: generatedText,
-    reasoning: thinkingText || null,
+    thinking_content: thinkingText || null,
+    thinking_enabled: selectedPlugin === PluginID.REASONING,
+    thinking_elapsed_secs: thinkingElapsedSecs || null,
     model: modelData.modelId,
     plugin: selectedPlugin,
-    provider_metadata: getProviderMetadata(
-      selectedPlugin,
-      thinkingElapsedSecs,
-      citations,
-    ),
     role: 'assistant',
     sequence_number: lastSequenceNumber(chatMessages) + 2,
     image_paths: [],
+    citations: citations || [],
     attachments: fileAttachments
       ? convertToJsonAttachments(fileAttachments)
       : [],

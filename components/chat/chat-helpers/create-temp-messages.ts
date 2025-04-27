@@ -27,17 +27,11 @@ export const createTempMessages = ({
     message: {
       chat_id: '',
       content: messageContentInternal,
-      reasoning: null,
+      thinking_content: null,
+      thinking_enabled: selectedPlugin === PluginID.REASONING,
+      thinking_elapsed_secs: null,
       model,
       plugin: selectedPlugin,
-      provider_metadata:
-        selectedPlugin === PluginID.REASONING
-          ? {
-              thinking_enabled: true,
-              thinking_elapsed_secs: null,
-              citations: [],
-            }
-          : {},
       role: 'user',
       sequence_number: lastSequenceNumber(chatMessages) + 1,
       created_at: new Date().toISOString(),
@@ -45,6 +39,7 @@ export const createTempMessages = ({
       id: uuidv4(),
       image_paths: b64Images,
       user_id: '',
+      citations: [],
       attachments: [],
     },
     fileItems: [],
@@ -54,17 +49,11 @@ export const createTempMessages = ({
     message: {
       chat_id: '',
       content: '',
-      reasoning: null,
+      thinking_content: null,
+      thinking_enabled: selectedPlugin === PluginID.REASONING,
+      thinking_elapsed_secs: null,
       model,
       plugin: selectedPlugin,
-      provider_metadata:
-        selectedPlugin === PluginID.REASONING
-          ? {
-              thinking_enabled: true,
-              thinking_elapsed_secs: null,
-              citations: [],
-            }
-          : {},
       role: 'assistant',
       sequence_number: lastSequenceNumber(chatMessages) + 2,
       created_at: new Date().toISOString(),
@@ -72,6 +61,7 @@ export const createTempMessages = ({
       id: uuidv4(),
       image_paths: [],
       user_id: '',
+      citations: [],
       attachments: [],
     },
     fileItems: [],
