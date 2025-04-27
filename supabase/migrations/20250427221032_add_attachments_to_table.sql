@@ -1,4 +1,3 @@
--- First, add new columns if they don't exist
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'attachments') THEN
@@ -7,7 +6,6 @@ BEGIN
 END $$;
 
 
--- Add constraints if they don't exist
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE table_name = 'messages' AND constraint_name = 'check_attachments_length') THEN
@@ -15,7 +13,6 @@ BEGIN
     END IF;
 END $$;
 
--- Add indexes if they don't exist
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE tablename = 'messages' AND indexname = 'idx_messages_attachments') THEN
@@ -23,23 +20,21 @@ BEGIN
     END IF;
 END $$;
 
--- Drop old columns if they exist
--- DO $$ 
--- BEGIN
-    -- IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'rag_used') THEN
-    --     ALTER TABLE messages DROP COLUMN rag_used;
-    -- END IF;
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'rag_used') THEN
+        ALTER TABLE messages DROP COLUMN rag_used;
+    END IF;
     
-    -- IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'rag_id') THEN
-    --     ALTER TABLE messages DROP COLUMN rag_id;
-    -- END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'rag_id') THEN
+        ALTER TABLE messages DROP COLUMN rag_id;
+    END IF;
     
-    -- IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'fragment') THEN
-    --     ALTER TABLE messages DROP COLUMN fragment;
-    -- END IF;
--- END $$;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'fragment') THEN
+        ALTER TABLE messages DROP COLUMN fragment;
+    END IF;
+END $$;
 
--- Update RLS policies to include new columns
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'messages' AND policyname = 'Allow view access to attachments for non-private chats') THEN
