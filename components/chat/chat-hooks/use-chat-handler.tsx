@@ -9,6 +9,7 @@ import type {
   ModelParams,
   ModelWithWebSearch,
   AgentMode,
+  MessageModelParams,
 } from '@/types';
 import { PluginID } from '@/types/plugins';
 import { useRouter } from 'next/navigation';
@@ -197,9 +198,11 @@ export const useChatHandler = () => {
       allow_email: allow_email,
       allow_sharing: allow_sharing,
       has_files: chatMessage.fileItems.length > 0,
-      plugin: chatMessage.message.plugin || PluginID.NONE,
-      rag_used: chatMessage.message.rag_used,
-      rag_id: chatMessage.message.rag_id,
+      plugin:
+        (chatMessage.message.model_params as unknown as MessageModelParams)
+          ?.plugin || PluginID.NONE,
+      rag_used: false,
+      rag_id: null,
     };
     const newFeedback = await createMessageFeedback(feedbackInsert);
     setChatMessages((prevMessages: ChatMessage[]) =>
@@ -467,6 +470,7 @@ export const useChatHandler = () => {
         selectedPlugin: updatedSelectedPlugin,
         citations: citationsFromResponse,
         chatTitle,
+        fileAttachments,
       } = await handleHostedChat(
         payload,
         tempAssistantChatMessage,
@@ -499,10 +503,12 @@ export const useChatHandler = () => {
                 message: {
                   ...msg.message,
                   content: generatedText,
-                  thinking_content: thinkingText,
-                  thinking_enabled: !!thinkingText,
-                  thinking_elapsed_secs: thinkingElapsedSecs,
-                  citations: citations || [],
+                  reasoning: thinkingText,
+                  provider_metadata: {
+                    thinking_enabled: !!thinkingText,
+                    thinking_elapsed_secs: thinkingElapsedSecs,
+                    citations: citations || [],
+                  },
                 },
               }
             : msg,
@@ -525,7 +531,7 @@ export const useChatHandler = () => {
           return updatedChats;
         });
 
-        if (selectedChat?.id === updatedChat.id) {
+        if (currentChat) {
           setSelectedChat(updatedChat);
         }
 
@@ -550,6 +556,7 @@ export const useChatHandler = () => {
           thinkingElapsedSecs,
           newMessageFiles,
           setChatFiles,
+          fileAttachments,
         );
       }
 
