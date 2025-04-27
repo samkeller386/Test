@@ -29,9 +29,7 @@ export const createTempMessages = ({
       content: messageContentInternal,
       reasoning: null,
       model,
-      model_params: {
-        plugin: selectedPlugin,
-      },
+      plugin: selectedPlugin,
       provider_metadata:
         selectedPlugin === PluginID.REASONING
           ? {
@@ -58,9 +56,7 @@ export const createTempMessages = ({
       content: '',
       reasoning: null,
       model,
-      model_params: {
-        plugin: selectedPlugin,
-      },
+      plugin: selectedPlugin,
       provider_metadata:
         selectedPlugin === PluginID.REASONING
           ? {

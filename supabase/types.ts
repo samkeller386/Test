@@ -437,7 +437,7 @@ export type Database = {
           id: string;
           image_paths: string[];
           model: string;
-          model_params: Json | null;
+          plugin: string | null;
           provider_metadata: Json | null;
           reasoning: string | null;
           role: string;
@@ -453,7 +453,7 @@ export type Database = {
           id?: string;
           image_paths: string[];
           model: string;
-          model_params?: Json | null;
+          plugin?: string | null;
           provider_metadata?: Json | null;
           reasoning?: string | null;
           role: string;
@@ -469,7 +469,7 @@ export type Database = {
           id?: string;
           image_paths?: string[];
           model?: string;
-          model_params?: Json | null;
+          plugin?: string | null;
           provider_metadata?: Json | null;
           reasoning?: string | null;
           role?: string;

@@ -73,9 +73,7 @@ export const handleCreateMessages = async (
         role: 'user',
         reasoning: null,
         model: modelData.modelId,
-        model_params: {
-          plugin: selectedPlugin,
-        },
+        plugin: selectedPlugin,
         provider_metadata: getProviderMetadata(selectedPlugin, null, []),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -94,9 +92,7 @@ export const handleCreateMessages = async (
         content: generatedText,
         reasoning: thinkingText || null,
         model: modelData.modelId,
-        model_params: {
-          plugin: selectedPlugin,
-        },
+        plugin: selectedPlugin,
         provider_metadata: getProviderMetadata(
           selectedPlugin,
           thinkingElapsedSecs,
@@ -125,9 +121,7 @@ export const handleCreateMessages = async (
     content: messageContent || '',
     reasoning: null,
     model: modelData.modelId,
-    model_params: {
-      plugin: selectedPlugin,
-    },
+    plugin: selectedPlugin,
     provider_metadata: getProviderMetadata(selectedPlugin, null, []),
     role: 'user',
     sequence_number: lastSequenceNumber(chatMessages) + 1,
@@ -141,9 +135,7 @@ export const handleCreateMessages = async (
     content: generatedText,
     reasoning: thinkingText || null,
     model: modelData.modelId,
-    model_params: {
-      plugin: selectedPlugin,
-    },
+    plugin: selectedPlugin,
     provider_metadata: getProviderMetadata(
       selectedPlugin,
       thinkingElapsedSecs,

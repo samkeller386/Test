@@ -42,13 +42,11 @@ export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
   isLastMessage,
   toolInUse,
 }) => {
-  const modelParams = message.model_params as MessageModelParams | null;
   const metadata = message.provider_metadata as ProviderMetadata | null;
-  const plugin = modelParams?.plugin;
 
   const isPluginOutput =
-    plugin !== null &&
-    plugin !== PluginID.NONE.toString() &&
+    message.plugin !== null &&
+    message.plugin !== PluginID.NONE.toString() &&
     message.role === 'assistant';
 
   // console.log({
@@ -58,7 +56,7 @@ export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
   // })
 
   if (
-    (isPluginOutput && isTerminalPlugin(plugin)) ||
+    (isPluginOutput && isTerminalPlugin(message.plugin)) ||
     isTerminalPlugin(toolInUse)
   ) {
     return (
@@ -87,7 +85,7 @@ export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
   }
 
   if (
-    plugin === PluginID.WEB_SEARCH ||
+    message.plugin === PluginID.WEB_SEARCH ||
     toolInUse === PluginID.WEB_SEARCH ||
     hasCitations(metadata)
   ) {

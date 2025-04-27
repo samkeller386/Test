@@ -198,9 +198,7 @@ export const useChatHandler = () => {
       allow_email: allow_email,
       allow_sharing: allow_sharing,
       has_files: chatMessage.fileItems.length > 0,
-      plugin:
-        (chatMessage.message.model_params as unknown as MessageModelParams)
-          ?.plugin || PluginID.NONE,
+      plugin: chatMessage.message.plugin || PluginID.NONE,
       rag_used: false,
       rag_id: null,
     };
