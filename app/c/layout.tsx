@@ -3,19 +3,15 @@
 import { Dashboard } from '@/components/ui/dashboard';
 import { PentestGPTContext } from '@/context/context';
 import { useUIContext } from '@/context/ui-context';
-import { getChatFilesByMultipleChatIds } from '@/db/chat-files';
 import { getChatsByUserId } from '@/db/chats';
 import { localDB } from '@/db/local/db';
-import { getFeedbackByMultipleChatIds } from '@/db/message-feedback';
-import { getFileItemsByMultipleFileIds } from '@/db/message-file-items';
-import { getMessagesByMultipleChatIds } from '@/db/messages';
+import { refreshLocalData } from '@/db/refresh-local-data';
 import { getSubscriptionByUserId } from '@/db/subscriptions';
 import { LargeModel, SmallModel } from '@/lib/models/hackerai-llm-list';
+import { supabase } from '@/lib/supabase/browser-client';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useContext, useEffect, useState } from 'react';
 import Loading from '../loading';
-import { supabase } from '@/lib/supabase/browser-client';
-import { refreshLocalData } from '@/db/refresh-local-data';
 
 interface WorkspaceLayoutProps {
   children: ReactNode;
@@ -27,7 +23,11 @@ const fetchWorkspaceData = async (
 ) => {
   try {
     const chats = await getChatsByUserId(userId, false);
-    await refreshLocalData(chats);
+    try {
+      await refreshLocalData(chats);
+    } catch (error) {
+      console.error('Error refreshing local data:', error);
+    }
 
     setChats(chats);
     return true;

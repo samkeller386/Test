@@ -30,15 +30,17 @@ export const getMessagesByChatId = async (
   chatId: string,
   limit = 20,
   lastSequenceNumber?: number,
-  useStored = true,
+  useStored: boolean = true,
 ): Promise<MessageWithFileItemsAndFeedback[]> => {
-  const storedMessages = await localDB.messages.getByChatId(
-    chatId,
-    limit,
-    lastSequenceNumber,
-  );
-  if (useStored && storedMessages) {
-    return storedMessages;
+  if (useStored) {
+    const storedMessages = await localDB.messages.getByChatId(
+      chatId,
+      limit,
+      lastSequenceNumber,
+    );
+    if (storedMessages) {
+      return storedMessages;
+    }
   }
 
   let query = supabase

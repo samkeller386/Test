@@ -3,8 +3,8 @@ import { getChatFilesByMultipleChatIds } from './chat-files';
 import { localDB } from './local/db';
 import { getFeedbackByMultipleChatIds } from './message-feedback';
 import {
-  getFileItemsByMultipleFileIds,
-  getMessageFileItemsByMultipleMessageIds,
+  getFileItemsByMultipleChatIds,
+  getMessageFileItemsByMultipleChatIds,
 } from './message-file-items';
 import { getMessagesByMultipleChatIds } from './messages';
 
@@ -66,10 +66,8 @@ export const refreshLocalData = async (chats: Tables<'chats'>[]) => {
 
 const refreshMessages = async (chatIds: string[], currentSyncDate: string) => {
   const uniqueChatIds = [...new Set(chatIds)];
-  const messages = await getMessagesByMultipleChatIds(uniqueChatIds);
-  await getMessageFileItemsByMultipleMessageIds(
-    messages.map((message) => message.id),
-  );
+  await getMessagesByMultipleChatIds(uniqueChatIds);
+  await getMessageFileItemsByMultipleChatIds(uniqueChatIds);
   await localDB.storage.setSyncData(
     uniqueChatIds.map((chatId) => buildKey(LAST_MESSAGE_SYNC, chatId)),
     currentSyncDate,
@@ -86,8 +84,8 @@ const refreshFeedback = async (chatIds: string[], currentSyncDate: string) => {
 
 const refreshFiles = async (chatIds: string[], currentSyncDate: string) => {
   const uniqueChatIds = [...new Set(chatIds)];
-  const files = await getChatFilesByMultipleChatIds(uniqueChatIds);
-  await getFileItemsByMultipleFileIds(files.map((file) => file.id));
+  await getChatFilesByMultipleChatIds(uniqueChatIds);
+  await getFileItemsByMultipleChatIds(uniqueChatIds);
   await localDB.storage.setSyncData(
     uniqueChatIds.map((chatId) => buildKey(LAST_FILE_SYNC, chatId)),
     currentSyncDate,

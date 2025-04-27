@@ -122,7 +122,6 @@ export const createFile = async (
       `Error processing file:${createdFile.id}, status:${response.status}, response:${json.message}`,
     );
     await deleteFile(createdFile.id);
-    await localDB.files.delete(createdFile.id);
     throw new Error(
       `Failed to process file (${fileRecord.name}): ${json.message}`,
     );

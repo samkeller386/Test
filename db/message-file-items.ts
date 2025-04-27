@@ -2,13 +2,18 @@ import { supabase } from '@/lib/supabase/browser-client';
 import type { TablesInsert } from '@/supabase/types';
 import { localDB } from './local/db';
 
-export const getMessageFileItemsByMessageId = async (messageId: string) => {
-  const fileItems = await localDB.fileItems.getByMessageId(messageId);
-  if (fileItems) {
-    return {
-      id: messageId,
-      file_items: fileItems,
-    };
+export const getMessageFileItemsByMessageId = async (
+  messageId: string,
+  useStored: boolean = true,
+) => {
+  if (useStored) {
+    const fileItems = await localDB.fileItems.getByMessageId(messageId);
+    if (fileItems) {
+      return {
+        id: messageId,
+        file_items: fileItems,
+      };
+    }
   }
 
   const { data: messageFileItems, error } = await supabase
@@ -53,42 +58,46 @@ export const createMessageFileItems = async (
   return createdMessageFileItems;
 };
 
-export const getFileItemsByMultipleFileIds = async (fileIds: string[]) => {
-  if (fileIds.length === 0) {
+export const getFileItemsByMultipleChatIds = async (chatIds: string[]) => {
+  if (chatIds.length === 0) {
     return [];
   }
 
   const { data: fileItems, error } = await supabase
-    .from('file_items')
-    .select('*')
-    .in('file_id', fileIds);
+    .from('files')
+    .select('id, file_items(*)')
+    .in('chat_id', chatIds);
 
   if (error) {
     throw new Error(error.message);
   }
 
-  await localDB.fileItems.updateMany(fileItems);
+  await localDB.fileItems.updateMany(
+    fileItems.flatMap((file) => file.file_items),
+  );
 
   return fileItems;
 };
 
-export const getMessageFileItemsByMultipleMessageIds = async (
-  messageIds: string[],
+export const getMessageFileItemsByMultipleChatIds = async (
+  chatIds: string[],
 ) => {
-  if (messageIds.length === 0) {
+  if (chatIds.length === 0) {
     return [];
   }
 
   const { data: messageFileItems, error } = await supabase
-    .from('message_file_items')
-    .select('*')
-    .in('message_id', messageIds);
+    .from('messages')
+    .select('id, message_file_items(*)')
+    .in('chat_id', chatIds);
 
   if (error) {
     throw new Error(error.message);
   }
 
-  await localDB.messageFileItems.updateMany(messageFileItems);
+  await localDB.messageFileItems.updateMany(
+    messageFileItems.flatMap((message) => message.message_file_items),
+  );
 
   return messageFileItems;
 };
