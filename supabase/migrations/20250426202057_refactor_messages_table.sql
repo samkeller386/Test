@@ -109,21 +109,21 @@ END $$;
 -- Drop old columns if they exist
 DO $$ 
 BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'thinking_content') THEN
-        ALTER TABLE messages DROP COLUMN thinking_content;
-    END IF;
+    -- IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'thinking_content') THEN
+    --     ALTER TABLE messages DROP COLUMN thinking_content;
+    -- END IF;
     
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'plugin') THEN
-        ALTER TABLE messages DROP COLUMN plugin;
-    END IF;
+    -- IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'plugin') THEN
+    --     ALTER TABLE messages DROP COLUMN plugin;
+    -- END IF;
     
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'thinking_enabled') THEN
-        ALTER TABLE messages DROP COLUMN thinking_enabled;
-    END IF;
+    -- IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'thinking_enabled') THEN
+    --     ALTER TABLE messages DROP COLUMN thinking_enabled;
+    -- END IF;
     
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'thinking_elapsed_secs') THEN
-        ALTER TABLE messages DROP COLUMN thinking_elapsed_secs;
-    END IF;
+    -- IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'thinking_elapsed_secs') THEN
+    --     ALTER TABLE messages DROP COLUMN thinking_elapsed_secs;
+    -- END IF;
     
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'rag_used') THEN
         ALTER TABLE messages DROP COLUMN rag_used;
@@ -137,9 +137,9 @@ BEGIN
         ALTER TABLE messages DROP COLUMN fragment;
     END IF;
     
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'citations') THEN
-        ALTER TABLE messages DROP COLUMN citations;
-    END IF;
+    -- IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'citations') THEN
+    --     ALTER TABLE messages DROP COLUMN citations;
+    -- END IF;
 END $$;
 
 -- Update RLS policies to include new columns
