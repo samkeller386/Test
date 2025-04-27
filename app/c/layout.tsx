@@ -23,7 +23,11 @@ const fetchWorkspaceData = async (
 ) => {
   try {
     const chats = await getChatsByUserId(userId, false);
-    await refreshLocalData(chats);
+    try {
+      await refreshLocalData(chats);
+    } catch (error) {
+      console.error('Error refreshing local data:', error);
+    }
 
     setChats(chats);
     return true;
