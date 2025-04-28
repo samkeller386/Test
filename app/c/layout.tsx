@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase/browser-client';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useContext, useEffect, useState } from 'react';
 import Loading from '../loading';
+import { sendAnonymousSentinelReport } from '@/lib/sentinel';
 
 interface WorkspaceLayoutProps {
   children: ReactNode;
@@ -25,7 +26,8 @@ const fetchWorkspaceData = async (
     const chats = await getChatsByUserId(userId, false);
     try {
       await refreshLocalData(chats);
-    } catch (error) {
+    } catch (error: any) {
+      await sendAnonymousSentinelReport(error);
       console.error('Error refreshing local data:', error);
     }
 
