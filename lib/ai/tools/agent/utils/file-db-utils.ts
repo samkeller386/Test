@@ -26,7 +26,7 @@ export const saveFileToDatabase = async (
 
   try {
     // Use createAdminFile to handle the file upload and processing
-    const createdFile = await createAdminFile(file, fileRecord);
+    const createdFile = await createAdminFile(file, fileRecord, append);
 
     if (!createdFile) {
       console.error('Failed to create file');

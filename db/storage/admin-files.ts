@@ -38,6 +38,7 @@ const uploadAdminFile = async (
 export const createAdminFile = async (
   file: File,
   fileRecord: TablesInsert<'files'>,
+  append?: boolean,
 ) => {
   const supabaseAdmin = createSupabaseAdminClient();
 
@@ -52,15 +53,55 @@ export const createAdminFile = async (
   }
   fileRecord.name = validFilename;
 
-  // Create file record in database
-  const { data: createdFile, error } = await supabaseAdmin
-    .from('files')
-    .insert([fileRecord])
-    .select('*')
-    .single();
+  let createdFile;
 
-  if (error) {
-    throw new Error(error.message);
+  // If append is true, check if a file already exists at the same location
+  if (append) {
+    const { data: existingFile, error: findError } = await supabaseAdmin
+      .from('files')
+      .select('*')
+      .eq('user_id', fileRecord.user_id)
+      .eq('name', validFilename)
+      .single();
+
+    if (findError && findError.code !== 'PGRST116') {
+      // PGRST116 is "no rows returned"
+      throw new Error(findError.message);
+    }
+
+    if (existingFile) {
+      // Update the existing file
+      const { data: updatedFile, error: updateError } = await supabaseAdmin
+        .from('files')
+        .update({
+          size: file.size,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingFile.id)
+        .select('*')
+        .single();
+
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+
+      createdFile = updatedFile;
+    }
+  }
+
+  // If no existing file was found or append is false, create a new file
+  if (!createdFile) {
+    const { data: newFile, error: insertError } = await supabaseAdmin
+      .from('files')
+      .insert([fileRecord])
+      .select('*')
+      .single();
+
+    if (insertError) {
+      throw new Error(insertError.message);
+    }
+
+    createdFile = newFile;
   }
 
   // Upload file to storage using admin client
