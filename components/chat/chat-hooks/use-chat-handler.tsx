@@ -14,6 +14,7 @@ import { PluginID } from '@/types/plugins';
 import { useRouter } from 'next/navigation';
 import { useContext, useEffect, useRef } from 'react';
 import { LLM_LIST } from '../../../lib/models/llm-list';
+import { SmallModel } from '@/lib/models/hackerai-llm-list';
 import { v4 as uuidv4 } from 'uuid';
 import { useUIContext } from '@/context/ui-context';
 import { createMessageFeedback } from '@/db/message-feedback';
@@ -26,6 +27,7 @@ import {
 } from '../chat-helpers';
 import { getMessageFileItemsByMessageId } from '@/db/message-file-items';
 import { useRetrievalLogic } from './retrieval-logic';
+import { toast } from 'sonner';
 
 export const useChatHandler = () => {
   const router = useRouter();
@@ -429,9 +431,16 @@ export const useChatHandler = () => {
 
       // Create chat early if it doesn't exist
       if (!currentChat && !isTemporaryChat) {
+        if (!profile) {
+          toast.error('User profile not found. Please try logging in again.');
+          throw new Error('Profile not found - user needs to log in');
+        }
+
+        const validModel = baseModel || SmallModel.modelId;
+
         currentChat = await handleCreateChat(
-          baseModel!,
-          profile!,
+          validModel,
+          profile,
           messageContent || '',
           'stop',
           setSelectedChat,

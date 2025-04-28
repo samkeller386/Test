@@ -22,21 +22,6 @@ END $$;
 
 DO $$ 
 BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'rag_used') THEN
-        ALTER TABLE messages DROP COLUMN rag_used;
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'rag_id') THEN
-        ALTER TABLE messages DROP COLUMN rag_id;
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'fragment') THEN
-        ALTER TABLE messages DROP COLUMN fragment;
-    END IF;
-END $$;
-
-DO $$ 
-BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'messages' AND policyname = 'Allow view access to attachments for non-private chats') THEN
         CREATE POLICY "Allow view access to attachments for non-private chats"
             ON messages
