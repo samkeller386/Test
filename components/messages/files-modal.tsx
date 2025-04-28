@@ -187,7 +187,7 @@ export const FilesModal: React.FC<FilesModalProps> = ({
               {isBatchMode ? 'Cancel' : <IconDownload className="size-5" />}
             </Button>
             {!isBatchMode && (
-              <DialogClose className="ml-auto">
+              <DialogClose asChild>
                 <WithTooltip
                   display="Close"
                   trigger={
@@ -208,9 +208,9 @@ export const FilesModal: React.FC<FilesModalProps> = ({
           </div>
         </DialogHeader>
         <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
-          {files.map((file, idx) => (
+          {files.map((file) => (
             <div
-              key={idx}
+              key={file.url}
               className={cn(
                 'flex items-center space-x-3 rounded-lg px-3 py-2 group',
                 isBatchMode
@@ -249,7 +249,10 @@ export const FilesModal: React.FC<FilesModalProps> = ({
                   <Checkbox
                     checked={selectedFiles.includes(file.url)}
                     onCheckedChange={() => toggleFileSelection(file.url)}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                    }}
                   />
                 </div>
               )}
