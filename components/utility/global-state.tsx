@@ -86,9 +86,6 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
   const [sourceCount, setSourceCount] = useState<number>(4);
 
   // Audio
-  const [currentPlayingMessageId, setCurrentPlayingMessageId] = useState<
-    string | null
-  >(null);
   const [isMicSupported, setIsMicSupported] = useState(true);
 
   // TEMPORARY CHAT STORE
@@ -420,8 +417,6 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
         setSourceCount,
 
         // Audio
-        currentPlayingMessageId,
-        setCurrentPlayingMessageId,
         isMicSupported,
         setIsMicSupported,
 
