@@ -4,7 +4,6 @@ import llmConfig from '@/lib/models/llm-config';
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
 import { createDataStreamResponse, smoothStream, streamText } from 'ai';
 import { myProvider } from '@/lib/ai/providers';
-import { terminalPlugins } from '@/lib/ai/terminal-utils';
 import PostHogClient from '@/app/posthog';
 import { handleToolExecution } from '@/lib/ai/tool-handler';
 import { createToolSchemas } from '@/lib/ai/tools/toolSchemas';
@@ -20,7 +19,6 @@ import {
 } from '@/lib/ai/actions';
 import { createClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { v4 as uuidv4 } from 'uuid';
 
 export const maxDuration = 600;
 
@@ -55,14 +53,21 @@ export async function POST(request: Request) {
       modelParams.selectedPlugin,
     );
 
-    if (config.rateLimitCheckResult !== null) {
-      return config.rateLimitCheckResult.response;
+    if (!config.isRateLimitAllowed) {
+      return new Response(
+        JSON.stringify({
+          error: {
+            type: 'ratelimit_hit',
+            message: config.rateLimitInfo.message,
+            isPremiumUser: config.isPremiumUser,
+          },
+        }),
+        { status: 429 },
+      );
     }
-
     let {
       messages: validatedMessages,
       selectedModel: finalSelectedModel,
-      supportsImages,
       systemPrompt,
     } = await processChatMessages(
       messages,
@@ -72,16 +77,23 @@ export async function POST(request: Request) {
       modelParams.isTerminalContinuation,
       llmConfig.openai.apiKey,
       config.isLargeModel,
-      profile.profile_context,
+      profile,
     );
 
     let supabase: SupabaseClient | null = null;
     let generatedTitle: string | undefined;
-    if (chatMetadata.id && model) {
+    let toolUsed = '';
+    if (chatMetadata.id) {
       supabase = await createClient();
     }
 
     request.signal.addEventListener('abort', async () => {
+      const isTerminalUsed =
+        modelParams.isTerminalContinuation ||
+        modelParams.confirmTerminalCommand ||
+        modelParams.selectedPlugin === PluginID.TERMINAL ||
+        toolUsed === 'terminal';
+
       if (supabase) {
         await handleChatWithMetadata({
           supabase,
@@ -90,7 +102,7 @@ export async function POST(request: Request) {
           model,
           title: generatedTitle,
           messages: validatedMessages,
-          finishReason: 'stop',
+          finishReason: isTerminalUsed ? 'aborted' : 'stop',
         });
       }
     });
@@ -104,10 +116,10 @@ export async function POST(request: Request) {
       agentMode: modelParams.agentMode,
       confirmTerminalCommand: modelParams.confirmTerminalCommand,
       abortSignal: request.signal,
-      // For saving the chat on backend
       chatMetadata,
       model,
       supabase,
+      isPremiumUser: config.isPremiumUser,
     });
     if (toolResponse) {
       return toolResponse;
@@ -115,7 +127,6 @@ export async function POST(request: Request) {
 
     // Process RAG
     let ragUsed = false;
-    let ragId: string | null = null;
     if (modelParams.isRagEnabled) {
       const ragResult = await processRag({
         messages,
@@ -125,7 +136,6 @@ export async function POST(request: Request) {
       });
 
       ragUsed = ragResult.ragUsed;
-      ragId = ragResult.ragId;
       if (ragResult.systemPrompt) {
         systemPrompt = ragResult.systemPrompt;
       }
@@ -139,18 +149,19 @@ export async function POST(request: Request) {
       });
     }
 
-    if (!ragUsed && finalSelectedModel !== 'chat-model-large') {
+    if (!ragUsed) {
       finalSelectedModel = config.isLargeModel
-        ? 'chat-model-gpt-large-with-tools'
-        : 'chat-model-gpt-small-with-tools';
+        ? 'chat-model-large-with-tools'
+        : 'chat-model-small-with-tools';
     }
-
-    let toolCalled = false;
 
     try {
       return createDataStreamResponse({
         execute: async (dataStream) => {
-          dataStream.writeData({ ragUsed, ragId });
+          dataStream.writeData({
+            type: 'ratelimit',
+            content: config.rateLimitInfo,
+          });
 
           const toolConfig = {
             messages: validatedMessages,
@@ -162,18 +173,19 @@ export async function POST(request: Request) {
             chatMetadata,
             model,
             supabase,
+            isPremiumUser: config.isPremiumUser,
           };
 
           const result = streamText({
             model: myProvider.languageModel(finalSelectedModel),
             system: systemPrompt,
-            messages: toVercelChatMessages(validatedMessages, supportsImages),
+            messages: toVercelChatMessages(validatedMessages, true),
             maxTokens: 2048,
             abortSignal: request.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),
             onChunk: async (chunk: any) => {
               if (chunk.chunk.type === 'tool-call') {
-                toolCalled = true;
+                toolUsed = chunk.chunk.toolName;
               }
             },
             ...(!ragUsed
@@ -186,7 +198,7 @@ export async function POST(request: Request) {
                 }
               : {}),
             onFinish: async ({ finishReason }: { finishReason: string }) => {
-              if (supabase && !toolCalled) {
+              if (supabase && !toolUsed) {
                 await handleChatWithMetadata({
                   supabase,
                   chatMetadata,
@@ -233,11 +245,11 @@ async function getProviderConfig(
   profile: any,
   selectedPlugin: PluginID,
 ) {
-  // Moving away from chat-model-large to chat-model-gpt-large
+  // Moving away from gpt-4-turbo-preview to chat-model-large
   const modelMap: Record<string, string> = {
     'mistral-medium': 'chat-model-small',
-    'mistral-large': 'chat-model-gpt-large',
-    'gpt-4-turbo-preview': 'chat-model-gpt-large',
+    'mistral-large': 'chat-model-large',
+    'gpt-4-turbo-preview': 'chat-model-large',
   };
   // Moving away from gpt-4-turbo-preview to pentestgpt-pro
   const rateLimitModelMap: Record<string, string> = {
@@ -254,19 +266,20 @@ async function getProviderConfig(
 
   const rateLimitModel =
     selectedPlugin !== PluginID.NONE &&
-    !terminalPlugins.includes(selectedPlugin as PluginID) &&
     selectedPlugin !== PluginID.ENHANCED_SEARCH
       ? selectedPlugin
       : rateLimitModelMap[model] || model;
 
-  const rateLimitCheckResult = await checkRatelimitOnApi(
+  const rateLimitStatus = await checkRatelimitOnApi(
     profile.user_id,
     rateLimitModel,
   );
 
   return {
     selectedModel,
-    rateLimitCheckResult,
+    isRateLimitAllowed: rateLimitStatus.allowed,
     isLargeModel,
+    rateLimitInfo: rateLimitStatus.info,
+    isPremiumUser: rateLimitStatus.info.isPremiumUser,
   };
 }

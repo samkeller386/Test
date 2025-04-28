@@ -6,14 +6,13 @@ import type { Sandbox } from '@e2b/code-interpreter';
 import { pauseSandbox } from '@/lib/tools/e2b/sandbox';
 import { createAgentTools } from '@/lib/ai/tools/agent';
 import { PENTESTGPT_AGENT_SYSTEM_PROMPT } from '@/lib/models/agent-prompts';
-import { getSubscriptionInfo } from '@/lib/server/subscription-utils';
 import { myProvider } from '@/lib/ai/providers';
 import { executeTerminalCommandWithConfig } from './terminal-command-executor';
 import {
   generateTitleFromUserMessage,
   handleChatWithMetadata,
 } from '@/lib/ai/actions';
-import type { ChatMetadata, LLMID, PluginID, AgentMode } from '@/types';
+import type { ChatMetadata, LLMID, AgentMode } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 interface TerminalToolConfig {
@@ -22,12 +21,12 @@ interface TerminalToolConfig {
   dataStream: any;
   agentMode: AgentMode;
   confirmTerminalCommand: boolean;
-  selectedPlugin?: PluginID;
   abortSignal: AbortSignal;
-  // For saving the chat on backend
   chatMetadata: ChatMetadata;
   model: LLMID;
   supabase: SupabaseClient | null;
+  isPremiumUser: boolean;
+  autoSelected?: boolean;
 }
 
 export async function executeTerminalAgent({
@@ -39,35 +38,34 @@ export async function executeTerminalAgent({
     profile,
     dataStream,
     agentMode,
-    selectedPlugin,
     abortSignal,
     chatMetadata,
     model,
     supabase,
+    isPremiumUser,
+    autoSelected,
   } = config;
   let messages = config.messages;
 
   let sandbox: Sandbox | null = null;
   const persistentSandbox = false;
   const userID = profile.user_id;
-  const systemPrompt = PENTESTGPT_AGENT_SYSTEM_PROMPT;
 
   try {
     // Check rate limit
-    const rateLimitResult = await ratelimit(userID, 'terminal');
-    if (!rateLimitResult.allowed) {
-      const waitTime = epochTimeToNaturalLanguage(
-        rateLimitResult.timeRemaining!,
-      );
-      dataStream.writeData({
-        type: 'error',
-        content: `⚠️ You've reached the limit for terminal usage.\n\nTo ensure fair usage for all users, please wait ${waitTime} before trying again.`,
-      });
-      return 'Rate limit exceeded';
+    if (autoSelected) {
+      const rateLimitResult = await ratelimit(userID, 'terminal');
+      if (!rateLimitResult.allowed) {
+        const waitTime = epochTimeToNaturalLanguage(
+          rateLimitResult.timeRemaining!,
+        );
+        dataStream.writeData({
+          type: 'error',
+          content: `⚠️ You've reached the limit for terminal usage.\n\nTo ensure fair usage for all users, please wait ${waitTime} before trying again.`,
+        });
+        return 'Rate limit exceeded';
+      }
     }
-
-    const subscriptionInfo = await getSubscriptionInfo(userID);
-    const isPremiumUser = subscriptionInfo.isPremium;
 
     // Functions to update sandbox and persistentSandbox from tools
     const setSandbox = (newSandbox: Sandbox) => {
@@ -80,7 +78,6 @@ export async function executeTerminalAgent({
         userID,
         dataStream,
         isPremiumUser,
-        selectedPlugin,
         setSandbox,
         initialSandbox: sandbox || undefined,
         initialPersistentSandbox: persistentSandbox,
@@ -99,19 +96,18 @@ export async function executeTerminalAgent({
         const { fullStream, finishReason } = streamText({
           model: myProvider.languageModel('chat-model-agent'),
           maxTokens: 2048,
-          system: systemPrompt,
+          system: PENTESTGPT_AGENT_SYSTEM_PROMPT,
           messages: toVercelChatMessages(messages, true),
           tools: createAgentTools({
             dataStream,
             sandbox,
             userID,
             persistentSandbox,
-            selectedPlugin,
             setSandbox,
             isPremiumUser,
             agentMode,
           }),
-          maxSteps: 5,
+          maxSteps: 10,
           toolChoice: 'required',
           abortSignal,
           onFinish: async ({ finishReason }: { finishReason: string }) => {
@@ -178,7 +174,7 @@ export async function executeTerminalAgent({
         }
       })(),
       (async () => {
-        if (chatMetadata?.newChat) {
+        if (chatMetadata?.newChat && !autoSelected) {
           generatedTitle = await generateTitleFromUserMessage({
             messages,
             abortSignal,

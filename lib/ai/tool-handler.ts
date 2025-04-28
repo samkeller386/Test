@@ -2,7 +2,6 @@ import { PluginID } from '@/types/plugins';
 import { executeWebSearchTool } from '@/lib/ai/tools/web-search';
 import { executeTerminalAgent } from '@/lib/ai/tools/terminal-agent';
 import { executeReasonLLMTool } from '@/lib/ai/tools/reason-llm';
-import { terminalPlugins } from '@/lib/ai/terminal-utils';
 import { createStreamResponse } from '@/lib/ai-helper';
 import type { ChatMetadata, BuiltChatMessage, AgentMode, LLMID } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -19,6 +18,7 @@ interface ToolHandlerConfig {
   chatMetadata: ChatMetadata;
   model: LLMID;
   supabase: SupabaseClient | null;
+  isPremiumUser: boolean;
 }
 
 export async function handleToolExecution(config: ToolHandlerConfig) {
@@ -34,6 +34,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
     chatMetadata,
     model,
     supabase,
+    isPremiumUser,
   } = config;
 
   switch (selectedPlugin) {
@@ -74,7 +75,6 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
       if (
         isTerminalContinuation ||
         confirmTerminalCommand ||
-        terminalPlugins.includes(selectedPlugin as PluginID) ||
         selectedPlugin === PluginID.TERMINAL
       ) {
         return createStreamResponse(async (dataStream) => {
@@ -83,13 +83,13 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
               messages,
               profile,
               dataStream,
-              selectedPlugin: selectedPlugin as PluginID,
               agentMode,
               confirmTerminalCommand,
               abortSignal,
               chatMetadata,
               model,
               supabase,
+              isPremiumUser,
             },
           });
         });

@@ -1,5 +1,4 @@
 import type { Sandbox } from '@e2b/code-interpreter';
-import type { PluginID } from '@/types/plugins';
 import type { AgentMode } from '@/types/llms';
 
 /**
@@ -10,7 +9,6 @@ export interface ToolContext {
   sandbox?: Sandbox | null;
   userID: string;
   persistentSandbox?: boolean;
-  selectedPlugin?: PluginID;
   setSandbox?: (sandbox: Sandbox) => void;
   isPremiumUser?: boolean;
   agentMode: AgentMode;

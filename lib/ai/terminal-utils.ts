@@ -1,5 +1,4 @@
 import { encode, decode } from 'gpt-tokenizer';
-import { PluginID } from '@/types/plugins';
 
 const STREAM_MAX_TOKENS = 2048;
 const AGENT_MAX_TOKENS = 32000;
@@ -68,8 +67,7 @@ export async function streamTerminalOutput(
   const tokens = encode(terminalOutput);
   if (tokens.length > AGENT_MAX_TOKENS) {
     const truncatedTokens = tokens.slice(0, AGENT_MAX_TOKENS);
-    terminalOutput =
-      decode(truncatedTokens) + '\n\n[Output truncated because too long]';
+    terminalOutput = `${decode(truncatedTokens)}\n\n[Output truncated because too long]`;
   }
 
   return terminalOutput;
@@ -86,9 +84,3 @@ export function truncateContentByTokens(
   }
   return output;
 }
-
-export const terminalPlugins = [
-  PluginID.WAF_DETECTOR,
-  PluginID.WHOIS_LOOKUP,
-  PluginID.SUBDOMAIN_FINDER,
-];
