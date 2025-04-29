@@ -131,7 +131,7 @@ export async function processMessageContentWithAttachments(
 
     // Collect all file IDs from user messages only
     const allFileIds = processedMessages
-      .filter(m => m.role === 'user') // Only process user messages
+      .filter((m) => m.role === 'user') // Only process user messages
       .flatMap((m) => (m.attachments ?? []).map((a) => a.file_id))
       .filter(Boolean);
 
@@ -144,7 +144,11 @@ export async function processMessageContentWithAttachments(
     // Process each message
     for (const message of processedMessages) {
       // Only process attachments for user messages
-      if (message.role === 'user' && message.attachments && Array.isArray(message.attachments)) {
+      if (
+        message.role === 'user' &&
+        message.attachments &&
+        Array.isArray(message.attachments)
+      ) {
         // Filter file items for this specific message
         const fileItems =
           allFileItems?.filter((fi) =>

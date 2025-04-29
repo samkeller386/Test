@@ -177,9 +177,7 @@ export const TerminalBlockComponent: React.FC<TerminalBlockProps> = ({
           )}
           {block.error && (
             <div className="font-mono text-destructive/90">
-              {renderContent(
-                `\`\`\`stdout\n${block.error}\n\`\`\``,
-              )}
+              {renderContent(`\`\`\`stdout\n${block.error}\n\`\`\``)}
             </div>
           )}
         </div>
