@@ -43,12 +43,12 @@ export async function getModerationResult(
       isLargeModel,
     );
 
-    // console.log(
-    //   JSON.stringify(moderation, null, 2),
-    //   moderationLevel,
-    //   hazardCategories,
-    //   shouldUncensorResponse,
-    // );
+    console.log(
+      JSON.stringify(moderation, null, 2),
+      moderationLevel,
+      hazardCategories,
+      shouldUncensorResponse,
+    );
 
     return { shouldUncensorResponse };
   } catch (error: any) {
@@ -157,7 +157,7 @@ function determineShouldUncensorResponse(
   // NEVER LOWER THAN 0.1
   const minModerationLevel = 0.1;
   // NEVER HIGHER THAN 0.9
-  const maxModerationLevel = 0.9;
+  const maxModerationLevel = 0.8;
   return (
     moderationLevel >= minModerationLevel &&
     moderationLevel <= maxModerationLevel &&
