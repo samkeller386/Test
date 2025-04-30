@@ -39,7 +39,7 @@ export const getAllFilesCount = async (
 
   const { count, error } = await supabase
     .from('files')
-    .select('*', { count: 'exact' });
+    .select('*', { count: 'exact', head: true });
 
   if (error) {
     throw new Error(error.message);
