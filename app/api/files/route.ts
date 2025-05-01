@@ -173,12 +173,18 @@ export async function POST(req: Request) {
     }
 
     if (chunks.length === 0 && fileExtension !== 'pdf') {
+      // Clean up the file record and storage if file is empty
+      await supabase.from('files').delete().eq('id', createdFile.id);
+      await supabase.storage.from('files').remove([filePath]);
       throw new Error('Empty file. Please check the file format and content.');
     }
 
     const totalTokens = chunks.reduce((acc, chunk) => acc + chunk.tokens, 0);
     const limit = fileExtension === 'pdf' ? PDF_TOKEN_LIMIT : TOKEN_LIMIT;
     if (totalTokens > limit) {
+      // Clean up the file record and storage if token limit is exceeded
+      await supabase.from('files').delete().eq('id', createdFile.id);
+      await supabase.storage.from('files').remove([filePath]);
       throw new Error(`File content exceeds token limit of ${limit}`);
     }
 
@@ -197,6 +203,9 @@ export async function POST(req: Request) {
       .upsert(file_items);
 
     if (itemsError) {
+      // Clean up the file record and storage if file items creation fails
+      await supabase.from('files').delete().eq('id', createdFile.id);
+      await supabase.storage.from('files').remove([filePath]);
       throw new Error(`Failed to create file items: ${itemsError.message}`);
     }
 
@@ -206,6 +215,13 @@ export async function POST(req: Request) {
       .eq('id', createdFile.id);
 
     if (tokenUpdateError) {
+      // Clean up the file record, items, and storage if token update fails
+      await supabaseAdmin
+        .from('file_items')
+        .delete()
+        .eq('file_id', createdFile.id);
+      await supabase.from('files').delete().eq('id', createdFile.id);
+      await supabase.storage.from('files').remove([filePath]);
       throw new Error(
         `Failed to update token count: ${tokenUpdateError.message}`,
       );
