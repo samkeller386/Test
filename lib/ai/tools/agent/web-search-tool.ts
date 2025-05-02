@@ -32,6 +32,10 @@ export const createWebSearchTool = (context: ToolContext) => {
     }),
     execute: async ({ query, date_range }) => {
       // Initialize Firecrawl client
+      if (!process.env.FIRECRAWL_API_KEY) {
+        console.error('FIRECRAWL_API_KEY environment variable is not set');
+        return 'Failed to perform web search: API key not configured';
+      }
       const app = new FirecrawlApp({ apiKey: process.env.FIRECRAWL_API_KEY });
 
       // Map date_range to Firecrawl's tbs format
