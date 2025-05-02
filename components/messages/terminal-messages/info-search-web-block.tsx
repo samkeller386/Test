@@ -18,15 +18,19 @@ const getDomain = (url: string) => {
 
 // Returns the main domain (no TLD), capitalized
 const getMainDomain = (url: string) => {
-  const hostname = new URL(url).hostname;
-  const parsed = parse(hostname);
-  if (parsed.domainWithoutSuffix) {
-    return (
-      parsed.domainWithoutSuffix.charAt(0).toUpperCase() +
-      parsed.domainWithoutSuffix.slice(1).toLowerCase()
-    );
+  try {
+    const hostname = new URL(url).hostname;
+    const parsed = parse(hostname);
+    if (parsed.domainWithoutSuffix) {
+      return (
+        parsed.domainWithoutSuffix.charAt(0).toUpperCase() +
+        parsed.domainWithoutSuffix.slice(1).toLowerCase()
+      );
+    }
+    return hostname;
+  } catch {
+    return '';
   }
-  return hostname;
 };
 
 export const InfoSearchWebBlockComponent: React.FC<InfoSearchWebBlockProps> = ({
