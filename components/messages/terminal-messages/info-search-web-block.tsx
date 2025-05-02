@@ -53,8 +53,9 @@ export const InfoSearchWebBlockComponent: React.FC<InfoSearchWebBlockProps> = ({
       <div className="divide-y divide-border">
         {resultsToShow.map((result, index) => (
           <div
-            key={index}
+            key={`${result.url}-${index}`}
             className="flex flex-col px-4 py-2 bg-background hover:bg-accent transition-colors"
+          >
           >
             <div className="flex flex-row items-start gap-3">
               <img
