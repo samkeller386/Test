@@ -4,7 +4,7 @@ import { useUIContext } from '@/context/ui-context';
  * Represents the different states an agent can be in during execution
  */
 export enum AgentStatusState {
-  THINKING = 'message_notify_user',
+  THINKING = 'thinking',
   TERMINAL = 'terminal',
   CREATING_FILE = 'creating_file',
   EDITING_FILE = 'editing_file',
