@@ -49,7 +49,7 @@ export async function executeTerminalAgent({
   let messages = config.messages;
 
   let sandbox: Sandbox | null = null;
-  const persistentSandbox = isPremiumUser ? true : false;
+  const persistentSandbox = !!isPremiumUser;
   const userID = profile.user_id;
 
   try {

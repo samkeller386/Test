@@ -95,7 +95,6 @@ export async function POST(req: Request) {
     }
 
     let filePath: string;
-    try {
       filePath = await uploadFileToStorage(
         file,
         {
@@ -105,10 +104,6 @@ export async function POST(req: Request) {
         },
         supabase,
       );
-    } catch (uploadError) {
-      // Clean up the file record if upload fails
-      throw uploadError;
-    }
 
     // Update file path in database
     const { error: updateError } = await supabase
