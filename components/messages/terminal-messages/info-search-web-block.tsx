@@ -60,7 +60,6 @@ export const InfoSearchWebBlockComponent: React.FC<InfoSearchWebBlockProps> = ({
             key={`${result.url}-${index}`}
             className="flex flex-col px-4 py-2 bg-background hover:bg-accent transition-colors"
           >
-          >
             <div className="flex flex-row items-start gap-3">
               <img
                 src={`https://www.google.com/s2/favicons?domain=${getDomain(result.url)}`}

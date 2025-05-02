@@ -304,7 +304,7 @@ export async function getPageContent(
       return `Error: Empty content received from URL: ${url}`;
     }
 
-    return content;
+    return truncateContentByTokens(content);
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error';
