@@ -89,19 +89,33 @@ export async function executeReasonLLMTool({
         Do not use browser tool for general information queries that can be answered without visiting a URL.
         Do not use browser tool if the user merely mentions a URL without explicitly asking you to open it.
         The browser tool can only visit HTTPS websites with valid domain names. \
-        The browser tool cannot access HTTP-only sites, IP addresses (like http://192.168.1.1), or non-standard URLs.`,
+        The browser tool cannot access HTTP-only sites, IP addresses (like http://192.168.1.1), or non-standard URLs.
+        
+        The browser tool can extract content in two formats:
+        - markdown: Use for general content reading and information extraction (default).
+        - html: Use for security testing, vulnerability assessment, and penetration testing to analyze HTML \
+        structure, forms, scripts, and potential security issues. Also use when HTML content would be more \
+        beneficial for the user's needs.
+        `,
               parameters: z.object({
                 open_url: z
                   .string()
                   .url()
-                  .describe('The URL of the webpage to get content from'),
+                  .describe('The URL of the webpage to open'),
+                format_output: z
+                  .enum(['markdown', 'html'])
+                  .default('markdown')
+                  .describe('The format of the output content.'),
               }),
-              execute: async ({ open_url }: { open_url: string }) => {
+              execute: async ({
+                open_url,
+                format_output,
+              }: { open_url: string; format_output: 'markdown' | 'html' }) => {
                 dataStream.writeData({
                   type: 'agent-status',
                   content: 'browser',
                 });
-                const content = await getPageContent(open_url);
+                const content = await getPageContent(open_url, format_output);
 
                 return content;
               },
