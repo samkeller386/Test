@@ -95,15 +95,15 @@ export async function POST(req: Request) {
     }
 
     let filePath: string;
-      filePath = await uploadFileToStorage(
-        file,
-        {
-          name: createdFile.name,
-          user_id: createdFile.user_id,
-          file_id: createdFile.name,
-        },
-        supabase,
-      );
+    filePath = await uploadFileToStorage(
+      file,
+      {
+        name: createdFile.name,
+        user_id: createdFile.user_id,
+        file_id: createdFile.name,
+      },
+      supabase,
+    );
 
     // Update file path in database
     const { error: updateError } = await supabase
