@@ -115,8 +115,11 @@ export async function executeReasonLLMTool({
                   type: 'agent-status',
                   content: 'browser',
                 });
+                dataStream.writeData({
+                  type: 'reasoning',
+                  content: '\n\n',
+                });
                 const content = await getPageContent(open_url, format_output);
-
                 return content;
               },
             },
