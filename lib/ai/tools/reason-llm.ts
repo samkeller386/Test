@@ -7,6 +7,8 @@ import type { ChatMetadata, LLMID } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { generateTitleFromUserMessage } from '@/lib/ai/actions';
 import { myProvider } from '../providers';
+import { z } from 'zod';
+import { getPageContent } from './browser';
 
 interface ReasonLLMConfig {
   messages: any[];
@@ -75,6 +77,44 @@ export async function executeReasonLLMTool({
           messages: toVercelChatMessages(messages),
           maxTokens: 8192,
           abortSignal: abortSignal,
+          maxSteps: 2,
+          tools: {
+            browser: {
+              description: `Use the browser tool to open a specific URL and extract its content. \
+        Some examples of when to use the browser tool include:
+        - When the user explicitly requests to visit, open, browse, or view a specific webpage or URL.
+        - When the user directly instructs you to access a specific website they've mentioned.
+        - When performing security testing, vulnerability assessment, or penetration testing of a website.
+        
+        Do not use browser tool for general information queries that can be answered without visiting a URL.
+        Do not use browser tool if the user merely mentions a URL without explicitly asking you to open it.
+        The browser tool can only visit HTTPS websites with valid domain names. \
+        The browser tool cannot access HTTP-only sites, IP addresses (like http://192.168.1.1), or non-standard URLs.`,
+              parameters: z.object({
+                open_url: z
+                  .string()
+                  .url()
+                  .describe('The URL of the webpage to get content from'),
+              }),
+              execute: async ({ open_url }: { open_url: string }) => {
+                dataStream.writeData({
+                  type: 'agent-status',
+                  content: 'browser',
+                });
+                const content = await getPageContent(open_url);
+
+                return content;
+              },
+            },
+          },
+          onChunk: async (chuck) => {
+            if (chuck.chunk.type === 'tool-result') {
+              dataStream.writeData({
+                type: 'agent-status',
+                content: 'none',
+              });
+            }
+          },
           onError: async (error) => {
             console.error('[ReasonLLM] Stream Error:', error);
           },

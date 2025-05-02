@@ -281,3 +281,28 @@ export async function executeBrowserTool({
     return 'Browser tool executed with errors';
   }
 }
+
+export async function getPageContent(url: string): Promise<string> {
+  try {
+    const app = new FirecrawlApp({ apiKey: process.env.FIRECRAWL_API_KEY });
+    const scrapeResult = (await app.scrapeUrl(url, {
+      formats: ['markdown'],
+    })) as ScrapeResponse;
+
+    if (!scrapeResult.success) {
+      return `Error fetching URL: ${url}. Error: ${scrapeResult.error}`;
+    }
+
+    const content = (scrapeResult as any).markdown;
+    if (!content) {
+      return `Error: Empty content received from URL: ${url}`;
+    }
+
+    return content;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+    console.error('[BrowserTool] Error getting page content:', url, error);
+    return `Error getting page content: ${url}. ${errorMessage}`;
+  }
+}
