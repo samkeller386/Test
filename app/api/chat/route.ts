@@ -1,6 +1,5 @@
 import { getAIProfile } from '@/lib/server/server-chat-helpers';
 import { handleErrorResponse } from '@/lib/models/api-error';
-import llmConfig from '@/lib/models/llm-config';
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
 import { createDataStreamResponse, smoothStream, streamText } from 'ai';
 import { myProvider } from '@/lib/ai/providers';
@@ -65,18 +64,14 @@ export async function POST(request: Request) {
       );
     }
 
-    let {
-      messages: validatedMessages,
-      selectedModel: finalSelectedModel,
-      systemPrompt,
-    } = await processChatMessages(
-      messages,
-      config.selectedModel,
-      modelParams.isContinuation,
-      modelParams.isTerminalContinuation,
-      config.isLargeModel,
-      profile,
-    );
+    const { messages: validatedMessages, systemPrompt } =
+      await processChatMessages(
+        messages,
+        config.selectedModel,
+        modelParams,
+        config.isLargeModel,
+        profile,
+      );
 
     let supabase: SupabaseClient | null = null;
     let generatedTitle: string | undefined;
@@ -127,7 +122,7 @@ export async function POST(request: Request) {
     if (posthog) {
       posthog.capture({
         distinctId: profile.user_id,
-        event: finalSelectedModel,
+        event: config.selectedModel,
       });
     }
 
@@ -153,7 +148,7 @@ export async function POST(request: Request) {
           };
 
           const result = streamText({
-            model: myProvider.languageModel(finalSelectedModel),
+            model: myProvider.languageModel(config.selectedModel),
             system: systemPrompt,
             messages: toVercelChatMessages(validatedMessages, true),
             maxTokens: 2048,
@@ -164,8 +159,19 @@ export async function POST(request: Request) {
                 toolUsed = chunk.chunk.toolName;
               }
             },
+            onError: async (error) => {
+              if (
+                !(
+                  error instanceof Error &&
+                  error.name === 'AI_ToolExecutionError' &&
+                  error.message.includes('terminated')
+                )
+              ) {
+                console.error('[Chat] Stream Error:', error);
+              }
+            },
             tools: createToolSchemas(toolConfig).getSelectedSchemas(
-              config.isLargeModel
+              config.isLargeModel && !modelParams.isTemporaryChat
                 ? ['browser', 'webSearch', 'terminal']
                 : ['browser', 'webSearch'],
             ),
@@ -180,7 +186,6 @@ export async function POST(request: Request) {
                   messages: validatedMessages,
                   finishReason,
                 });
-                dataStream.writeData({ isChatSavedInBackend: true });
               }
             },
           });
@@ -219,9 +224,9 @@ async function getProviderConfig(
 ) {
   // Moving away from gpt-4-turbo-preview to chat-model-large
   const modelMap: Record<string, string> = {
-    'mistral-medium': 'chat-model-small',
-    'mistral-large': 'chat-model-large',
-    'gpt-4-turbo-preview': 'chat-model-large',
+    'mistral-medium': 'chat-model-small-with-tools',
+    'mistral-large': 'chat-model-large-with-tools',
+    'gpt-4-turbo-preview': 'chat-model-large-with-tools',
   };
   // Moving away from gpt-4-turbo-preview to pentestgpt-pro
   const rateLimitModelMap: Record<string, string> = {

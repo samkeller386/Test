@@ -1,8 +1,6 @@
 import { supabase } from '@/lib/supabase/browser-client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/supabase/types';
 import mammoth from 'mammoth';
-import { toast } from 'sonner';
-import { uploadFile } from './storage/files';
 import { localDB } from './local/db';
 
 export const getFileById = async (fileId: string, useStored = true) => {
@@ -34,7 +32,7 @@ export const getAllFilesCount = async (userId: string) => {
 
   const { count, error } = await supabase
     .from('files')
-    .select('*', { count: 'exact' });
+    .select('*', { count: 'exact', head: true });
 
   if (error) {
     throw new Error(error.message);
@@ -49,15 +47,18 @@ export const createFileBasedOnExtension = async (
 ) => {
   const fileExtension = file.name.split('.').pop();
 
-  // console.log("fileExtension", fileExtension)
-
   if (fileExtension === 'docx') {
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({
       arrayBuffer,
     });
 
-    return createDocXFile(result.value, file, fileRecord);
+    // Create a new file with the processed text content
+    const processedFile = new File([result.value], fileRecord.name, {
+      type: 'text/plain',
+    });
+
+    return createFile(processedFile, fileRecord);
   } else {
     return createFile(file, fileRecord);
   }
@@ -79,38 +80,11 @@ export const createFile = async (
   }
   fileRecord.name = validFilename;
 
-  const filesCounts = (await getAllFilesCount(fileRecord.user_id)) || 0;
-  const maxFiles = Number.parseInt(
-    process.env.NEXT_PUBLIC_RATELIMITER_LIMIT_FILES || '100',
-  );
-
-  if (filesCounts >= maxFiles) return false;
-
-  const { data: createdFile, error } = await supabase
-    .from('files')
-    .insert([fileRecord])
-    .select('*')
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-  await localDB.files.update(createdFile);
-
-  const filePath = await uploadFile(file, {
-    name: createdFile.name,
-    user_id: createdFile.user_id,
-    file_id: createdFile.name,
-  });
-
-  await updateFile(createdFile.id, {
-    file_path: filePath,
-  });
-
   const formData = new FormData();
-  formData.append('file_id', createdFile.id);
+  formData.append('file', file);
+  formData.append('fileRecord', JSON.stringify(fileRecord));
 
-  const response = await fetch('/api/retrieval/process', {
+  const response = await fetch('/api/files', {
     method: 'POST',
     body: formData,
   });
@@ -119,82 +93,22 @@ export const createFile = async (
     const jsonText = await response.text();
     const json = JSON.parse(jsonText);
     console.error(
-      `Error processing file:${createdFile.id}, status:${response.status}, response:${json.message}`,
+      `Error processing file, status:${response.status}, response:${json.message}`,
     );
-    await deleteFile(createdFile.id);
     throw new Error(
       `Failed to process file (${fileRecord.name}): ${json.message}`,
     );
   }
 
-  const fetchedFile = await getFileById(createdFile.id, false);
+  const { createdFile } = await response.json();
 
-  // for the cache
-  await getFileItemsByFileId(createdFile.id, false);
-
-  return fetchedFile;
-};
-
-// // Handle docx files
-export const createDocXFile = async (
-  text: string,
-  file: File,
-  fileRecord: TablesInsert<'files'>,
-) => {
-  const filesCounts = (await getAllFilesCount(fileRecord.user_id)) || 0;
-  const maxFiles = Number.parseInt(
-    process.env.NEXT_PUBLIC_RATELIMITER_LIMIT_FILES || '100',
-  );
-
-  if (filesCounts >= maxFiles) return false;
-
-  const { data: createdFile, error } = await supabase
-    .from('files')
-    .insert([fileRecord])
-    .select('*')
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-  await localDB.files.update(createdFile);
-
-  const filePath = await uploadFile(file, {
-    name: createdFile.name,
-    user_id: createdFile.user_id,
-    file_id: createdFile.name,
-  });
-
-  await updateFile(createdFile.id, {
-    file_path: filePath,
-  });
-
-  const response = await fetch('/api/retrieval/process/docx', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      text: text,
-      fileId: createdFile.id,
-      fileExtension: 'docx',
-    }),
-  });
-
-  if (!response.ok) {
-    toast.error('Failed to process file.');
-    const jsonText = await response.text();
-    const json = JSON.parse(jsonText);
-    console.error(
-      `Error processing file:${createdFile.id}, status:${response.status}, response:${json.message}`,
-    );
-    toast.error(`Failed to process file. Reason:${json.message}`, {
-      duration: 10000,
-    });
-    await deleteFile(createdFile.id);
+  if (!createdFile) {
+    throw new Error('Failed to create file: No file ID returned');
   }
 
+  // const fetchedFile = await getFileById(createdFile.id, false);
   const fetchedFile = await getFileById(createdFile.id);
+
   // for the cache
   await getFileItemsByFileId(createdFile.id, false);
 

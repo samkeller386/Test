@@ -21,11 +21,13 @@ export const executeTerminalCommand = async ({
   command,
   exec_dir,
   sandbox = null,
+  dataStream,
 }: {
   userID: string;
   command: string;
   exec_dir: string;
   sandbox?: Sandbox | null;
+  dataStream?: any;
 }): Promise<ReadableStream<Uint8Array>> => {
   let hasTerminalOutput = false;
   let currentBlock: 'stdout' | null = null;
@@ -148,7 +150,17 @@ export const executeTerminalCommand = async ({
               );
             }
           }
-          console.error(`[${userID}] Error:`, error);
+          // Only log errors that are not CommandExitError with exit status 1 or 28 and no stderr
+          if (
+            !(
+              error instanceof Error &&
+              error.name === 'CommandExitError' &&
+              ((error as ExecutionError).result?.exitCode === 1 ||
+                (error as ExecutionError).result?.exitCode === 28)
+            )
+          ) {
+            console.error(`[${userID}] Error:`, error);
+          }
         }
       } finally {
         // Clear timeout in case it's still pending

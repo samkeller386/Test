@@ -73,7 +73,6 @@ export const handleHostedChat = async (
     setFirstTokenReceived,
     setChatMessages,
     setToolInUse,
-    requestBody,
     setIsGenerating,
     alertDispatch,
     modelParams.selectedPlugin,
@@ -125,6 +124,10 @@ export const fetchChatResponse = async (
         },
       });
     } else {
+      console.error(
+        `[Frontend] [${response.status}] Error in fetchChatResponse:`,
+        errorData.message || 'An error occurred',
+      );
       toast.error(errorData.message || 'An error occurred');
     }
 

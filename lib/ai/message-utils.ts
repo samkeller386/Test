@@ -11,6 +11,8 @@ import { getModerationResult } from '@/lib/server/moderation';
 import { getSystemPrompt } from './prompts';
 import { processMessageContentWithAttachments } from '../build-prompt-backend';
 import llmConfig from '../models/llm-config';
+import { countTokens } from 'gpt-tokenizer';
+import { PluginID } from '@/types/plugins';
 
 /**
  * Removes the last assistant message if it's empty.
@@ -213,6 +215,43 @@ export function validateMessages(messages: any[]) {
 }
 
 /**
+ * Validates that the total tokens in messages don't exceed the maximum limit
+ * @param messages - Array of messages to validate
+ * @throws Error if total tokens exceed MAX_TOKENS
+ */
+function validateMessageTokens(
+  messages: BuiltChatMessage[],
+  userId: string,
+): void {
+  const MAX_TOKENS = 32000;
+  let totalTokens = 0;
+
+  for (const message of messages) {
+    if (typeof message.content === 'string') {
+      totalTokens += countTokens(message.content);
+    } else if (Array.isArray(message.content)) {
+      // Only count text content
+      const textContent = message.content
+        .filter((item: any) => item.type === 'text')
+        .map((item: any) => item.text)
+        .join(' ');
+      totalTokens += countTokens(textContent);
+    }
+  }
+
+  if (totalTokens > MAX_TOKENS) {
+    console.error('Token limit exceeded:', {
+      totalTokens,
+      maxTokens: MAX_TOKENS,
+      userId,
+    });
+    throw new Error(
+      `Message content exceeds maximum token limit of ${MAX_TOKENS}. Please reduce the message length.`,
+    );
+  }
+}
+
+/**
  * Processes chat messages and handles model selection, uncensoring, and validation
  * @param messages - Array of messages to process
  * @param selectedModel - The initially selected model
@@ -227,20 +266,28 @@ export function validateMessages(messages: any[]) {
 export async function processChatMessages(
   messages: BuiltChatMessage[],
   selectedModel: string,
-  isContinuation: boolean,
-  isTerminalContinuation: boolean,
+  modelParams: {
+    isContinuation: boolean;
+    isTerminalContinuation: boolean;
+    selectedPlugin: string;
+  },
   isLargeModel: boolean,
   profile: { user_id: string; profile_context: string },
 ): Promise<{
   messages: BuiltChatMessage[];
-  selectedModel: string;
   systemPrompt: string;
 }> {
   let shouldUncensor = false;
   const apiKey = llmConfig.openai.apiKey;
+  const isReasoning = modelParams.selectedPlugin === PluginID.REASONING;
 
   // Check if we should uncensor the response
-  if (apiKey && !isContinuation && !isTerminalContinuation) {
+  if (
+    apiKey &&
+    !modelParams.isContinuation &&
+    !modelParams.isTerminalContinuation &&
+    !isReasoning
+  ) {
     const { shouldUncensorResponse: moderationResult } =
       await getModerationResult(messages, apiKey, 10, isLargeModel);
     shouldUncensor = moderationResult;
@@ -252,10 +299,14 @@ export async function processChatMessages(
 
   filterEmptyAssistantMessages(messages);
 
+  // Validate total token count before processing attachments
+  validateMessageTokens(messages, profile?.user_id);
+
   // Process attachments and file content for the last message
   const messagesWithAttachments = await processMessageContentWithAttachments(
     messages,
-    profile?.user_id,
+    profile.user_id,
+    isReasoning,
   );
 
   // Remove invalid message exchanges
@@ -268,7 +319,6 @@ export async function processChatMessages(
 
   return {
     messages: validatedMessages,
-    selectedModel,
     systemPrompt,
   };
 }

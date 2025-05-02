@@ -11,6 +11,7 @@ import {
   generateTitleFromUserMessage,
   handleChatWithMetadata,
 } from '@/lib/ai/actions';
+import { truncateContentByTokens } from '@/lib/ai/terminal-utils';
 
 interface BrowserToolConfig {
   profile: any;
@@ -42,12 +43,12 @@ export function getLastUserMessage(messages: any[]): string {
 
 export async function browsePage(
   url: string,
-  format: 'markdown' | 'rawHtml' = 'markdown',
+  format: 'markdown' | 'html' = 'markdown',
 ): Promise<string> {
   try {
     const app = new FirecrawlApp({ apiKey: process.env.FIRECRAWL_API_KEY });
     const scrapeResult = (await app.scrapeUrl(url, {
-      formats: ['markdown', 'rawHtml'],
+      formats: ['markdown', 'html'],
     })) as ScrapeResponse;
 
     if (!scrapeResult.success) {
@@ -57,12 +58,12 @@ export async function browsePage(
     const content =
       format === 'markdown'
         ? (scrapeResult as any).markdown
-        : (scrapeResult as any).rawHtml;
+        : (scrapeResult as any).html;
     if (!content) {
       return `Error: Empty content received from URL: ${url}`;
     }
 
-    return content;
+    return truncateContentByTokens(content);
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error';
@@ -71,7 +72,8 @@ export async function browsePage(
     if (
       !errorMessage.includes('408') &&
       !errorMessage.includes('403') &&
-      !errorMessage.includes('500')
+      !errorMessage.includes('500') &&
+      !errorMessage.includes('400')
     ) {
       console.error('[BrowserTool] Error browsing URL:', url, error);
     }
@@ -182,7 +184,7 @@ export async function executeBrowserTool({
   config,
 }: {
   open_url: string;
-  format_output: 'markdown' | 'rawHtml';
+  format_output: 'markdown' | 'html';
   config: BrowserToolConfig;
 }) {
   if (!process.env.FIRECRAWL_API_KEY) {
@@ -228,6 +230,9 @@ export async function executeBrowserTool({
             { role: 'user', content: browserPrompt },
           ],
           maxTokens: 2048,
+          onError: async (error) => {
+            console.error('[BrowserTool] Stream Error:', error);
+          },
           onFinish: async ({ finishReason }: { finishReason: string }) => {
             if (supabase) {
               await handleChatWithMetadata({

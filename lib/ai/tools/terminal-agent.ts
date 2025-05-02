@@ -14,6 +14,7 @@ import {
 } from '@/lib/ai/actions';
 import type { ChatMetadata, LLMID, AgentMode } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { handleMessageAttachments } from '@/lib/ai/tools/agent/utils/file-db-utils';
 
 interface TerminalToolConfig {
   messages: any[];
@@ -48,7 +49,7 @@ export async function executeTerminalAgent({
   let messages = config.messages;
 
   let sandbox: Sandbox | null = null;
-  const persistentSandbox = false;
+  const persistentSandbox = isPremiumUser ? true : false;
   const userID = profile.user_id;
 
   try {
@@ -77,7 +78,6 @@ export async function executeTerminalAgent({
       const result = await executeTerminalCommandWithConfig({
         userID,
         dataStream,
-        isPremiumUser,
         setSandbox,
         initialSandbox: sandbox || undefined,
         initialPersistentSandbox: persistentSandbox,
@@ -104,12 +104,14 @@ export async function executeTerminalAgent({
             userID,
             persistentSandbox,
             setSandbox,
-            isPremiumUser,
             agentMode,
           }),
           maxSteps: 10,
           toolChoice: 'required',
           abortSignal,
+          onError: async (error) => {
+            console.error('[TerminalAgent] Stream Error:', error);
+          },
           onFinish: async ({ finishReason }: { finishReason: string }) => {
             if (supabase) {
               await handleChatWithMetadata({
@@ -123,7 +125,6 @@ export async function executeTerminalAgent({
                   ? customFinishReason
                   : finishReason,
               });
-              dataStream.writeData({ isChatSavedInBackend: true });
             }
           },
         });
@@ -142,6 +143,18 @@ export async function executeTerminalAgent({
               customFinishReason = 'idle';
               shouldStop = true;
             } else if (chunk.toolName === 'message_ask_user') {
+              // Handle attachments if provided
+              if (chunk.args?.attachments) {
+                await handleMessageAttachments({
+                  attachments: chunk.args.attachments,
+                  sandbox,
+                  userID,
+                  dataStream,
+                  setSandbox,
+                  persistentSandbox,
+                });
+              }
+
               dataStream.writeData({
                 type: 'text-delta',
                 content: chunk.args?.text,

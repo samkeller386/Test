@@ -75,11 +75,8 @@ export async function executeReasonLLMTool({
           messages: toVercelChatMessages(messages),
           maxTokens: 8192,
           abortSignal: abortSignal,
-          providerOptions: {
-            openai: {
-              reasoningSummary: 'auto',
-              reasoningEffort: 'high',
-            },
+          onError: async (error) => {
+            console.error('[ReasonLLM] Stream Error:', error);
           },
           onFinish: async ({ finishReason }: { finishReason: string }) => {
             if (supabase) {
@@ -92,7 +89,6 @@ export async function executeReasonLLMTool({
                 messages,
                 finishReason,
               });
-              dataStream.writeData({ isChatSavedInBackend: true });
             }
           },
         });
@@ -145,10 +141,13 @@ export async function executeReasonLLMTool({
 
     return 'Reason LLM execution completed';
   } catch (error) {
-    console.error('[ReasonLLM] Error:', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      model,
-    });
+    // Skip logging for terminated errors
+    if (!(error instanceof Error && error.message === 'terminated')) {
+      console.error('[ReasonLLM] Error:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        model,
+      });
+    }
     throw error;
   }
 }

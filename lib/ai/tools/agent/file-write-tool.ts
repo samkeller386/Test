@@ -18,7 +18,7 @@ const writeFileContent = async (
   try {
     dataStream.writeData({
       type: 'agent-status',
-      content: 'file_write',
+      content: append ? 'editing_file' : 'creating_file',
     });
 
     let finalContent = content;
@@ -65,7 +65,6 @@ export const createFileWriteTool = (context: ToolContext) => {
     userID,
     persistentSandbox: initialPersistentSandbox = true,
     setSandbox,
-    isPremiumUser,
   } = context;
 
   return tool({
@@ -105,7 +104,6 @@ export const createFileWriteTool = (context: ToolContext) => {
           {
             userID,
             dataStream,
-            isPremiumUser,
             setSandbox,
           },
           {
