@@ -72,7 +72,7 @@ export async function processMessagesWithImages(
       const mimeType = response.headers.get('content-type') || 'image/png';
       return { path, base64: `data:${mimeType};base64,${base64}` };
     } catch (error) {
-      console.error(`Error processing image ${JSON.stringify(path)}:`, error);
+      console.error('Error processing image %s:', JSON.stringify(path), error);
       return null;
     }
   });
