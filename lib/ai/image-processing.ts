@@ -12,6 +12,11 @@ async function getSignedUrls(
   paths: string[],
   supabase: SupabaseClient,
 ): Promise<Map<string, string>> {
+  // Return empty map if no paths to process
+  if (!paths.length) {
+    return new Map();
+  }
+
   const { data, error } = await supabase.storage
     .from('message_images')
     .createSignedUrls(paths, 60); // 1 minute expiry is enough for our use case
@@ -55,6 +60,11 @@ export async function processMessagesWithImages(
       });
     }
   });
+
+  // If no paths to process, return original messages
+  if (pathsToProcess.size === 0) {
+    return messages;
+  }
 
   // Get signed URLs for all images in a single request
   const signedUrls = await getSignedUrls(Array.from(pathsToProcess), supabase);
