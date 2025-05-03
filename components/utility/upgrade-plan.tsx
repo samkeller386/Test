@@ -119,7 +119,7 @@ export const UpgradePlan: FC = () => {
 
   const getYearlySavingsNote = (plan: 'pro' | 'team') => {
     if (selectedPlan === 'yearly') {
-      return plan === 'pro' ? 'Save $108' : 'Save $96';
+      return plan === 'pro' ? 'Save $60' : 'Save $96';
     }
     return '';
   };
