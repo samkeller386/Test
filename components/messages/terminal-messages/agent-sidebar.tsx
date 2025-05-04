@@ -1,4 +1,4 @@
-import { IconX } from '@tabler/icons-react';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAgentSidebar } from '@/components/chat/chat-hooks/use-agent-sidebar';
 import { useUIContext } from '@/context/ui-context';
@@ -40,7 +40,7 @@ export const AgentSidebar = () => {
           tabIndex={0}
           onClick={resetAgentSidebar}
         >
-          <IconX className="size-5" />
+          <X className="size-5" />
         </Button>
       </div>
       {/* File path */}
