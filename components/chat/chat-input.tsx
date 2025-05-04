@@ -37,7 +37,6 @@ export const ChatInput: FC = () => {
   const [showConfirmationDialog, setShowConfirmationDialog] =
     useState<boolean>(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [bottomSpacingPx, setBottomSpacingPx] = useState(5);
 
   const divRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -47,6 +46,7 @@ export const ChatInput: FC = () => {
     chatMessages,
     temporaryChatMessages,
     newMessageImages,
+    newMessageFiles,
     isPremiumSubscription,
     isMicSupported,
     isTemporaryChat,
@@ -98,21 +98,6 @@ export const ChatInput: FC = () => {
     requestMicAccess,
     micPermissionDenied,
   } = useVoiceRecording(handleTranscriptChange);
-
-  // Effect for bottom spacing
-  useEffect(() => {
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setBottomSpacingPx(entry.contentRect.height + 10);
-      }
-    });
-
-    if (divRef.current) {
-      observer.observe(divRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
 
   // Effect for initial focus
   useEffect(() => {
@@ -194,6 +179,7 @@ export const ChatInput: FC = () => {
                     setPendingFiles,
                     handleSelectDeviceFile,
                     newMessageImages,
+                    newMessageFiles,
                   );
                 }}
                 accept="*"

@@ -1,7 +1,26 @@
 import type { MessageImage } from '@/types/images/message-image';
+import type { Tables } from '@/supabase/types';
 import { toast } from 'sonner';
 
-const MAX_FILES = 3;
+const MAX_TOTAL_FILES = 5;
+const VERCEL_AI_PAYLOAD_LIMIT = 4.5 * 1024 * 1024; // 4.5MB in bytes
+
+const checkTotalImageSize = (
+  files: File[],
+  existingImages: MessageImage[] = [],
+): boolean => {
+  const totalSize =
+    files.reduce((acc, file) => acc + file.size, 0) +
+    existingImages.reduce((acc, img) => acc + (img.file?.size || 0), 0);
+
+  if (totalSize > VERCEL_AI_PAYLOAD_LIMIT) {
+    toast.error(
+      `Total image size exceeds 4.5MB payload limit. Please reduce image sizes or upload fewer images.`,
+    );
+    return false;
+  }
+  return true;
+};
 
 export const handleFileUpload = (
   files: File[],
@@ -9,6 +28,7 @@ export const handleFileUpload = (
   setPendingFiles: (files: File[]) => void,
   handleSelectDeviceFile: (file: File) => void,
   newMessageImages: MessageImage[] = [],
+  newMessageFiles: Tables<'files'>[] = [],
 ) => {
   const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
   const videoExtensions = ['mp4', 'avi', 'mov', 'wmv', 'flv'];
@@ -47,13 +67,20 @@ export const handleFileUpload = (
     'text/html',
   ];
 
-  if (files.length > MAX_FILES) {
-    toast.error(`Maximum of ${MAX_FILES} files can be uploaded at once.`);
+  const totalFiles = newMessageImages.length + newMessageFiles.length;
+  if (totalFiles >= MAX_TOTAL_FILES) {
+    toast.error(
+      `Maximum of ${MAX_TOTAL_FILES} files (including images) allowed.`,
+    );
     return;
   }
 
-  if (newMessageImages.length > 2) {
-    toast.error(`Maximum of 3 images allowed.`);
+  // Filter out image files to check their total size
+  const imageFiles = files.filter((file) => file.type.startsWith('image/'));
+  if (
+    imageFiles.length > 0 &&
+    !checkTotalImageSize(imageFiles, newMessageImages)
+  ) {
     return;
   }
 
