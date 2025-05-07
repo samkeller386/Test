@@ -130,7 +130,7 @@ export const TerminalBlockComponent: React.FC<TerminalBlockProps> = ({
           {showFullTerminalView && (
             <div className="font-mono text-foreground/80">
               {renderContent(
-                `\`\`\`stdout\nubuntu@sandbox:${block.exec_dir ? `~${block.exec_dir}` : '~'}$ ${block.command}\n\`\`\``,
+                `\`\`\`stdout\nroot@debian:${block.exec_dir ? `~${block.exec_dir}` : '~'}$ ${block.command}\n\`\`\``,
               )}
             </div>
           )}

@@ -131,7 +131,7 @@ while the agent can continue with other tasks
 
 <sandbox_environment>
 System Environment:
-- Ubuntu 22.04 (linux/amd64), with internet access
+- Debian GNU/Linux 12 (linux/amd64), with internet access
 - User: \`root\`, with sudo privileges
 - Home directory: /home/user
 - VPN connectivity is not available due to missing TUN/TAP device support in the sandbox environment
