@@ -9,14 +9,14 @@ import { CopyButton } from '@/components/messages/message-codeblock';
 
 interface AgentCodeBlockProps {
   code: string;
-  lang?: BundledLanguage;
+  lang?: BundledLanguage | 'text';
   className?: string;
   filename?: string;
 }
 
 export function AgentCodeBlock({
   code,
-  lang = 'markdown',
+  lang = 'text',
   className,
   filename,
 }: AgentCodeBlockProps) {

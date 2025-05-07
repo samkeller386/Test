@@ -12,7 +12,7 @@ export const CODE_THEMES = {
 } as const;
 
 interface HighlightOptions {
-  lang: BundledLanguage;
+  lang: BundledLanguage | 'text';
   theme?: string;
   customComponents?: {
     pre?: (props: any) => JSX.Element;

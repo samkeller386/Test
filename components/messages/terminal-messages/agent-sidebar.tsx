@@ -18,11 +18,11 @@ export const AgentSidebar = () => {
     : 'flex h-full w-full flex-col overflow-hidden border-l border-border bg-background';
 
   // Get language from file extension
-  const getLanguage = (filePath: string): BundledLanguage => {
-    const extension = filePath.split('.').pop()?.toLowerCase() || 'markdown';
+  const getLanguage = (filePath: string): BundledLanguage | 'text' => {
+    const extension = filePath.split('.').pop()?.toLowerCase() || 'text';
     return Object.keys(bundledLanguages).includes(extension)
       ? (extension as BundledLanguage)
-      : 'markdown';
+      : 'text';
   };
 
   return (
