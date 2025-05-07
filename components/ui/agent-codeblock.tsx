@@ -16,7 +16,7 @@ interface AgentCodeBlockProps {
 
 export function AgentCodeBlock({
   code,
-  lang = 'typescript',
+  lang = 'markdown',
   className,
   filename,
 }: AgentCodeBlockProps) {
