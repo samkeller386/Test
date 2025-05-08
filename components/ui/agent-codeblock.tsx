@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import type { AgentCodeBlockLang } from '@/types';
 import { useTheme } from 'next-themes';
 import { CopyButton } from '@/components/messages/message-codeblock';
+import stripAnsi from 'strip-ansi';
 
 interface AgentCodeBlockProps {
   code: string;
@@ -65,7 +66,7 @@ export function AgentCodeBlock({ code, lang, filename }: AgentCodeBlockProps) {
             {filename}
           </span>
         )}
-        <CopyButton value={code} />
+        <CopyButton value={lang === 'ansi' ? stripAnsi(code) : code} />
       </div>
       {nodes}
     </div>
