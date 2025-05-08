@@ -75,13 +75,22 @@ beneficial for the user's needs.
       },
     },
     webSearch: {
-      description: `Use the web search tool to search the web for latest information. Use this tool only in specific circumstances:
+      description: `Use the webSearch tool to access up-to-date information from the web \
+or when responding to the user requires information about their location. \
+Some examples of when to use the webSearch tool include:
 
-1) When the user inquires about current events or requires real-time information such as weather conditions or sports scores. \
-2) When the user explicitly requests or instructs to google, search the web or similar.
-
-Do not use this tool to open URLs, links, or videos. \
-Do not use this tool if the user is merely asking about the possibility of searching the web.`,
+- Local Information: Use the \`webSearch\` tool to respond to questions that require information \
+about the user's location, such as the weather, local businesses, or events.
+- Freshness: If up-to-date information on a topic could potentially change or enhance the answer, \
+call the \`webSearch\` tool any time you would otherwise refuse to answer a question because your \
+knowledge might be out of date.
+- Niche Information: If the answer would benefit from detailed information not widely known or understood \
+(which might be found on the internet), such as details about a small neighborhood, a less well-known \
+company, or arcane regulations, use web sources directly rather than relying on the distilled knowledge \
+from pretraining.
+- Accuracy: If the cost of a small mistake or outdated information is high (e.g., using an outdated \
+version of a software library or not knowing the date of the next game for a sports team), then use the \
+\`webSearch\` tool.`,
       parameters: z.object({
         search: z.boolean().describe('Set to true to search the web'),
       }),
