@@ -46,13 +46,11 @@ The browser tool can extract content in two formats:
 - markdown: Use for general content reading and information extraction (default).
 - html: Use for security testing, vulnerability assessment, and penetration testing to analyze HTML \
 structure, forms, scripts, and potential security issues. Also use when HTML content would be more \
-beneficial for the user's needs.
-`,
+beneficial for the user's needs.`,
       parameters: z.object({
         open_url: z.string().url().describe('The URL of the webpage to open'),
         format_output: z
           .enum(['markdown', 'html'])
-          .default('markdown')
           .describe('The format of the output content.'),
       }),
       execute: async ({
