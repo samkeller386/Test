@@ -56,7 +56,7 @@ export const TerminalBlockComponent: React.FC<TerminalBlockProps> = ({
 
   const isAskUser = selectedChat?.finish_reason === 'terminal_command_ask_user';
   const hasOutput = block.stdout || block.error;
-  const commandPrompt = `root@debian:${block.exec_dir ? `~${block.exec_dir}` : '~'}$ ${block.command}`;
+  const commandPrompt = `\x1b[32mroot@debian:${block.exec_dir ? `~${block.exec_dir}` : '~'}$\x1b[0m ${block.command}`;
   const outputContent = [commandPrompt, block.stdout, block.error]
     .filter(Boolean)
     .join('\n\n');
