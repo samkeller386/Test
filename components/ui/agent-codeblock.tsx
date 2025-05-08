@@ -3,23 +3,17 @@
 import { type JSX, useLayoutEffect, useState } from 'react';
 import { highlight, CODE_THEMES } from '@/lib/shiki/shared';
 import { cn } from '@/lib/utils';
-import type { BundledLanguage } from 'shiki/bundle/web';
+import type { AgentCodeBlockLang } from '@/types';
 import { useTheme } from 'next-themes';
 import { CopyButton } from '@/components/messages/message-codeblock';
 
 interface AgentCodeBlockProps {
   code: string;
-  lang?: BundledLanguage | 'text';
-  className?: string;
+  lang: AgentCodeBlockLang;
   filename?: string;
 }
 
-export function AgentCodeBlock({
-  code,
-  lang = 'text',
-  className,
-  filename,
-}: AgentCodeBlockProps) {
+export function AgentCodeBlock({ code, lang, filename }: AgentCodeBlockProps) {
   const [nodes, setNodes] = useState<JSX.Element | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { resolvedTheme } = useTheme();
@@ -39,7 +33,6 @@ export function AgentCodeBlock({
             {...props}
             className={cn(
               'relative rounded-md overflow-hidden bg-muted text-sm break-words whitespace-pre-wrap',
-              className,
             )}
           />
         ),
@@ -53,13 +46,11 @@ export function AgentCodeBlock({
     })
       .then(setNodes)
       .finally(() => setIsLoading(false));
-  }, [code, lang, className, resolvedTheme]);
+  }, [code, lang, resolvedTheme]);
 
   if (isLoading) {
     return (
-      <div
-        className={cn('animate-pulse bg-muted/50 rounded-md p-4', className)}
-      >
+      <div className={cn('animate-pulse bg-muted/50 rounded-md p-4')}>
         <div className="h-4 w-3/4 bg-muted rounded" />
         <div className="h-4 w-1/2 bg-muted rounded mt-2" />
       </div>
@@ -69,9 +60,11 @@ export function AgentCodeBlock({
   return (
     <div className="relative rounded-md overflow-hidden bg-muted">
       <div className="flex items-center justify-between px-4 py-1 border-b">
-        <span className="text-xs text-muted-foreground font-mono">
-          {filename || 'untitled'}
-        </span>
+        {filename && (
+          <span className="text-xs text-muted-foreground font-mono">
+            {filename}
+          </span>
+        )}
         <CopyButton value={code} />
       </div>
       {nodes}
