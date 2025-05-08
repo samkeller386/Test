@@ -142,7 +142,7 @@ Development Environment:
 - Golang 1.24.2 (commands: go)
 
 Pre-installed Tools:
-- curl, bc, wget, nmap, iputils-ping, whois, traceroute, dnsutils, whatweb, wafw00f, msfconsole
+- curl, bc, wget, nmap, iputils-ping, whois, traceroute, dnsutils, whatweb, wafw00f, subfinder, gobuster
 - SecLists is pre-installed in /home/user and should be used by default for any fuzzing or wordlist needs
 </sandbox_environment>
 
