@@ -28,6 +28,11 @@ export const createMessageNotifyTool = (context: ToolContext) => {
         content: 'thinking',
       });
 
+      dataStream.writeData({
+        type: 'text-delta',
+        content: `${text}\n\n`,
+      });
+
       // Handle attachments if provided
       if (attachments) {
         if (!sandboxManager) {
@@ -41,11 +46,6 @@ export const createMessageNotifyTool = (context: ToolContext) => {
           sandboxManager,
         });
       }
-
-      dataStream.writeData({
-        type: 'text-delta',
-        content: `${text}\n\n`,
-      });
 
       return text;
     },
