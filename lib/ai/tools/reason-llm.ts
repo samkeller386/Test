@@ -94,8 +94,7 @@ Some examples of when to use the browser tool include:
 
 Do not use browser tool for general information queries that can be answered without visiting a URL.
 Do not use browser tool if the user merely mentions a URL without explicitly asking you to open it.
-The browser tool can only visit HTTPS websites with valid domain names. \
-The browser tool cannot access HTTP-only sites, IP addresses (like http://192.168.1.1), or non-standard URLs.
+The browser tool cannot access IP addresses (like http://192.168.1.1), or non-standard URLs.
 
 The browser tool can extract content in two formats:
 - markdown: Use for general content reading and information extraction (default).
