@@ -12,6 +12,7 @@ import {
   handleChatWithMetadata,
 } from '@/lib/ai/actions';
 import { truncateContentByTokens } from '@/lib/ai/terminal-utils';
+import { perplexity } from '@ai-sdk/perplexity';
 
 interface BrowserToolConfig {
   profile: any;
@@ -21,6 +22,7 @@ interface BrowserToolConfig {
   chatMetadata: ChatMetadata;
   model: LLMID;
   supabase: SupabaseClient | null;
+  userCountryCode: string | null;
 }
 
 async function getProviderConfig(profile: any) {
@@ -206,15 +208,28 @@ export async function executeBrowserTool({
 
     let generatedTitle: string | undefined;
 
+    console.log('userCountryCode', config.userCountryCode);
     await Promise.all([
       (async () => {
         const { fullStream } = streamText({
-          model,
+          model: perplexity('sonar'),
           system: systemPrompt,
           messages: [
             ...toVercelChatMessages(messages.slice(0, -1)),
             { role: 'user', content: browserPrompt },
           ],
+          providerOptions: {
+            perplexity: {
+              search_context_size: 'medium',
+              ...(config.userCountryCode && {
+                user_location: [
+                  {
+                    country: config.userCountryCode,
+                  },
+                ],
+              }),
+            },
+          },
           maxTokens: 2048,
           onError: async (error) => {
             console.error('[BrowserTool] Stream Error:', error);
@@ -234,8 +249,23 @@ export async function executeBrowserTool({
           },
         });
 
+        const citations: string[] = [];
+        let hasFirstTextDelta = false;
+
         for await (const delta of fullStream) {
+          if (delta.type === 'source') {
+            if (delta.source.sourceType === 'url') {
+              citations.push(delta.source.url);
+            }
+          }
+
           if (delta.type === 'text-delta') {
+            if (!hasFirstTextDelta) {
+              // Send citations after first text-delta
+              dataStream.writeData({ citations });
+              hasFirstTextDelta = true;
+            }
+
             dataStream.writeData({
               type: 'text-delta',
               content: delta.textDelta,

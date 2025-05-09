@@ -17,6 +17,7 @@ export const createToolSchemas = ({
   model,
   supabase,
   isPremiumUser,
+  userCountryCode,
 }: {
   messages: any;
   profile: any;
@@ -28,6 +29,7 @@ export const createToolSchemas = ({
   model: LLMID;
   supabase: SupabaseClient | null;
   isPremiumUser: boolean;
+  userCountryCode: string | null;
 }) => {
   const allSchemas = {
     browser: {
@@ -67,6 +69,7 @@ beneficial for the user's needs.`,
             chatMetadata,
             model,
             supabase,
+            userCountryCode,
           },
         });
       },
@@ -102,6 +105,7 @@ version of a software library or not knowing the date of the next game for a spo
             chatMetadata,
             model,
             supabase,
+            userCountryCode,
           },
         });
       },
