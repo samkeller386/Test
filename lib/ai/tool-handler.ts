@@ -93,6 +93,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
               model,
               supabase,
               isPremiumUser,
+              userCountryCode,
             },
           });
         });

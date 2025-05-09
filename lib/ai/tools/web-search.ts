@@ -87,7 +87,6 @@ export async function executeWebSearchTool({
 
   let generatedTitle: string | undefined;
 
-  console.log('userCountryCode', config.userCountryCode);
   try {
     await Promise.all([
       (async () => {

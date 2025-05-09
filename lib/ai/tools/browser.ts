@@ -208,7 +208,6 @@ export async function executeBrowserTool({
 
     let generatedTitle: string | undefined;
 
-    console.log('userCountryCode', config.userCountryCode);
     await Promise.all([
       (async () => {
         const { fullStream } = streamText({

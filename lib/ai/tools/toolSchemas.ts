@@ -137,6 +137,7 @@ This tool executes terminal commands in a Debian GNU/Linux 12 environment with r
             model,
             supabase,
             isPremiumUser,
+            userCountryCode,
             autoSelected: true,
           },
         });
