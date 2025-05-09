@@ -48,7 +48,7 @@ export const createMessageNotifyTool = (context: ToolContext) => {
         });
       }
 
-      return text;
+      return null;
     },
   });
 };
