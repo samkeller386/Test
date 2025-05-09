@@ -40,24 +40,6 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
   } = config;
 
   switch (selectedPlugin) {
-    case PluginID.WEB_SEARCH:
-      return createStreamResponse(async (dataStream) => {
-        await executeWebSearchTool({
-          config: {
-            messages,
-            profile,
-            dataStream,
-            isLargeModel,
-            directToolCall: true,
-            abortSignal,
-            chatMetadata,
-            model,
-            supabase,
-            userCountryCode,
-          },
-        });
-      });
-
     case PluginID.REASONING:
       return createStreamResponse(async (dataStream) => {
         await executeReasonLLMTool({
