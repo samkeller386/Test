@@ -1,6 +1,5 @@
 import { PluginID } from '@/types/plugins';
-import { executeWebSearchTool } from '@/lib/ai/tools/web-search';
-import { executeTerminalAgent } from '@/lib/ai/tools/terminal-agent';
+import { executeTerminalAgent } from '@/lib/ai/tools/pentest-agent';
 import { executeReasonLLMTool } from '@/lib/ai/tools/reason-llm';
 import { createStreamResponse } from '@/lib/ai-helper';
 import type { ChatMetadata, BuiltChatMessage, AgentMode, LLMID } from '@/types';
