@@ -17,6 +17,7 @@ export const createMessageNotifyTool = (context: ToolContext) => {
       text: z.string().describe('Message text to display to user'),
       attachments: z
         .union([z.string(), z.array(z.string())])
+        .nullable()
         .optional()
         .describe(
           '(Optional) List of attachments to show to user, should be file paths',
