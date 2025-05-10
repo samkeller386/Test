@@ -119,6 +119,7 @@ export const createMessages = async (
         .select('*');
 
       if (error) {
+        console.log(error);
         // When user aborts, we need to retry because the chat might not be created yet
         // This happens because the abort signal is sent before the chat is fully created
         if (error.code === '23503' && error.details.includes('chats')) {

@@ -17,6 +17,7 @@ import {
 } from '@/lib/ai/actions';
 import { createClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { waitUntil } from '@vercel/functions';
 
 // Increased max duration to allow for long reasoning tool responses
 export const maxDuration = 180;
@@ -82,15 +83,17 @@ export async function POST(request: Request) {
 
     request.signal.addEventListener('abort', async () => {
       if (chatMetadata.id) {
-        await handleChatWithMetadata({
-          supabase,
-          chatMetadata,
-          profile,
-          model,
-          title: generatedTitle,
-          messages: processedMessages,
-          finishReason: 'stop',
-        });
+        waitUntil(
+          handleChatWithMetadata({
+            supabase,
+            chatMetadata,
+            profile,
+            model,
+            title: generatedTitle,
+            messages: processedMessages,
+            finishReason: 'stop',
+          }),
+        );
       }
     });
 
