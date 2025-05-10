@@ -18,7 +18,8 @@ import {
 import { createClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export const maxDuration = 600;
+// Increased max duration to allow for long reasoning tool responses
+export const maxDuration = 180;
 
 export const preferredRegion = [
   'iad1',
@@ -80,12 +81,6 @@ export async function POST(request: Request) {
     );
 
     request.signal.addEventListener('abort', async () => {
-      const isTerminalUsed =
-        modelParams.isTerminalContinuation ||
-        modelParams.confirmTerminalCommand ||
-        modelParams.selectedPlugin === PluginID.TERMINAL ||
-        toolUsed === 'terminal';
-
       if (chatMetadata.id) {
         await handleChatWithMetadata({
           supabase,
@@ -94,7 +89,7 @@ export async function POST(request: Request) {
           model,
           title: generatedTitle,
           messages: processedMessages,
-          finishReason: isTerminalUsed ? 'aborted' : 'stop',
+          finishReason: 'stop',
         });
       }
     });
@@ -160,14 +155,11 @@ export async function POST(request: Request) {
             tools: createToolSchemas({
               messages: processedMessages,
               profile,
-              agentMode: modelParams.agentMode,
-              confirmTerminalCommand: modelParams.confirmTerminalCommand,
               dataStream,
               abortSignal: request.signal,
               chatMetadata,
               model,
               supabase,
-              isPremiumUser: config.isPremiumUser,
               userCountryCode,
             }).getSelectedSchemas(
               config.isLargeModel && !modelParams.isTemporaryChat

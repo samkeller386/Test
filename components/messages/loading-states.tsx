@@ -24,14 +24,6 @@ export const loadingStates = {
     icon: <Atom size={20} />,
     text: 'Thinking...',
   },
-  'temporary-sandbox': {
-    icon: <SquareTerminal size={20} />,
-    text: 'Connecting to sandbox...',
-  },
-  'persistent-sandbox': {
-    icon: <SquareTerminal size={20} />,
-    text: 'Connecting to sandbox...',
-  },
   [PluginID.TERMINAL]: {
     icon: <SquareTerminal size={20} />,
     text: 'Using pentest agent...',

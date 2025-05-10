@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { PluginID } from '@/types/plugins';
 import type { AgentStatusState } from '@/components/messages/agent-status';
 import type { Dispatch, SetStateAction } from 'react';
+import { fetchChatResponse } from '.';
 
 export const processResponse = async (
   response: Response,
@@ -18,6 +19,7 @@ export const processResponse = async (
   selectedPlugin: PluginID,
   isContinuation: boolean,
   setAgentStatus: Dispatch<SetStateAction<AgentStatusState | null>>,
+  requestBody: any,
 ) => {
   if (!response.ok) {
     const result = await response.json();
@@ -57,7 +59,6 @@ export const processResponse = async (
     let thinkingText = '';
     let finishReason = '';
     let thinkingElapsedSecs: number | null = null;
-    const ragUsed = false;
     let isFirstChunk = true;
     let isFirstChunkReceived = false;
     let updatedPlugin = selectedPlugin;
@@ -235,15 +236,6 @@ export const processResponse = async (
                 controller.abort();
                 return;
               }
-
-              // Handle sandbox type
-              if (firstValue.type === 'sandbox-type') {
-                if (firstValue.sandboxType === 'persistent-sandbox') {
-                  setToolInUse('persistent-sandbox');
-                } else {
-                  setToolInUse('temporary-sandbox');
-                }
-              }
             }
 
             // Handle citations
@@ -282,6 +274,44 @@ export const processResponse = async (
             updatedPlugin = plugin;
           }
 
+          if (plugin === PluginID.TERMINAL) {
+            const apiEndpoint = '/api/agent';
+
+            const agentResponse = await fetchChatResponse(
+              apiEndpoint,
+              requestBody,
+              controller,
+              setIsGenerating,
+              setChatMessages,
+              alertDispatch,
+            );
+
+            const result = await processResponse(
+              agentResponse,
+              lastChatMessage,
+              controller,
+              setFirstTokenReceived,
+              setChatMessages,
+              setToolInUse,
+              setIsGenerating,
+              alertDispatch,
+              PluginID.TERMINAL,
+              false,
+              setAgentStatus,
+              requestBody,
+            );
+
+            if (result) {
+              fullText = result.fullText;
+              thinkingText = result.thinkingText;
+              thinkingElapsedSecs = result.thinkingElapsedSecs;
+              finishReason = result.finishReason;
+              citations = result.citations;
+              chatTitle = result.chatTitle;
+              fileAttachments = result.fileAttachments;
+            }
+          }
+
           toolExecuted = true;
         },
         onFinishMessagePart: (value) => {
@@ -316,7 +346,6 @@ export const processResponse = async (
       thinkingText,
       thinkingElapsedSecs,
       finishReason,
-      ragUsed,
       selectedPlugin: updatedPlugin,
       citations,
       chatTitle,

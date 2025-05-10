@@ -1,5 +1,5 @@
 import { PluginID } from '@/types/plugins';
-import { executeTerminalAgent } from '@/lib/ai/tools/pentest-agent';
+import { executePentestAgent } from '@/lib/ai/tools/pentest-agent';
 import { executeReasonLLMTool } from '@/lib/ai/tools/reason-llm';
 import { createStreamResponse } from '@/lib/ai-helper';
 import type { ChatMetadata, BuiltChatMessage, AgentMode, LLMID } from '@/types';
@@ -55,6 +55,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
         });
       });
 
+    // TODO: Remove this once the pentest agent api is used for some time
     default:
       if (
         isTerminalContinuation ||
@@ -62,7 +63,7 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
         selectedPlugin === PluginID.TERMINAL
       ) {
         return createStreamResponse(async (dataStream) => {
-          await executeTerminalAgent({
+          await executePentestAgent({
             config: {
               messages,
               profile,
