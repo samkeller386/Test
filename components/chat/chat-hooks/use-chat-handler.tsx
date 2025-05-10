@@ -147,12 +147,10 @@ export const useChatHandler = () => {
   const handleStopMessage = async () => {
     if (abortController && !abortController.signal.aborted) {
       abortController.abort();
-      while (isGeneratingRef.current) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Update chat's finish reason to 'aborted' when terminal in use
+      // Wait for 1 second to ensure abort completes and chat is saved
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       if (selectedChat && toolInUse === PluginID.TERMINAL) {
         const updatedChat = {
           ...selectedChat,
