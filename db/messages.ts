@@ -119,8 +119,9 @@ export const createMessages = async (
         .select('*');
 
       if (error) {
-        // Check if it's a foreign key constraint error
-        if (error.code === '23503' && error.message.includes('chats')) {
+        // When user aborts, we need to retry because the chat might not be created yet
+        // This happens because the abort signal is sent before the chat is fully created
+        if (error.code === '23503' && error.details.includes('chats')) {
           if (attempt < maxRetries) {
             console.log(
               `Retrying message creation (attempt ${attempt}/${maxRetries})...`,
