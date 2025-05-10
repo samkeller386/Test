@@ -149,7 +149,7 @@ export const useChatHandler = () => {
       abortController.abort();
 
       // Wait for 1 second to ensure abort completes and chat is saved
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       if (selectedChat && toolInUse === PluginID.TERMINAL) {
         const updatedChat = {
