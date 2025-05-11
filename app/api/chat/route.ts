@@ -100,17 +100,12 @@ export async function POST(request: Request) {
     const toolResponse = await handleToolExecution({
       messages: processedMessages,
       profile,
-      isTerminalContinuation: modelParams.isTerminalContinuation,
       selectedPlugin: modelParams.selectedPlugin,
       isLargeModel: config.isLargeModel,
-      agentMode: modelParams.agentMode,
-      confirmTerminalCommand: modelParams.confirmTerminalCommand,
       abortSignal: request.signal,
       chatMetadata,
       model,
       supabase,
-      isPremiumUser: config.isPremiumUser,
-      userCountryCode,
     });
     if (toolResponse) {
       return toolResponse;

@@ -5,6 +5,7 @@ import { createDataStreamResponse } from 'ai';
 import { executePentestAgent } from '@/lib/ai/tools/pentest-agent';
 import { createClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { processChatMessages } from '@/lib/ai/message-utils';
 
 export const maxDuration = 600;
 
@@ -52,6 +53,15 @@ export async function POST(request: Request) {
     let supabase: SupabaseClient | null = null;
     supabase = await createClient();
 
+    const { processedMessages } = await processChatMessages(
+      messages,
+      'chat-model-large-with-tools',
+      modelParams,
+      true,
+      profile,
+      supabase,
+    );
+
     return createDataStreamResponse({
       execute: async (dataStream) => {
         dataStream.writeData({
@@ -61,7 +71,7 @@ export async function POST(request: Request) {
 
         await executePentestAgent({
           config: {
-            messages,
+            messages: processedMessages,
             profile,
             dataStream,
             agentMode: modelParams.agentMode,
