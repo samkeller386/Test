@@ -21,7 +21,7 @@ export const MessageThinking: React.FC<MessageThinkingProps> = ({
   citations = [],
 }) => {
   const { toolInUse } = useUIContext();
-  const [closedBlocks, setClosedBlocks] = useState(new Set<number>());
+  const [closedBlocks, setClosedBlocks] = useState(new Set<number>([0]));
   const toggleBlock = useCallback((index: number) => {
     setClosedBlocks((prev) => {
       const newSet = new Set(prev);

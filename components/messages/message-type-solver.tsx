@@ -18,8 +18,6 @@ export const allTerminalPlugins = [
   PluginID.WAF_DETECTOR,
   PluginID.WHOIS_LOOKUP,
   PluginID.SUBDOMAIN_FINDER,
-  'persistent-sandbox',
-  'temporary-sandbox',
 ];
 
 export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
