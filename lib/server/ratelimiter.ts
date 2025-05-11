@@ -2,7 +2,7 @@
 import { epochTimeToNaturalLanguage } from '../utils';
 import { getRedis } from './redis';
 import { getSubscriptionInfo } from './subscription-utils';
-import type { SubscriptionInfo } from '@/types';
+import type { RateLimitInfo, SubscriptionInfo } from '@/types';
 
 export type RateLimitResult =
   | {
@@ -207,13 +207,15 @@ export function getRateLimitErrorMessage(
       message += `\n\nIn the meantime, you can use Large Model`;
     } else if (model === 'pentestgpt-pro') {
       message += `\n\nIn the meantime, you can use Small Model`;
+    } else if (model === 'reasoning-model') {
+      message += `\n\nIn the meantime, you can use Large Model or Small Model`;
     }
   } else {
     message += `\n\n🔓 Want more? Upgrade to Pro or Team and unlock a world of features:
 - Access to smarter models
-- Extended limits on messaging and reasoning
+- Extended limits on messaging
 - Access to file uploads, vision, web search, and browsing
-- Access to pentest agent
+- Access to pentest agent and reasoning model
 - Opportunities to test new features`;
   }
 
@@ -227,6 +229,7 @@ function getModelName(model: string): string {
     terminal: 'Pentest Agent',
     'stt-1': 'speech-to-text',
     reasoning: 'reasoning model',
+    'reasoning-model': 'reasoning model',
   };
   return modelNames[model] || model;
 }
@@ -240,7 +243,7 @@ export async function checkRatelimitOnApi(
   const subInfo = subscriptionInfo || (await getSubscriptionInfo(userId));
   const max = _getLimit(model, subInfo);
   const used = max - result.remaining;
-  const info: any = {
+  const info: RateLimitInfo = {
     remaining: result.remaining,
     used,
     max,

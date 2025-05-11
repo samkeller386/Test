@@ -12,7 +12,6 @@ import { getSystemPrompt } from './prompts';
 import { processMessageContentWithAttachments } from '../build-prompt-backend';
 import llmConfig from '../models/llm-config';
 import { countTokens } from 'gpt-tokenizer';
-import { PluginID } from '@/types/plugins';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { processMessagesWithImages } from './image-processing';
 
@@ -279,6 +278,7 @@ export async function processChatMessages(
   },
   isLargeModel: boolean,
   profile: { user_id: string; profile_context: string },
+  isReasoningModel: boolean,
   supabase?: SupabaseClient,
 ): Promise<{
   processedMessages: BuiltChatMessage[];
@@ -286,7 +286,6 @@ export async function processChatMessages(
 }> {
   let shouldUncensor = false;
   const apiKey = llmConfig.openai.apiKey;
-  const isReasoning = modelParams.selectedPlugin === PluginID.REASONING;
 
   // Filter empty assistant messages first
   filterEmptyAssistantMessages(messages);
@@ -304,7 +303,7 @@ export async function processChatMessages(
     apiKey &&
     !modelParams.isContinuation &&
     !modelParams.isTerminalContinuation &&
-    !isReasoning
+    !isReasoningModel
   ) {
     const { shouldUncensorResponse: moderationResult } =
       await getModerationResult(processedMessages, apiKey, 10, isLargeModel);
@@ -325,7 +324,7 @@ export async function processChatMessages(
   const messagesWithAttachments = await processMessageContentWithAttachments(
     validatedMessages,
     profile.user_id,
-    isReasoning,
+    isReasoningModel,
   );
 
   const systemPrompt = getSystemPrompt({

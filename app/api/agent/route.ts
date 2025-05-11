@@ -59,6 +59,7 @@ export async function POST(request: Request) {
       modelParams,
       true,
       profile,
+      false,
       supabase,
     );
 

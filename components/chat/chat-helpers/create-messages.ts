@@ -8,11 +8,11 @@ import {
 import { uploadMessageImage } from '@/db/storage/message-images';
 import { lastSequenceNumber } from '@/lib/utils';
 import type { Tables, TablesInsert } from '@/supabase/types';
-import {
-  type ChatMessage,
-  type LLM,
-  type MessageImage,
-  type FileAttachment,
+import type {
+  ChatMessage,
+  LLM,
+  MessageImage,
+  FileAttachment,
   PluginID,
 } from '@/types';
 import { toast } from 'sonner';
@@ -53,7 +53,7 @@ export const handleCreateMessages = async (
           chat_id: '',
           content: messageContent || '',
           thinking_content: null,
-          thinking_enabled: selectedPlugin === PluginID.REASONING,
+          thinking_enabled: modelData.modelId === 'reasoning-model',
           thinking_elapsed_secs: null,
           role: 'user',
           model: modelData.modelId,
@@ -75,7 +75,7 @@ export const handleCreateMessages = async (
           chat_id: '',
           content: generatedText,
           thinking_content: thinkingText || null,
-          thinking_enabled: selectedPlugin === PluginID.REASONING,
+          thinking_enabled: modelData.modelId === 'reasoning-model',
           thinking_elapsed_secs: thinkingElapsedSecs || null,
           model: modelData.modelId,
           plugin: selectedPlugin,
@@ -102,7 +102,7 @@ export const handleCreateMessages = async (
       user_id: profile.user_id,
       content: messageContent || '',
       thinking_content: null,
-      thinking_enabled: selectedPlugin === PluginID.REASONING,
+      thinking_enabled: modelData.modelId === 'reasoning-model',
       thinking_elapsed_secs: null,
       model: modelData.modelId,
       plugin: selectedPlugin,
@@ -118,7 +118,7 @@ export const handleCreateMessages = async (
       user_id: profile.user_id,
       content: generatedText,
       thinking_content: thinkingText || null,
-      thinking_enabled: selectedPlugin === PluginID.REASONING,
+      thinking_enabled: modelData.modelId === 'reasoning-model',
       thinking_elapsed_secs: thinkingElapsedSecs || null,
       model: modelData.modelId,
       plugin: selectedPlugin,

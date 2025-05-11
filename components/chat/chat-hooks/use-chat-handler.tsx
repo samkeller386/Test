@@ -462,9 +462,11 @@ export const useChatHandler = () => {
         modelParams.selectedPlugin &&
           modelParams.selectedPlugin !== PluginID.NONE
           ? modelParams.selectedPlugin
-          : retrievalUsed
-            ? 'retrieval'
-            : PluginID.NONE,
+          : baseModel === 'reasoning-model'
+            ? 'thinking'
+            : retrievalUsed
+              ? 'retrieval'
+              : PluginID.NONE,
       );
 
       const {

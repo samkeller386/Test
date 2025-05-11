@@ -31,8 +31,6 @@ export enum PluginID {
   BROWSER = 'browser',
   TERMINAL = 'terminal',
   PENTEST_AGENT = 'pentest-agent',
-  REASONING = 'reasoning',
-  REASONING_WEB_SEARCH = 'reasoning-web-search',
   // Pentest tools
   PORT_SCANNER = 'port-scanner',
   WAF_DETECTOR = 'waf-detector',
@@ -54,7 +52,7 @@ export const pluginUrls: PluginUrls = {
   PENTESTGPT: 'https://github.com/hackerai-tech/PentestGPT',
 };
 
-export const PLUGINS_WITHOUT_IMAGE_SUPPORT: PluginID[] = [PluginID.REASONING];
+export const PLUGINS_WITHOUT_IMAGE_SUPPORT: PluginID[] = [];
 
 export const isPluginWithoutImageSupport = (pluginId: PluginID): boolean => {
   return PLUGINS_WITHOUT_IMAGE_SUPPORT.includes(pluginId);

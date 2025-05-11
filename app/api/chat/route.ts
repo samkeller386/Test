@@ -11,7 +11,10 @@ import {
   toVercelChatMessages,
 } from '@/lib/ai/message-utils';
 import { type LLMID, PluginID } from '@/types';
-import { generateTitleFromUserMessage, handleChatWithMetadata } from '@/lib/ai/actions';
+import {
+  generateTitleFromUserMessage,
+  handleChatWithMetadata,
+} from '@/lib/ai/actions';
 import { createClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { waitUntil } from '@vercel/functions';
@@ -64,6 +67,8 @@ export async function POST(request: Request) {
       );
     }
 
+    const isReasoningModel =
+      model === 'reasoning-model' || modelParams.selectedPlugin === 'reasoning';
     let supabase: SupabaseClient | null = null;
     let generatedTitle: string | undefined;
     let toolUsed = '';
@@ -75,6 +80,7 @@ export async function POST(request: Request) {
       modelParams,
       config.isLargeModel,
       profile,
+      isReasoningModel,
       supabase,
     );
 
@@ -97,12 +103,13 @@ export async function POST(request: Request) {
     const toolResponse = await handleToolExecution({
       messages: processedMessages,
       profile,
-      selectedPlugin: modelParams.selectedPlugin,
       isLargeModel: config.isLargeModel,
       abortSignal: request.signal,
       chatMetadata,
       model,
       supabase,
+      isReasoningModel,
+      rateLimitInfo: config.rateLimitInfo,
     });
     if (toolResponse) {
       return toolResponse;
@@ -213,6 +220,7 @@ async function getProviderConfig(
     'mistral-medium': 'chat-model-small-with-tools',
     'mistral-large': 'chat-model-large-with-tools',
     'gpt-4-turbo-preview': 'chat-model-large-with-tools',
+    'reasoning-model': 'reasoning-model',
   };
   // Moving away from gpt-4-turbo-preview to pentestgpt-pro
   const rateLimitModelMap: Record<string, string> = {

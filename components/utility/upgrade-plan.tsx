@@ -194,7 +194,9 @@ export const UpgradePlan: FC = () => {
             <PlanStatement>
               Access to file uploads, vision, web search, and browsing
             </PlanStatement>
-            <PlanStatement>Access to pentest agent</PlanStatement>
+            <PlanStatement>
+              Access to pentest agent and reasoning model
+            </PlanStatement>
             <PlanStatement>Opportunities to test new features</PlanStatement>
           </PlanCard>
 

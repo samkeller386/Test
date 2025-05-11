@@ -12,6 +12,10 @@ export const loadingStates = {
     icon: <FileText size={20} />,
     text: 'Reading documents...',
   },
+  thinking: {
+    icon: <Atom size={20} />,
+    text: 'Thinking...',
+  },
   [PluginID.WEB_SEARCH]: {
     icon: <Globe size={20} />,
     text: 'Searching the web...',
@@ -19,10 +23,6 @@ export const loadingStates = {
   [PluginID.BROWSER]: {
     icon: <Globe size={20} />,
     text: 'Browsing the web...',
-  },
-  [PluginID.REASONING]: {
-    icon: <Atom size={20} />,
-    text: 'Thinking...',
   },
   [PluginID.PENTEST_AGENT]: {
     icon: <SquareTerminal size={20} />,

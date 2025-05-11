@@ -50,12 +50,7 @@ export const MessageTypeResolver: FC<MessageTypeResolverProps> = ({
     );
   }
 
-  if (
-    message.role === 'assistant' &&
-    (toolInUse === PluginID.REASONING ||
-      toolInUse === PluginID.REASONING_WEB_SEARCH ||
-      message.thinking_content)
-  ) {
+  if (message.role === 'assistant' && message.thinking_content) {
     return (
       <MessageThinking
         content={message.content}
