@@ -152,7 +152,7 @@ export const useChatHandler = () => {
       }
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      if (selectedChat && toolInUse === PluginID.TERMINAL) {
+      if (selectedChat && toolInUse === PluginID.PENTEST_AGENT) {
         const updatedChat = {
           ...selectedChat,
           updated_at: new Date().toISOString(),

@@ -43,7 +43,9 @@ export const ToolOptions = ({ fileInputRef }: ToolOptionsProps) => {
     }
 
     setSelectedPlugin(
-      selectedPlugin === PluginID.TERMINAL ? PluginID.NONE : PluginID.TERMINAL,
+      selectedPlugin === PluginID.PENTEST_AGENT
+        ? PluginID.NONE
+        : PluginID.PENTEST_AGENT,
     );
   };
 
@@ -153,7 +155,7 @@ export const ToolOptions = ({ fileInputRef }: ToolOptionsProps) => {
             <div
               className={cn(
                 'relative flex flex-row items-center rounded-lg transition-colors duration-300',
-                selectedPlugin === PluginID.TERMINAL
+                selectedPlugin === PluginID.PENTEST_AGENT
                   ? 'bg-primary/10'
                   : 'hover:bg-black/10 dark:hover:bg-white/10',
                 hasImageAttached &&
@@ -166,7 +168,7 @@ export const ToolOptions = ({ fileInputRef }: ToolOptionsProps) => {
               <SquareTerminal
                 className={cn(
                   'cursor-pointer rounded-lg rounded-bl-xl p-1 focus-visible:outline-black dark:focus-visible:outline-white',
-                  selectedPlugin === PluginID.TERMINAL
+                  selectedPlugin === PluginID.PENTEST_AGENT
                     ? 'text-primary'
                     : 'opacity-50',
                 )}
@@ -178,7 +180,7 @@ export const ToolOptions = ({ fileInputRef }: ToolOptionsProps) => {
                   'transition-all duration-300',
                   !isMobile && 'max-w-[100px] pr-2',
                   isMobile &&
-                    (selectedPlugin === PluginID.TERMINAL
+                    (selectedPlugin === PluginID.PENTEST_AGENT
                       ? 'max-w-[100px] pr-2 opacity-100'
                       : 'max-w-0 opacity-0'),
                 )}

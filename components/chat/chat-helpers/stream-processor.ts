@@ -264,7 +264,7 @@ export const processResponse = async (
           const { toolName } = value;
           const toolMap = {
             browser: PluginID.BROWSER,
-            terminal: PluginID.TERMINAL,
+            terminal: PluginID.PENTEST_AGENT,
             webSearch: PluginID.WEB_SEARCH,
           } as const;
 
@@ -274,7 +274,7 @@ export const processResponse = async (
             updatedPlugin = plugin;
           }
 
-          if (plugin === PluginID.TERMINAL) {
+          if (plugin === PluginID.PENTEST_AGENT) {
             const apiEndpoint = '/api/agent';
 
             const agentResponse = await fetchChatResponse(
@@ -295,7 +295,7 @@ export const processResponse = async (
               setToolInUse,
               setIsGenerating,
               alertDispatch,
-              PluginID.TERMINAL,
+              PluginID.PENTEST_AGENT,
               false,
               setAgentStatus,
               requestBody,
@@ -319,7 +319,7 @@ export const processResponse = async (
             // Only set finishReason if it hasn't been set before
             if (
               value.finishReason === 'tool-calls' &&
-              updatedPlugin === PluginID.TERMINAL
+              updatedPlugin === PluginID.PENTEST_AGENT
             ) {
               // To use continue generating for terminal
               finishReason = 'terminal-calls';

@@ -24,7 +24,7 @@ export const loadingStates = {
     icon: <Atom size={20} />,
     text: 'Thinking...',
   },
-  [PluginID.TERMINAL]: {
+  [PluginID.PENTEST_AGENT]: {
     icon: <SquareTerminal size={20} />,
     text: 'Using pentest agent...',
   },

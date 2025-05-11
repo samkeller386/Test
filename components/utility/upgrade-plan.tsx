@@ -189,11 +189,12 @@ export const UpgradePlan: FC = () => {
           >
             <PlanStatement>Access to smarter models</PlanStatement>
             <PlanStatement>
-              Extended limits on messaging, reasoning, and terminal
+              Extended limits on messaging and reasoning
             </PlanStatement>
             <PlanStatement>
               Access to file uploads, vision, web search, and browsing
             </PlanStatement>
+            <PlanStatement>Access to pentest agent</PlanStatement>
             <PlanStatement>Opportunities to test new features</PlanStatement>
           </PlanCard>
 

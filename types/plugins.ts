@@ -30,6 +30,7 @@ export enum PluginID {
   WEB_SEARCH = 'websearch',
   BROWSER = 'browser',
   TERMINAL = 'terminal',
+  PENTEST_AGENT = 'pentest-agent',
   REASONING = 'reasoning',
   REASONING_WEB_SEARCH = 'reasoning-web-search',
   // Pentest tools

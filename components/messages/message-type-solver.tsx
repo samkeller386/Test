@@ -14,6 +14,7 @@ interface MessageTypeResolverProps {
 
 export const allTerminalPlugins = [
   PluginID.TERMINAL,
+  PluginID.PENTEST_AGENT,
   PluginID.WAF_DETECTOR,
   PluginID.WHOIS_LOOKUP,
   PluginID.SUBDOMAIN_FINDER,

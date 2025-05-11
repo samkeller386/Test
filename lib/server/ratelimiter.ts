@@ -194,10 +194,10 @@ export function getRateLimitErrorMessage(
   const remainingText = epochTimeToNaturalLanguage(timeRemaining);
 
   if (model === 'terminal') {
-    const baseMessage = `⚠️ You've reached the limit for terminal usage.\n\nTo ensure fair usage for all users, please wait ${remainingText} before trying again.`;
+    const baseMessage = `⚠️ You've reached the limit for Pentest Agent usage.\n\nTo ensure fair usage for all users, please wait ${remainingText} before trying again.`;
     return premium
       ? baseMessage
-      : `${baseMessage}\n\n🚀 Consider upgrading to Pro or Team for higher terminal usage limits and more features.`;
+      : `${baseMessage}\n\n🚀 Consider upgrading to Pro or Team for higher Pentest Agent usage limits and more features.`;
   }
 
   let message = `⚠️ You've reached the limit for ${getModelName(model)}.\n\nTo ensure fair usage for all users, please wait ${remainingText} before trying again.`;
@@ -211,8 +211,9 @@ export function getRateLimitErrorMessage(
   } else {
     message += `\n\n🔓 Want more? Upgrade to Pro or Team and unlock a world of features:
 - Access to smarter models
-- Extended limits on messaging, reasoning, and terminal
+- Extended limits on messaging and reasoning
 - Access to file uploads, vision, web search, and browsing
+- Access to pentest agent
 - Opportunities to test new features`;
   }
 
@@ -223,7 +224,7 @@ function getModelName(model: string): string {
   const modelNames: { [key: string]: string } = {
     pentestgpt: 'Small Model',
     'pentestgpt-pro': 'Large Model',
-    terminal: 'terminal',
+    terminal: 'Pentest Agent',
     'stt-1': 'speech-to-text',
     reasoning: 'reasoning model',
   };

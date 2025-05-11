@@ -44,7 +44,7 @@ export const handleHostedChat = async (
   if (
     modelParams.confirmTerminalCommand ||
     modelParams.isTerminalContinuation ||
-    modelParams.selectedPlugin === PluginID.TERMINAL
+    modelParams.selectedPlugin === PluginID.PENTEST_AGENT
   ) {
     apiEndpoint = '/api/agent';
   }
