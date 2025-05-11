@@ -83,6 +83,7 @@ export async function POST(request: Request) {
             isPremiumUser: config.isPremiumUser,
             userCountryCode,
             isAgentAPI: true,
+            originalMessages: messages,
           },
         });
       },

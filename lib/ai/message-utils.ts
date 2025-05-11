@@ -288,10 +288,16 @@ export async function processChatMessages(
   const apiKey = llmConfig.openai.apiKey;
   const isReasoning = modelParams.selectedPlugin === PluginID.REASONING;
 
+  // Filter empty assistant messages first
+  filterEmptyAssistantMessages(messages);
+
+  // Create a deep copy of messages using structuredClone
+  const messagesCopy = structuredClone(messages);
+
   // Process images if supabase client is provided
   const processedMessages = supabase
-    ? await processMessagesWithImages(messages, supabase)
-    : messages;
+    ? await processMessagesWithImages(messagesCopy, supabase)
+    : messagesCopy;
 
   // Check if we should uncensor the response
   if (
@@ -308,8 +314,6 @@ export async function processChatMessages(
   if (shouldUncensor) {
     addAuthMessage(processedMessages);
   }
-
-  filterEmptyAssistantMessages(processedMessages);
 
   // Validate total token count
   validateMessageTokens(processedMessages, profile?.user_id);
