@@ -11,7 +11,7 @@ import {
   toVercelChatMessages,
 } from '@/lib/ai/message-utils';
 import { type LLMID, PluginID } from '@/types';
-import { handleChatWithMetadata } from '@/lib/ai/actions';
+import { generateTitleFromUserMessage, handleChatWithMetadata } from '@/lib/ai/actions';
 import { createClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { waitUntil } from '@vercel/functions';
@@ -178,15 +178,15 @@ export async function POST(request: Request) {
 
           await Promise.all([
             result.mergeIntoDataStream(dataStream),
-            // (async () => {
-            //   if (chatMetadata.id && chatMetadata.newChat) {
-            //     generatedTitle = await generateTitleFromUserMessage({
-            //       messages,
-            //       abortSignal: request.signal,
-            //     });
-            //     dataStream.writeData({ chatTitle: generatedTitle });
-            //   }
-            // })(),
+            (async () => {
+              if (chatMetadata.id && chatMetadata.newChat) {
+                generatedTitle = await generateTitleFromUserMessage({
+                  messages,
+                  abortSignal: request.signal,
+                });
+                dataStream.writeData({ chatTitle: generatedTitle });
+              }
+            })(),
           ]);
         },
       });

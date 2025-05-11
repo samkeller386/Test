@@ -8,7 +8,6 @@ import React, {
 } from 'react';
 import { ChevronDown, Repeat } from 'lucide-react';
 import { WithTooltip } from './with-tooltip';
-import { GPT4 } from '@/lib/models/openai-llm-list';
 import { SmallModel, LargeModel } from '@/lib/models/hackerai-llm-list';
 import type { LLMID } from '@/types';
 import {
@@ -28,8 +27,6 @@ interface SwitchModelProps {
 
 const getModelDisplayName = (modelId: string): string => {
   switch (modelId) {
-    case GPT4.modelId:
-      return '4.1';
     case SmallModel.modelId:
       return 'small';
     case LargeModel.modelId:
