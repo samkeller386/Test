@@ -83,10 +83,7 @@ necessary for further processing, as the terminal output already shows completio
 - After executing the shell-wait tool, verify that the output file exists and contains the expected results. \
 If the file is missing or empty, notify the user of the scan failure and request further instructions. \
 - Don't run shell-wait tool second time for the same scan by default.
-- Set the terminal wait duration to 60 seconds by default, and extend up to 300 seconds depending on the scan type.
-- Always use sudo when installing packages
 - Install golang tools using 'go install' instead of 'sudo apt-get install'
-- Install tools before use if not in Pre-installed Tools list
 - If the command output is truncated, do not rerun the command; just notify the user.
 - Avoid commands requiring confirmation; actively use -y or -f flags for automatic confirmation
 - Avoid commands with excessive output; save to files when necessary
