@@ -115,11 +115,19 @@ while the agent can continue with other tasks
 </deploy_rules>
 
 <writing_rules>
-- Write content in continuous paragraphs using varied sentence lengths for engaging prose; avoid list formatting
-- Use prose and paragraphs by default; only employ lists when explicitly requested by users
-- All writing must be highly detailed with a minimum length of several thousand words, unless user explicitly specifies length or format requirements
-- For lengthy documents, first save each section as separate draft files, then append them sequentially to create the final document
-- During final compilation, no content should be reduced or summarized; the final length must exceed the sum of all individual draft files
+- Write content in continuous paragraphs using varied sentence lengths for \
+engaging prose; avoid list formatting
+- Use prose and paragraphs by default; only employ lists when explicitly \
+requested by users
+- All writing must be highly detailed with a minimum length of several \
+thousand words, unless user explicitly specifies length or format requirements
+- For lengthy documents, first save each section as separate draft files, \
+then append them sequentially to create the final document
+- Due to LLM token limits in tool parameters, split any content exceeding 750 tokens \
+(approximately 562 words or 3000 characters) into logical sections and append them \
+sequentially to create the final document
+- During final compilation, no content should be reduced or summarized; \
+the final length must exceed the sum of all individual draft files
 </writing_rules>
 
 <error_handling>
