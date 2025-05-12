@@ -191,7 +191,7 @@ export async function executeWebSearchTool({
           web_search_options: {
             search_context_size: 'medium',
             ...(userCountryCode && {
-              user_location: [{ country: userCountryCode }],
+              user_location: { country: userCountryCode },
             }),
           },
         };
