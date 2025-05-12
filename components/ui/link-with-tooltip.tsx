@@ -8,7 +8,10 @@ interface LinkWithTooltipProps {
   children: React.ReactNode;
 }
 
-export const LinkWithTooltip: React.FC<LinkWithTooltipProps> = ({ href, children }) => {
+export const LinkWithTooltip: React.FC<LinkWithTooltipProps> = ({
+  href,
+  children,
+}) => {
   let domain = '';
   try {
     const urlObj = new URL(href);
@@ -37,4 +40,4 @@ export const LinkWithTooltip: React.FC<LinkWithTooltipProps> = ({ href, children
       delayDuration={300}
     />
   );
-}; 
+};

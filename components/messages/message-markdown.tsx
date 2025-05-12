@@ -33,7 +33,11 @@ const NonMemoizedMarkdown: FC<{
   const components: Partial<Components> = {
     a({ children, href, title, ...props }) {
       if (!href) return <span>{children}</span>;
-      return <LinkWithTooltip href={href} title={title}>{children}</LinkWithTooltip>;
+      return (
+        <LinkWithTooltip href={href} title={title}>
+          {children}
+        </LinkWithTooltip>
+      );
     },
     p({ children }) {
       return <p className="mb-2 whitespace-pre-wrap last:mb-0">{children}</p>;
