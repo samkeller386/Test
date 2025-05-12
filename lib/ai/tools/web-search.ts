@@ -120,6 +120,16 @@ async function* streamPerplexityResponse(
   }
 }
 
+async function getResponseBody(response: Response): Promise<string> {
+  try {
+    const clone = response.clone();
+    const text = await clone.text();
+    return text;
+  } catch (e) {
+    return 'Unable to read response body';
+  }
+}
+
 export async function executeWebSearchTool({
   config,
 }: {
@@ -170,6 +180,22 @@ export async function executeWebSearchTool({
   try {
     await Promise.all([
       (async () => {
+        const requestPayload = {
+          model: selectedModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...toVercelChatMessages(messages, true, true),
+          ],
+          stream: true,
+          max_tokens: 2048,
+          web_search_options: {
+            search_context_size: 'medium',
+            ...(userCountryCode && {
+              user_location: [{ country: userCountryCode }],
+            }),
+          },
+        };
+
         const response = await fetch(
           'https://api.perplexity.ai/chat/completions',
           {
@@ -178,28 +204,26 @@ export async function executeWebSearchTool({
               Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              model: selectedModel,
-              messages: [
-                { role: 'system', content: systemPrompt },
-                ...toVercelChatMessages(messages, true, true),
-              ],
-              stream: true,
-              max_tokens: 2048,
-              web_search_options: {
-                search_context_size: 'medium',
-                ...(userCountryCode && {
-                  user_location: [{ country: userCountryCode }],
-                }),
-              },
-            }),
+            body: JSON.stringify(requestPayload),
             signal: abortSignal,
           },
         );
 
         if (!response.ok) {
-          console.error('[WebSearch] Error:', response);
-          return 'Web search failed';
+          const responseBody = await getResponseBody(response);
+          console.error('[WebSearch] Error Details:', {
+            status: response.status,
+            statusText: response.statusText,
+            requestPayload: {
+              model: requestPayload.model,
+              messageCount: requestPayload.messages.length,
+            },
+            responseBody,
+            headers: Object.fromEntries(response.headers.entries()),
+          });
+          throw new Error(
+            `Web search failed: ${response.status} ${response.statusText}`,
+          );
         }
 
         const citations: string[] = [];
