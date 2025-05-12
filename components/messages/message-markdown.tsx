@@ -33,11 +33,7 @@ const NonMemoizedMarkdown: FC<{
   const components: Partial<Components> = {
     a({ children, href, ...props }) {
       if (typeof children === 'string' && /^\d+$/.test(children) && href) {
-        return (
-          <LinkWithTooltip href={href} title={href}>
-            {children}
-          </LinkWithTooltip>
-        );
+        return <LinkWithTooltip href={href}>{children}</LinkWithTooltip>;
       }
       return (
         <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
