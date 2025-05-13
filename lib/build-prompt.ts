@@ -54,10 +54,11 @@ export async function buildFinalMessages(
 
     // Add tokens from file items if they exist
     if (fileItems && fileItems.length > 0) {
-      messageTokens += fileItems.reduce(
+      const fileTokens = fileItems.reduce(
         (acc, item) => acc + (item.tokens || 0),
         0,
       );
+      messageTokens += fileTokens;
     }
 
     // Add tokens from retrieved file items for the last user message
@@ -66,10 +67,11 @@ export async function buildFinalMessages(
       retrievedFileItems &&
       retrievedFileItems.length > 0
     ) {
-      messageTokens += retrievedFileItems.reduce(
+      const retrievedTokens = retrievedFileItems.reduce(
         (acc, item) => acc + (item.tokens || 0),
         0,
       );
+      messageTokens += retrievedTokens;
     }
 
     if (messageTokens <= remainingTokens) {
@@ -103,6 +105,13 @@ export async function buildFinalMessages(
     } else {
       break;
     }
+  }
+
+  if (truncatedMessages.length === 1) {
+    const errorMessage =
+      'The message and its files are too large to process. Please reduce the file size or content.';
+    toast.error(errorMessage);
+    throw new Error(errorMessage);
   }
 
   const finalMessages: BuiltChatMessage[] = truncatedMessages.map((message) => {
