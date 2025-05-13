@@ -1,12 +1,5 @@
-import type {
-  BuiltChatMessage,
-  ChatMessage,
-  ChatPayload,
-  MessageImage,
-  LLMID,
-} from '@/types';
+import type { BuiltChatMessage, ChatMessage, ChatPayload } from '@/types';
 import { countTokens } from 'gpt-tokenizer';
-import { SmallModel, LargeModel } from './models/hackerai-llm-list';
 import { toast } from 'sonner';
 
 // Helper function to find the last user message
@@ -23,19 +16,12 @@ function findLastUserMessage(
 
 export async function buildFinalMessages(
   payload: ChatPayload,
-  model: LLMID,
-  chatImages: MessageImage[],
+  isPremiumSubscription = false,
 ): Promise<BuiltChatMessage[]> {
   const { chatMessages, retrievedFileItems } = payload;
+  const CONTEXT_WINDOW = isPremiumSubscription ? 32000 : 8000;
 
-  let CHUNK_SIZE = 12000;
-  if (model === LargeModel.modelId) {
-    CHUNK_SIZE = 24000 - 4000; // -4000 for the system prompt, custom instructions, and more
-  } else if (model === SmallModel.modelId) {
-    CHUNK_SIZE = 12000 - 4000; // -4000 for the system prompt, custom instructions, and more
-  }
-
-  let remainingTokens = CHUNK_SIZE;
+  let remainingTokens = CONTEXT_WINDOW;
 
   // Find the last user message
   const lastUserMessage = findLastUserMessage(chatMessages);
@@ -50,7 +36,7 @@ export async function buildFinalMessages(
     : lastUserMessage.message.content;
   const lastUserMessageTokens = countTokens(lastUserMessageContent);
 
-  if (lastUserMessageTokens > CHUNK_SIZE) {
+  if (lastUserMessageTokens > CONTEXT_WINDOW) {
     const errorMessage =
       'The message you submitted was too long, please submit something shorter.';
     toast.error(errorMessage);
