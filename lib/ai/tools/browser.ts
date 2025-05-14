@@ -15,7 +15,6 @@ import {
   handleChatWithMetadata,
 } from '@/lib/ai/actions';
 import { truncateContentByTokens } from '@/lib/ai/terminal-utils';
-import { perplexity } from '@ai-sdk/perplexity';
 
 interface BrowserToolConfig {
   profile: any;
@@ -186,7 +185,7 @@ export async function executeBrowserTool({
     await Promise.all([
       (async () => {
         const { fullStream } = streamText({
-          model: perplexity('sonar'),
+          model: myProvider.languageModel('browser-model'),
           system: systemPrompt,
           messages: [
             ...toVercelChatMessages(messages.slice(0, -1)),
