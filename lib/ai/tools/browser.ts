@@ -191,18 +191,6 @@ export async function executeBrowserTool({
             ...toVercelChatMessages(messages.slice(0, -1)),
             { role: 'user', content: browserPrompt },
           ],
-          providerOptions: {
-            perplexity: {
-              search_context_size: 'medium',
-              ...(config.userCountryCode && {
-                user_location: [
-                  {
-                    country: config.userCountryCode,
-                  },
-                ],
-              }),
-            },
-          },
           maxTokens: 2048,
           onError: async (error) => {
             console.error('[BrowserTool] Stream Error:', error);
