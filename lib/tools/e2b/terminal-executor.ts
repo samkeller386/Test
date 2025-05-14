@@ -72,9 +72,8 @@ export const executeTerminalCommand = async ({
         const execution = background
           ? await sandbox.commands.run(command, {
               timeoutMs: MAX_COMMAND_EXECUTION_TIME,
-              cwd: exec_dir,
-              user: 'root',
               background: true,
+              cwd: exec_dir,
               onStdout: (data: string) => {
                 if (isStreamClosed) return;
                 hasTerminalOutput = true;
