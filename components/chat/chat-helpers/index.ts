@@ -18,7 +18,6 @@ import type { AgentStatusState } from '@/components/messages/agent-status';
 
 export * from './create-messages';
 export * from './create-temp-messages';
-export * from './image-handlers';
 export * from './validation';
 
 export const handleHostedChat = async (
