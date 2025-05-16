@@ -82,7 +82,6 @@ export async function POST(request: Request) {
             chatMetadata,
             model,
             supabase,
-            isPremiumUser: config.isPremiumUser,
             userCountryCode,
             isAgentAPI: true,
             originalMessages: messages,
