@@ -59,6 +59,7 @@ export async function browsePage(
       location: {
         country: userCountryCode || 'US',
       },
+      timeout: 15000,
     })) as ScrapeResponse;
 
     // Check if we got an error status code that warrants stealth retry
@@ -71,6 +72,7 @@ export async function browsePage(
           country: userCountryCode || 'US',
         },
         proxy: 'stealth',
+        timeout: 20000,
       })) as ScrapeResponse;
 
       if (!stealthResult.success) {
