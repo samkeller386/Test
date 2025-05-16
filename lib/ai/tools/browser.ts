@@ -48,6 +48,7 @@ export function getLastUserMessage(messages: any[]): string {
 export async function browsePage(
   url: string,
   format: 'markdown' | 'html' = 'markdown',
+  userCountryCode: string | null = null,
 ): Promise<string> {
   try {
     const app = new FirecrawlApp({ apiKey: process.env.FIRECRAWL_API_KEY });
@@ -55,6 +56,9 @@ export async function browsePage(
     // First try with default proxy
     const scrapeResult = (await app.scrapeUrl(url, {
       formats: ['markdown', 'html'],
+      location: {
+        country: userCountryCode || 'US',
+      },
     })) as ScrapeResponse;
 
     // Check if we got an error status code that warrants stealth retry
@@ -63,6 +67,9 @@ export async function browsePage(
       // Retry with stealth proxy
       const stealthResult = (await app.scrapeUrl(url, {
         formats: ['markdown', 'html'],
+        location: {
+          country: userCountryCode || 'US',
+        },
         proxy: 'stealth',
       })) as ScrapeResponse;
 
@@ -152,7 +159,14 @@ export async function executeBrowserTool({
     );
   }
 
-  const { profile, messages, dataStream, chatMetadata, supabase } = config;
+  const {
+    profile,
+    messages,
+    dataStream,
+    chatMetadata,
+    supabase,
+    userCountryCode,
+  } = config;
   const { systemPrompt, model } = await getProviderConfig(profile);
 
   const posthog = PostHogClient();
@@ -173,7 +187,11 @@ export async function executeBrowserTool({
     const lastUserMessage = extractTextContent(message.content);
     dataStream.writeData({ type: 'tool-call', content: 'browser' });
 
-    const browserResult = await browsePage(open_url, format_output);
+    const browserResult = await browsePage(
+      open_url,
+      format_output,
+      userCountryCode,
+    );
     const browserPrompt = createBrowserPrompt(
       browserResult,
       open_url,
