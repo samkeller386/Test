@@ -1,5 +1,8 @@
 import { buildSystemPrompt } from '@/lib/ai/prompts';
-import { toVercelChatMessages } from '@/lib/ai/message-utils';
+import {
+  toVercelChatMessages,
+  validateWebSearchMessages,
+} from '@/lib/ai/message-utils';
 import llmConfig from '@/lib/models/llm-config';
 import PostHogClient from '@/app/posthog';
 import type { ChatMetadata, LLMID } from '@/types';
@@ -155,6 +158,9 @@ export async function executeWebSearchTool({
   // Filter out PDF content from messages
   const filteredMessages = removePdfContentFromMessages(messages);
 
+  // Validate messages for proper alternating roles
+  const validatedMessages = validateWebSearchMessages(filteredMessages);
+
   const { systemPrompt, selectedModel } = await getProviderConfig(
     isLargeModel,
     profile,
@@ -186,7 +192,7 @@ export async function executeWebSearchTool({
         const requestPayload = {
           model: selectedModel,
           system: systemPrompt,
-          messages: toVercelChatMessages(filteredMessages, true, true),
+          messages: toVercelChatMessages(validatedMessages, true, true),
           stream: true,
           max_tokens: 2048,
           web_search_options: {
