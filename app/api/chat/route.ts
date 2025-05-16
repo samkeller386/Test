@@ -170,8 +170,7 @@ export async function POST(request: Request) {
                 ) &&
                 !(
                   error instanceof Error &&
-                  error.name === 'AI_InvalidToolArgumentsError' &&
-                  error.message.includes('format_output')
+                  error.name === 'AI_InvalidToolArgumentsError'
                 )
               ) {
                 console.error('[Chat] Stream Error:', error);
