@@ -8,17 +8,18 @@ import { streamText } from 'ai';
 import { myProvider } from '@/lib/ai/providers';
 import FirecrawlApp, { type ScrapeResponse } from '@mendable/firecrawl-js';
 import PostHogClient from '@/app/posthog';
-import type { ChatMetadata, LLMID } from '@/types';
+import type { ChatMetadata, LLMID, ModelParams } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   generateTitleFromUserMessage,
-  handleChatWithMetadata,
+  handleChatAndUserMessage,
 } from '@/lib/ai/actions';
 import { truncateContentByTokens } from '@/lib/ai/terminal-utils';
 
 interface BrowserToolConfig {
   profile: any;
   messages: any[];
+  modelParams: ModelParams;
   dataStream: any;
   abortSignal: AbortSignal;
   chatMetadata: ChatMetadata;
@@ -164,6 +165,7 @@ export async function executeBrowserTool({
   const {
     profile,
     messages,
+    modelParams,
     dataStream,
     chatMetadata,
     supabase,
@@ -217,14 +219,15 @@ export async function executeBrowserTool({
           },
           onFinish: async ({ finishReason }: { finishReason: string }) => {
             if (supabase) {
-              await handleChatWithMetadata({
+              await handleChatAndUserMessage({
                 supabase,
+                modelParams,
                 chatMetadata,
                 profile,
                 model: config.model,
-                title: generatedTitle,
                 messages,
                 finishReason,
+                title: generatedTitle,
               });
             }
           },

@@ -13,10 +13,9 @@ import {
 import { type LLMID, PluginID } from '@/types';
 import {
   generateTitleFromUserMessage,
-  handleChatWithMetadata,
+  handleChatAndUserMessage,
 } from '@/lib/ai/actions';
 import { createClient } from '@/lib/supabase/server';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { waitUntil } from '@vercel/functions';
 
 // Increased max duration to allow for long reasoning tool responses
@@ -67,14 +66,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const isReasoningModel =
-      model === 'reasoning-model' || modelParams.selectedPlugin === 'reasoning';
-    let supabase: SupabaseClient | null = null;
+    const supabase = await createClient();
+    const isReasoningModel = model === 'reasoning-model';
     let generatedTitle: string | undefined;
     let toolUsed = '';
     let hasGeneratedTitle = false;
     let titleGenerationPromise: Promise<void> | null = null;
-    supabase = await createClient();
 
     const { processedMessages, systemPrompt } = await processChatMessages(
       messages,
@@ -90,14 +87,15 @@ export async function POST(request: Request) {
     request.signal.addEventListener('abort', async () => {
       if (chatMetadata.id) {
         waitUntil(
-          handleChatWithMetadata({
+          handleChatAndUserMessage({
             supabase,
+            modelParams,
             chatMetadata,
             profile,
             model,
-            title: generatedTitle,
             messages,
             finishReason: 'stop',
+            title: generatedTitle,
           }),
         );
       }
@@ -105,6 +103,7 @@ export async function POST(request: Request) {
 
     const toolResponse = await handleToolExecution({
       messages: processedMessages,
+      modelParams,
       profile,
       isLargeModel: config.isLargeModel,
       abortSignal: request.signal,
@@ -178,6 +177,7 @@ export async function POST(request: Request) {
             },
             tools: createToolSchemas({
               messages: processedMessages,
+              modelParams,
               profile,
               dataStream,
               abortSignal: request.signal,
@@ -196,14 +196,15 @@ export async function POST(request: Request) {
                 if (titleGenerationPromise) {
                   await titleGenerationPromise;
                 }
-                await handleChatWithMetadata({
+                await handleChatAndUserMessage({
                   supabase,
+                  modelParams,
                   chatMetadata,
                   profile,
                   model,
-                  title: generatedTitle,
                   messages,
                   finishReason,
+                  title: generatedTitle,
                 });
               }
             },

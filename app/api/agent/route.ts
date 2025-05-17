@@ -4,7 +4,6 @@ import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
 import { createDataStreamResponse } from 'ai';
 import { executePentestAgent } from '@/lib/ai/tools/pentest-agent';
 import { createClient } from '@/lib/supabase/server';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { processChatMessages } from '@/lib/ai/message-utils';
 
 export const maxDuration = 600;
@@ -50,8 +49,7 @@ export async function POST(request: Request) {
       );
     }
 
-    let supabase: SupabaseClient | null = null;
-    supabase = await createClient();
+    const supabase = await createClient();
 
     const { processedMessages } = await processChatMessages(
       messages,
@@ -74,10 +72,9 @@ export async function POST(request: Request) {
         await executePentestAgent({
           config: {
             messages: processedMessages,
+            modelParams,
             profile,
             dataStream,
-            agentMode: modelParams.agentMode,
-            confirmTerminalCommand: modelParams.confirmTerminalCommand,
             abortSignal: request.signal,
             chatMetadata,
             model,

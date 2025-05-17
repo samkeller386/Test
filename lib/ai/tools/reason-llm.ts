@@ -2,10 +2,12 @@ import { getSystemPrompt } from '@/lib/ai/prompts';
 import { toVercelChatMessages } from '@/lib/ai/message-utils';
 import { streamText, tool } from 'ai';
 import PostHogClient from '@/app/posthog';
-import { handleChatWithMetadata } from '../actions';
-import type { ChatMetadata, LLMID, RateLimitInfo } from '@/types';
+import type { ChatMetadata, LLMID, RateLimitInfo, ModelParams } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { generateTitleFromUserMessage } from '@/lib/ai/actions';
+import {
+  handleChatAndUserMessage,
+  generateTitleFromUserMessage,
+} from '@/lib/ai/actions';
 import { myProvider } from '../providers';
 import { z } from 'zod';
 import { getPageContent } from './browser';
@@ -13,6 +15,7 @@ import { getPageContent } from './browser';
 interface ReasonLLMConfig {
   messages: any[];
   profile: any;
+  modelParams: ModelParams;
   dataStream: any;
   isLargeModel: boolean;
   abortSignal: AbortSignal;
@@ -46,6 +49,7 @@ export async function executeReasonLLMTool({
 
   const {
     messages,
+    modelParams,
     profile,
     dataStream,
     abortSignal,
@@ -135,14 +139,15 @@ beneficial for the user's needs.`,
           },
           onFinish: async ({ finishReason }: { finishReason: string }) => {
             if (supabase) {
-              await handleChatWithMetadata({
+              await handleChatAndUserMessage({
                 supabase,
+                modelParams,
                 chatMetadata,
                 profile,
                 model,
-                title: generatedTitle,
                 messages,
                 finishReason,
+                title: generatedTitle,
               });
             }
           },

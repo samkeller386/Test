@@ -5,15 +5,17 @@ import {
 } from '@/lib/ai/message-utils';
 import llmConfig from '@/lib/models/llm-config';
 import PostHogClient from '@/app/posthog';
-import type { ChatMetadata, LLMID } from '@/types';
+import type { ChatMetadata, LLMID, ModelParams } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   generateTitleFromUserMessage,
-  handleChatWithMetadata,
-} from '../actions';
+  handleChatAndUserMessage,
+} from '@/lib/ai/actions';
 import { removePdfContentFromMessages } from '@/lib/build-prompt-backend';
+
 interface WebSearchConfig {
   messages: any[];
+  modelParams: ModelParams;
   profile: any;
   dataStream: any;
   isLargeModel: boolean;
@@ -144,6 +146,7 @@ export async function executeWebSearchTool({
 
   const {
     messages,
+    modelParams,
     profile,
     dataStream,
     isLargeModel,
@@ -267,14 +270,15 @@ export async function executeWebSearchTool({
         }
 
         if (supabase) {
-          await handleChatWithMetadata({
+          await handleChatAndUserMessage({
             supabase,
+            modelParams,
             chatMetadata,
             profile,
             model,
-            title: generatedTitle,
             messages,
             finishReason: 'stop',
+            title: generatedTitle,
           });
         }
       })(),

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/browser-client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/supabase/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const getMessagesByChatId = async (
   chatId: string,
@@ -43,7 +44,7 @@ export const createMessage = async (message: TablesInsert<'messages'>) => {
 export const createMessages = async (
   messages: TablesInsert<'messages'>[],
   newChatFiles: { id: string }[],
-  chatId: string | null,
+  userMessageId: string | null,
   setChatFiles?: React.Dispatch<React.SetStateAction<Tables<'files'>[]>>,
 ) => {
   const { data: createdMessages, error } = await supabase
@@ -60,25 +61,14 @@ export const createMessages = async (
     .filter((id) => id !== undefined);
 
   if (fileIds.length > 0) {
-    const { error: filesError } = await supabase
-      .from('files')
-      .update({ message_id: createdMessages[0].id, chat_id: chatId })
-      .in('id', fileIds)
-      .is('message_id', null)
-      .select('*');
-
     if (setChatFiles) {
       setChatFiles((prev) =>
         prev.map((file) =>
           fileIds.includes(file.id)
-            ? { ...file, message_id: createdMessages[0].id }
+            ? { ...file, message_id: userMessageId }
             : file,
         ),
       );
-    }
-
-    if (filesError) {
-      throw new Error(filesError.message);
     }
   }
 
@@ -116,92 +106,113 @@ export const deleteMessage = async (messageId: string) => {
   return true;
 };
 
-export async function deleteMessagesIncludingAndAfter(
-  userId: string,
-  chatId: string,
-  sequenceNumber: number,
+export const deleteMessagesIncludingAndAfter = async ({
+  supabase,
+  userId,
+  chatId,
+  sequenceNumber,
   retrieveFiles = false,
-) {
+}: {
+  supabase: SupabaseClient;
+  userId: string;
+  chatId: string;
+  sequenceNumber: number;
+  retrieveFiles?: boolean;
+}) => {
   let files: Tables<'files'>[] = [];
+
   if (retrieveFiles) {
-    // Here we check if the edited message has a file, if so we retrieve it
-    // and return it in the response and remove the association from the file and
-    // the message so it doesnt get cascade deleted
+    try {
+      // Get messages at the sequence number
+      const { data: messagesData, error: messagesError } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('chat_id', chatId)
+        .eq('sequence_number', sequenceNumber);
 
-    // console.log(
-    //   "Fetching messages for chat:",
-    //   chatId,
-    //   "sequence:",
-    //   sequenceNumber
-    // )
-    const { data: messagesData, error: messagesError } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('chat_id', chatId)
-      .eq('sequence_number', sequenceNumber);
+      if (messagesError) {
+        console.error(
+          '[deleteMessagesIncludingAndAfter] Error fetching messages:',
+          messagesError,
+        );
+        throw messagesError;
+      }
 
-    if (messagesError) {
-      console.error('Error fetching messages:', messagesError);
-      throw new Error(messagesError.message);
-    }
-    // console.log("Found messages:", messagesData)
+      // Get files associated with these messages
+      const { data: filesData, error: filesError } = await supabase
+        .from('files')
+        .select('*')
+        .in(
+          'message_id',
+          messagesData.map((message: Tables<'messages'>) => message.id),
+        );
 
-    // console.log(
-    //   "Fetching files for messages:",
-    //   messagesData.map(m => m.id)
-    // )
-    const { data: filesData, error: filesError } = await supabase
-      .from('files')
-      .select('*')
-      .in(
-        'message_id',
-        messagesData.map((message) => message.id),
+      if (filesError) {
+        console.error(
+          '[deleteMessagesIncludingAndAfter] Error fetching files:',
+          filesError,
+        );
+        throw filesError;
+      }
+
+      // Update files to remove message_id
+      if (filesData.length > 0) {
+        const { error: updateError } = await supabase
+          .from('files')
+          .update({ message_id: null })
+          .in(
+            'id',
+            filesData.map((file: Tables<'files'>) => file.id),
+          );
+
+        if (updateError) {
+          console.error(
+            '[deleteMessagesIncludingAndAfter] Error updating files:',
+            updateError,
+          );
+          throw updateError;
+        }
+      }
+
+      files = filesData;
+    } catch (error) {
+      console.error(
+        '[deleteMessagesIncludingAndAfter] Error handling files:',
+        error,
       );
-
-    if (filesError) {
-      console.error('Error fetching files:', filesError);
-      throw new Error(filesError.message);
+      throw error;
     }
-    // console.log("Found files:", filesData)
-
-    // console.log(
-    //   "Updating files to remove message_id:",
-    //   filesData.map(f => f.id)
-    // )
-    const { error: updateError } = await supabase
-      .from('files')
-      .update({ message_id: null })
-      .in(
-        'id',
-        filesData.map((file) => file.id),
-      );
-
-    if (updateError) {
-      console.error('Error updating files:', updateError);
-      throw new Error(updateError.message);
-    }
-    // console.log("Successfully updated files")
-
-    files = filesData;
   }
 
-  const { error } = await supabase.rpc('delete_messages_including_and_after', {
-    p_user_id: userId,
-    p_chat_id: chatId,
-    p_sequence_number: sequenceNumber,
-  });
+  try {
+    const { error } = await supabase.rpc(
+      'delete_messages_including_and_after',
+      {
+        p_user_id: userId,
+        p_chat_id: chatId,
+        p_sequence_number: sequenceNumber,
+      },
+    );
 
-  if (error) {
+    if (error) {
+      console.error(
+        '[deleteMessagesIncludingAndAfter] Error deleting messages:',
+        error,
+      );
+      return {
+        files,
+        success: false,
+        error: 'Failed to delete messages.',
+      };
+    }
+
     return {
-      files: files,
-      success: false,
-      error: 'Failed to delete messages.',
+      files,
+      success: true,
+      error: null,
     };
+  } catch (error) {
+    console.error('[deleteMessagesIncludingAndAfter] Error:', error);
+    throw error;
   }
-
-  return {
-    files: files,
-    success: true,
-    error: null,
-  };
-}
+};

@@ -1,14 +1,4 @@
-import { createMessageFileItems } from '@/db/message-file-items';
-import {
-  createMessages,
-  deleteMessage,
-  deleteMessagesIncludingAndAfter,
-  updateMessage,
-} from '@/db/messages';
-import {
-  uploadMessageImage,
-  cleanupTemporaryImages,
-} from '@/db/storage/message-images';
+import { createMessages, deleteMessage, updateMessage } from '@/db/messages';
 import { lastSequenceNumber } from '@/lib/utils';
 import type { Tables, TablesInsert } from '@/supabase/types';
 import type {
@@ -34,7 +24,6 @@ export const handleCreateMessages = async (
   isContinuation: boolean,
   retrievedFileItems: Tables<'file_items'>[],
   setMessages: (messages: ChatMessage[]) => void,
-  setChatImages: React.Dispatch<React.SetStateAction<MessageImage[]>>,
   selectedPlugin: PluginID,
   editSequenceNumber?: number,
   isTemporary = false,
@@ -48,30 +37,39 @@ export const handleCreateMessages = async (
   try {
     const isEdit = editSequenceNumber !== undefined;
 
+    // Create user message for UI state
+    const userMessage: ChatMessage = {
+      message: {
+        id: isEdit
+          ? chatMessages.find(
+              (msg) => msg.message.sequence_number === editSequenceNumber,
+            )?.message.id || uuidv4()
+          : uuidv4(),
+        chat_id: currentChat?.id || '',
+        content: messageContent || '',
+        thinking_content: null,
+        thinking_enabled: modelData.modelId === 'reasoning-model',
+        thinking_elapsed_secs: null,
+        role: 'user',
+        model: modelData.modelId,
+        plugin: selectedPlugin,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        sequence_number: lastSequenceNumber(chatMessages) + 1,
+        user_id: profile.user_id,
+        image_paths: newMessageImages.map((image) => image.path),
+        attachments: [],
+        citations: [],
+      },
+      fileItems: isEdit
+        ? chatMessages.find(
+            (msg) => msg.message.sequence_number === editSequenceNumber,
+          )?.fileItems || []
+        : retrievedFileItems,
+    };
+
     // If it's a temporary chat, don't create messages in the database
     if (isTemporary || !currentChat) {
-      const tempUserMessage: ChatMessage = {
-        message: {
-          id: uuidv4(),
-          chat_id: '',
-          content: messageContent || '',
-          thinking_content: null,
-          thinking_enabled: modelData.modelId === 'reasoning-model',
-          thinking_elapsed_secs: null,
-          role: 'user',
-          model: modelData.modelId,
-          plugin: selectedPlugin,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          sequence_number: lastSequenceNumber(chatMessages) + 1,
-          user_id: profile.user_id,
-          image_paths: newMessageImages.map((image) => image.path),
-          attachments: [],
-          citations: [],
-        },
-        fileItems: retrievedFileItems,
-      };
-
       const tempAssistantMessage: ChatMessage = {
         message: {
           id: uuidv4(),
@@ -96,25 +94,9 @@ export const handleCreateMessages = async (
         fileItems: [],
       };
 
-      setMessages([...chatMessages, tempUserMessage, tempAssistantMessage]);
+      setMessages([...chatMessages, userMessage, tempAssistantMessage]);
       return;
     }
-
-    const finalUserMessage: TablesInsert<'messages'> = {
-      chat_id: currentChat.id,
-      user_id: profile.user_id,
-      content: messageContent || '',
-      thinking_content: null,
-      thinking_enabled: modelData.modelId === 'reasoning-model',
-      thinking_elapsed_secs: null,
-      model: modelData.modelId,
-      plugin: selectedPlugin,
-      role: 'user',
-      sequence_number: lastSequenceNumber(chatMessages) + 1,
-      image_paths: [],
-      citations: [],
-      attachments: [],
-    };
 
     const finalAssistantMessage: TablesInsert<'messages'> = {
       chat_id: currentChat.id,
@@ -136,26 +118,6 @@ export const handleCreateMessages = async (
 
     let finalChatMessages: ChatMessage[] = [];
 
-    // If the user is editing a message, delete all messages after the edited message
-    if (isEdit) {
-      const { files, error } = await deleteMessagesIncludingAndAfter(
-        profile.user_id,
-        currentChat.id,
-        editSequenceNumber,
-        true,
-      );
-
-      newChatFiles = files.map((file) => ({
-        id: file.id,
-      }));
-
-      if (error) {
-        toast.error('Error deleting messages:', {
-          description: error,
-        });
-      }
-    }
-
     if (isRegeneration) {
       const lastMessageId = chatMessages[chatMessages.length - 1].message.id;
       await deleteMessage(lastMessageId);
@@ -163,21 +125,9 @@ export const handleCreateMessages = async (
       const createdMessages = await createMessages(
         [finalAssistantMessage],
         [],
-        currentChat?.id,
+        userMessage.message.id,
         setChatFiles,
       );
-
-      await createMessageFileItems(
-        retrievedFileItems.map((fileItem) => {
-          return {
-            user_id: profile.user_id,
-            message_id: createdMessages[0].id,
-            file_item_id: fileItem.id,
-          };
-        }),
-      );
-
-      setChatImages((prevChatImages) => [...prevChatImages]);
 
       finalChatMessages = [
         ...chatMessages.slice(0, -1),
@@ -211,69 +161,11 @@ export const handleCreateMessages = async (
     } else {
       try {
         const createdMessages = await createMessages(
-          [finalUserMessage, finalAssistantMessage],
+          [finalAssistantMessage],
           newChatFiles || [],
-          currentChat?.id,
+          userMessage.message.id,
           setChatFiles,
         );
-
-        // Collect temporary paths to clean up later
-        const tempPaths: string[] = [];
-
-        // Upload each image (stored in newMessageImages) for the user message to message_images bucket
-        const uploadPromises = newMessageImages
-          .filter((obj) => obj.file !== null)
-          .map((obj) => {
-            // If this image has a temp path, add it to the cleanup list
-            if (obj.path?.includes('/temp/')) {
-              tempPaths.push(obj.path);
-            }
-
-            const filePath = `${profile.user_id}/${currentChat.id}/${
-              createdMessages[0].id
-            }/${uuidv4()}`;
-
-            return uploadMessageImage(filePath, obj.file as File).catch(
-              (error) => {
-                console.error(`Failed to upload image at ${filePath}:`, error);
-                return null;
-              },
-            );
-          });
-
-        const paths = (await Promise.all(uploadPromises)).filter(
-          Boolean,
-        ) as string[];
-
-        const newImages = newMessageImages.map((obj, index) => ({
-          ...obj,
-          messageId: createdMessages[0].id,
-          path: paths[index],
-        }));
-
-        setChatImages((prevImages) => [...prevImages, ...newImages]);
-
-        let messageWithPaths = createdMessages[0];
-        if (paths.length > 0) {
-          messageWithPaths = await updateMessage(createdMessages[0].id, {
-            image_paths: paths,
-          });
-        }
-
-        await createMessageFileItems(
-          retrievedFileItems.map((fileItem) => {
-            return {
-              user_id: profile.user_id,
-              message_id: createdMessages[0].id,
-              file_item_id: fileItem.id,
-            };
-          }),
-        );
-
-        // Clean up temporary images after permanent ones have been saved
-        if (tempPaths.length > 0) {
-          cleanupTemporaryImages(tempPaths);
-        }
 
         finalChatMessages = [
           ...(isEdit
@@ -282,12 +174,9 @@ export const handleCreateMessages = async (
                   chatMessage.message.sequence_number < editSequenceNumber,
               )
             : chatMessages),
+          userMessage,
           {
-            message: messageWithPaths,
-            fileItems: retrievedFileItems,
-          },
-          {
-            message: createdMessages[1],
+            message: createdMessages[0],
             fileItems: [],
           },
         ];
