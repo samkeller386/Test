@@ -20,7 +20,7 @@ import { waitUntil } from '@vercel/functions';
 
 // Increased max duration to allow for long reasoning tool responses
 export const maxDuration = 180;
-
+export const runtime = 'nodejs';
 export const preferredRegion = [
   'iad1',
   'arn1',
