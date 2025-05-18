@@ -12,9 +12,9 @@ import {
 } from './message-db-actions';
 
 // Find the last message with role 'user'
-export async function getLastUserMessage(
+export function getLastUserMessage(
   messages: BuiltChatMessage[],
-): Promise<BuiltChatMessage | null> {
+): BuiltChatMessage | null {
   const lastUserMessage = [...messages]
     .reverse()
     .find((message) => message.role === 'user');
@@ -49,7 +49,7 @@ export async function handleUserMessage({
   thinkingText?: string;
   thinkingElapsedSecs?: number | null;
   fileAttachments?: any[];
-}) {
+}): Promise<void> {
   // If editing, delete messages after the edited sequence
   if (editSequenceNumber !== undefined) {
     const { error } = await deleteMessagesIncludingAndAfter({
@@ -70,7 +70,7 @@ export async function handleUserMessage({
     await deleteLastMessage(supabase, chatId);
   }
 
-  const lastUserMessage = await getLastUserMessage(messages);
+  const lastUserMessage = getLastUserMessage(messages);
   if (!lastUserMessage) {
     throw new Error('No user message found');
   }
@@ -118,24 +118,14 @@ export async function handleUserMessage({
   }
 
   if (modelParams.isContinuation || modelParams.isTerminalContinuation) {
-    const updatedAssistantMessage = await updateLastAssistantMessage(
-      supabase,
-      chatId,
-      {
-        assistantMessage,
-        thinkingText,
-        thinkingElapsedSecs,
-        citations,
-        fileAttachments,
-      },
-    );
-
-    return {
-      success: true,
-      sequence: updatedAssistantMessage.sequence_number,
-      userMessage: null,
-      assistantMessage: updatedAssistantMessage,
-    };
+    await updateLastAssistantMessage(supabase, chatId, {
+      assistantMessage,
+      thinkingText,
+      thinkingElapsedSecs,
+      citations,
+      fileAttachments,
+    });
+    return;
   }
 
   const assistantMessageData: TablesInsert<'messages'> = {
@@ -158,7 +148,6 @@ export async function handleUserMessage({
   // Insert messages
   const createdMessages = await insertMessages(supabase, messagesToInsert);
 
-  const savedAssistantMessage = createdMessages[createdMessages.length - 1];
   const savedUserMessage = shouldSaveUserMessage ? createdMessages[0] : null;
 
   // Handle image relationships if we saved the user message
@@ -175,8 +164,7 @@ export async function handleUserMessage({
           .from('files')
           .update({ message_id: savedUserMessage.id, chat_id: chatId })
           .in('id', fileIds)
-          .is('message_id', null)
-          .select('*');
+          .is('message_id', null);
 
         if (filesError) {
           console.error('Error updating files:', filesError);
@@ -194,11 +182,4 @@ export async function handleUserMessage({
       );
     }
   }
-
-  return {
-    success: true,
-    sequence,
-    userMessage: savedUserMessage,
-    assistantMessage: savedAssistantMessage,
-  };
 }

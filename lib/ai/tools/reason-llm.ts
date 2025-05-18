@@ -118,7 +118,7 @@ export async function executeReasonLLMTool({
   try {
     await Promise.all([
       (async () => {
-        const { fullStream } = streamText({
+        const { textStream } = streamText({
           model: selectedModel,
           system: systemPrompt,
           messages: toVercelChatMessages(messages),
@@ -175,6 +175,17 @@ beneficial for the user's needs.`,
                 content: chuck.chunk.textDelta,
               });
               assistantMessage += chuck.chunk.textDelta;
+            } else if (chuck.chunk.type === 'reasoning') {
+              if (!isThinking) {
+                isThinking = true;
+                thinkingStartTime = Date.now();
+              }
+
+              thinkingText += chuck.chunk.textDelta;
+              dataStream.writeData({
+                type: 'reasoning',
+                content: chuck.chunk.textDelta,
+              });
             }
           },
           onError: async (error) => {
@@ -210,21 +221,12 @@ beneficial for the user's needs.`,
           },
         });
 
-        for await (const delta of fullStream) {
-          if (delta.type === 'reasoning') {
-            if (!isThinking) {
-              isThinking = true;
-              thinkingStartTime = Date.now();
-            }
-
-            thinkingText += delta.textDelta;
-            dataStream.writeData({
-              type: 'reasoning',
-              content: delta.textDelta,
-            });
-          }
+        // Consume the stream to keep it active
+        for await (const _ of textStream) {
+          // Stream is already handled in onChunk
         }
 
+        // Handle stream completion
         if (isThinking && thinkingStartTime) {
           isThinking = false;
           const thinkingElapsedSecs = Math.round(
