@@ -13,7 +13,7 @@ import { myProvider } from './providers';
 import { DEFAULT_TITLE_GENERATION_PROMPT_TEMPLATE } from './prompts';
 import { z } from 'zod';
 
-export async function handleChatAndUserMessage({
+export async function handleChatAndMessages({
   supabase,
   modelParams,
   chatMetadata,
@@ -22,6 +22,11 @@ export async function handleChatAndUserMessage({
   messages,
   finishReason,
   title,
+  assistantMessage,
+  citations,
+  thinkingText,
+  thinkingElapsedSecs,
+  fileAttachments,
 }: {
   supabase: SupabaseClient;
   modelParams: ModelParams;
@@ -31,6 +36,11 @@ export async function handleChatAndUserMessage({
   messages: any[];
   finishReason: string;
   title?: string;
+  assistantMessage?: string;
+  citations?: string[];
+  thinkingText?: string;
+  thinkingElapsedSecs?: number | null;
+  fileAttachments?: any[];
 }) {
   if (!chatMetadata.id) return;
 
@@ -58,22 +68,21 @@ export async function handleChatAndUserMessage({
     });
   }
 
-  if (
-    !modelParams.isContinuation &&
-    !modelParams.isTerminalContinuation &&
-    !modelParams.isRegeneration
-  ) {
-    await handleUserMessage({
-      supabase,
-      chatId: chatMetadata.id,
-      userId: profile.user_id,
-      messages,
-      model,
-      plugin: modelParams.selectedPlugin,
-      editSequenceNumber: modelParams.editSequenceNumber,
-      retrievedFileItems: chatMetadata.retrievedFileItems,
-    });
-  }
+  await handleUserMessage({
+    supabase,
+    chatId: chatMetadata.id,
+    userId: profile.user_id,
+    messages,
+    modelParams,
+    model,
+    editSequenceNumber: modelParams.editSequenceNumber,
+    retrievedFileItems: chatMetadata.retrievedFileItems,
+    assistantMessage,
+    citations,
+    thinkingText,
+    thinkingElapsedSecs,
+    fileAttachments,
+  });
 }
 
 export async function generateTitleFromUserMessage({

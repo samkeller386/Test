@@ -1,6 +1,5 @@
-import { createMessages, deleteMessage, updateMessage } from '@/db/messages';
 import { lastSequenceNumber } from '@/lib/utils';
-import type { Tables, TablesInsert } from '@/supabase/types';
+import type { Tables } from '@/supabase/types';
 import type {
   ChatMessage,
   LLM,
@@ -24,6 +23,7 @@ export const handleCreateMessages = async (
   isContinuation: boolean,
   retrievedFileItems: Tables<'file_items'>[],
   setMessages: (messages: ChatMessage[]) => void,
+  setChatImages: React.Dispatch<React.SetStateAction<MessageImage[]>>,
   selectedPlugin: PluginID,
   editSequenceNumber?: number,
   isTemporary = false,
@@ -37,7 +37,6 @@ export const handleCreateMessages = async (
   try {
     const isEdit = editSequenceNumber !== undefined;
 
-    // Create user message for UI state
     const userMessage: ChatMessage = {
       message: {
         id: isEdit
@@ -68,134 +67,97 @@ export const handleCreateMessages = async (
         : retrievedFileItems,
     };
 
-    // If it's a temporary chat, don't create messages in the database
-    if (isTemporary || !currentChat) {
-      const tempAssistantMessage: ChatMessage = {
-        message: {
-          id: uuidv4(),
-          chat_id: '',
-          content: generatedText,
-          thinking_content: thinkingText || null,
-          thinking_enabled: modelData.modelId === 'reasoning-model',
-          thinking_elapsed_secs: thinkingElapsedSecs || null,
-          model: modelData.modelId,
-          plugin: selectedPlugin,
-          role: 'assistant',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          sequence_number: lastSequenceNumber(chatMessages) + 2,
-          user_id: profile.user_id,
-          image_paths: [],
-          citations: citations || [],
-          attachments: fileAttachments
-            ? convertToJsonAttachments(fileAttachments)
-            : [],
-        },
-        fileItems: [],
-      };
+    const assistantMessage: ChatMessage = {
+      message: {
+        id: uuidv4(),
+        chat_id: currentChat?.id || '',
+        content: generatedText,
+        thinking_content: thinkingText || null,
+        thinking_enabled: modelData.modelId === 'reasoning-model',
+        thinking_elapsed_secs: thinkingElapsedSecs || null,
+        model: modelData.modelId,
+        plugin: selectedPlugin,
+        role: 'assistant',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        sequence_number: lastSequenceNumber(chatMessages) + 2,
+        user_id: profile.user_id,
+        image_paths: [],
+        citations: citations || [],
+        attachments: fileAttachments
+          ? convertToJsonAttachments(fileAttachments)
+          : [],
+      },
+      fileItems: [],
+    };
 
-      setMessages([...chatMessages, userMessage, tempAssistantMessage]);
+    // If it's a temporary chat, just update UI state
+    if (isTemporary || !currentChat) {
+      setMessages([...chatMessages, userMessage, assistantMessage]);
       return;
     }
-
-    const finalAssistantMessage: TablesInsert<'messages'> = {
-      chat_id: currentChat.id,
-      user_id: profile.user_id,
-      content: generatedText,
-      thinking_content: thinkingText || null,
-      thinking_enabled: modelData.modelId === 'reasoning-model',
-      thinking_elapsed_secs: thinkingElapsedSecs || null,
-      model: modelData.modelId,
-      plugin: selectedPlugin,
-      role: 'assistant',
-      sequence_number: lastSequenceNumber(chatMessages) + 2,
-      image_paths: [],
-      citations: citations || [],
-      attachments: fileAttachments
-        ? convertToJsonAttachments(fileAttachments)
-        : [],
-    };
 
     let finalChatMessages: ChatMessage[] = [];
 
     if (isRegeneration) {
-      const lastMessageId = chatMessages[chatMessages.length - 1].message.id;
-      await deleteMessage(lastMessageId);
+      finalChatMessages = [...chatMessages.slice(0, -1), assistantMessage];
+    } else if (isContinuation) {
+      // For continuation, update the last message
+      const lastMessage = chatMessages[chatMessages.length - 1];
+      const updatedMessage = {
+        ...lastMessage,
+        message: {
+          ...lastMessage.message,
+          content: lastMessage.message.content + generatedText,
+          attachments: [
+            ...(lastMessage.message.attachments || []),
+            ...(fileAttachments
+              ? convertToJsonAttachments(fileAttachments)
+              : []),
+          ],
+        },
+      };
+      finalChatMessages = [...chatMessages.slice(0, -1), updatedMessage];
+    } else {
+      const fileIds = newChatFiles
+        ? newChatFiles.map((file) => file.id).filter((id) => id !== undefined)
+        : [];
 
-      const createdMessages = await createMessages(
-        [finalAssistantMessage],
-        [],
-        userMessage.message.id,
-        setChatFiles,
-      );
+      if (fileIds.length > 0) {
+        if (setChatFiles) {
+          setChatFiles((prev) =>
+            prev.map((file) =>
+              fileIds.includes(file.id)
+                ? { ...file, message_id: userMessage.message.id }
+                : file,
+            ),
+          );
+        }
+      }
+
+      const newImages = newMessageImages.map((obj) => ({
+        ...obj,
+        messageId: userMessage.message.id,
+        path: obj.path,
+      }));
+
+      setChatImages((prevImages) => [...prevImages, ...newImages]);
 
       finalChatMessages = [
-        ...chatMessages.slice(0, -1),
-        {
-          message: createdMessages[0],
-          fileItems: retrievedFileItems,
-        },
+        ...(isEdit
+          ? chatMessages.filter(
+              (chatMessage) =>
+                chatMessage.message.sequence_number < editSequenceNumber,
+            )
+          : chatMessages),
+        userMessage,
+        assistantMessage,
       ];
-
-      setMessages(finalChatMessages);
-    } else if (isContinuation) {
-      const lastStartingMessage = chatMessages[chatMessages.length - 1].message;
-
-      // Get existing attachments and append new ones
-      const existingAttachments = lastStartingMessage.attachments || [];
-      const newAttachments = fileAttachments
-        ? convertToJsonAttachments(fileAttachments)
-        : [];
-      const combinedAttachments = [...existingAttachments, ...newAttachments];
-
-      const updatedMessage = await updateMessage(lastStartingMessage.id, {
-        content: lastStartingMessage.content + generatedText,
-        attachments: combinedAttachments,
-      });
-
-      chatMessages[chatMessages.length - 1].message = updatedMessage;
-
-      finalChatMessages = [...chatMessages];
-
-      setMessages(finalChatMessages);
-    } else {
-      try {
-        const createdMessages = await createMessages(
-          [finalAssistantMessage],
-          newChatFiles || [],
-          userMessage.message.id,
-          setChatFiles,
-        );
-
-        finalChatMessages = [
-          ...(isEdit
-            ? chatMessages.filter(
-                (chatMessage) =>
-                  chatMessage.message.sequence_number < editSequenceNumber,
-              )
-            : chatMessages),
-          userMessage,
-          {
-            message: createdMessages[0],
-            fileItems: [],
-          },
-        ];
-
-        setMessages(finalChatMessages);
-      } catch (error: any) {
-        if (
-          error.message.includes('chats') &&
-          error.message.includes('23503')
-        ) {
-          toast.error('Error creating messages. Please try again.');
-          console.error('Foreign key constraint error:', error);
-          return;
-        }
-        throw error;
-      }
     }
+
+    setMessages(finalChatMessages);
   } catch (error: any) {
     console.error('Error in handleCreateMessages:', error);
-    toast.error('Error creating messages. Please try again.');
+    toast.error('Error updating chat messages. Please try again.');
   }
 };

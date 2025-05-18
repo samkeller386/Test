@@ -147,10 +147,6 @@ export const useChatHandler = () => {
   const handleStopMessage = async () => {
     if (abortController && !abortController.signal.aborted) {
       abortController.abort();
-      while (isGeneratingRef.current) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-      await new Promise((resolve) => setTimeout(resolve, 100));
 
       if (selectedChat && toolInUse === PluginID.PENTEST_AGENT) {
         const updatedChat = {
@@ -586,6 +582,7 @@ export const useChatHandler = () => {
           isContinuation,
           retrievedFileItems,
           setChatMessages,
+          setChatImages,
           selectedPlugin,
           editSequenceNumber,
           isTemporaryChat,

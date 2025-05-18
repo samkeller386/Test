@@ -13,7 +13,7 @@ import {
 import { type LLMID, PluginID } from '@/types';
 import {
   generateTitleFromUserMessage,
-  handleChatAndUserMessage,
+  handleChatAndMessages,
 } from '@/lib/ai/actions';
 import { createClient } from '@/lib/supabase/server';
 import { waitUntil } from '@vercel/functions';
@@ -69,6 +69,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const isReasoningModel = model === 'reasoning-model';
     let generatedTitle: string | undefined;
+    let assistantMessage = '';
     let toolUsed = '';
     let hasGeneratedTitle = false;
     let titleGenerationPromise: Promise<void> | null = null;
@@ -85,9 +86,9 @@ export async function POST(request: Request) {
     );
 
     request.signal.addEventListener('abort', async () => {
-      if (chatMetadata.id) {
+      if (chatMetadata.id && !toolUsed && !isReasoningModel) {
         waitUntil(
-          handleChatAndUserMessage({
+          handleChatAndMessages({
             supabase,
             modelParams,
             chatMetadata,
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
             messages,
             finishReason: 'stop',
             title: generatedTitle,
+            assistantMessage,
           }),
         );
       }
@@ -159,6 +161,10 @@ export async function POST(request: Request) {
                   dataStream.writeData({ chatTitle: generatedTitle });
                 })();
               }
+
+              if (chunk.chunk.type === 'text-delta') {
+                assistantMessage += chunk.chunk.textDelta;
+              }
             },
             onError: async (error) => {
               if (
@@ -190,13 +196,16 @@ export async function POST(request: Request) {
                 ? ['browser', 'webSearch', 'terminal']
                 : ['browser', 'webSearch'],
             ),
-            onFinish: async ({ finishReason }: { finishReason: string }) => {
+            onFinish: async ({
+              finishReason,
+              text,
+            }: { finishReason: string; text: string }) => {
               if (chatMetadata.id && !toolUsed) {
                 // Wait for title generation if it's in progress
                 if (titleGenerationPromise) {
                   await titleGenerationPromise;
                 }
-                await handleChatAndUserMessage({
+                await handleChatAndMessages({
                   supabase,
                   modelParams,
                   chatMetadata,
@@ -205,6 +214,7 @@ export async function POST(request: Request) {
                   messages,
                   finishReason,
                   title: generatedTitle,
+                  assistantMessage: text,
                 });
               }
             },

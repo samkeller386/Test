@@ -5,12 +5,22 @@ import PostHogClient from '@/app/posthog';
 import type { ChatMetadata, LLMID, RateLimitInfo, ModelParams } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
-  handleChatAndUserMessage,
+  handleChatAndMessages,
   generateTitleFromUserMessage,
 } from '@/lib/ai/actions';
 import { myProvider } from '../providers';
 import { z } from 'zod';
 import { getPageContent } from './browser';
+import { waitUntil } from '@vercel/functions';
+
+function calculateThinkingElapsedSecs(
+  isThinking: boolean,
+  thinkingStartTime: number | null,
+): number | null {
+  return isThinking && thinkingStartTime
+    ? Math.round((Date.now() - thinkingStartTime) / 1000)
+    : null;
+}
 
 interface ReasonLLMConfig {
   messages: any[];
@@ -77,6 +87,33 @@ export async function executeReasonLLMTool({
   });
 
   let generatedTitle: string | undefined;
+  let assistantMessage = '';
+  let thinkingText = '';
+  let thinkingStartTime: number | null = null;
+  let isThinking = false;
+
+  abortSignal.addEventListener('abort', async () => {
+    if (chatMetadata.id) {
+      waitUntil(
+        handleChatAndMessages({
+          supabase: supabase as SupabaseClient,
+          modelParams,
+          chatMetadata,
+          profile,
+          model: config.model,
+          messages,
+          finishReason: 'stop',
+          title: generatedTitle,
+          assistantMessage,
+          thinkingText,
+          thinkingElapsedSecs: calculateThinkingElapsedSecs(
+            isThinking,
+            thinkingStartTime,
+          ),
+        }),
+      );
+    }
+  });
 
   try {
     await Promise.all([
@@ -86,7 +123,7 @@ export async function executeReasonLLMTool({
           system: systemPrompt,
           messages: toVercelChatMessages(messages),
           maxTokens: 8192,
-          abortSignal: abortSignal,
+          abortSignal,
           maxSteps: 2,
           tools: {
             open_url: tool({
@@ -132,14 +169,28 @@ beneficial for the user's needs.`,
                 type: 'reasoning',
                 content: '\n\n',
               });
+            } else if (chuck.chunk.type === 'text-delta') {
+              dataStream.writeData({
+                type: 'text-delta',
+                content: chuck.chunk.textDelta,
+              });
+              assistantMessage += chuck.chunk.textDelta;
             }
           },
           onError: async (error) => {
             console.error('[ReasonLLM] Stream Error:', error);
           },
-          onFinish: async ({ finishReason }: { finishReason: string }) => {
+          onFinish: async ({
+            finishReason,
+            text,
+            reasoning,
+          }: {
+            finishReason: string;
+            text: string;
+            reasoning: string | undefined;
+          }) => {
             if (supabase) {
-              await handleChatAndUserMessage({
+              await handleChatAndMessages({
                 supabase,
                 modelParams,
                 chatMetadata,
@@ -148,28 +199,25 @@ beneficial for the user's needs.`,
                 messages,
                 finishReason,
                 title: generatedTitle,
+                assistantMessage: text,
+                thinkingText: reasoning || undefined,
+                thinkingElapsedSecs: calculateThinkingElapsedSecs(
+                  isThinking,
+                  thinkingStartTime,
+                ),
               });
             }
           },
         });
 
-        let thinkingStartTime: number | null = null;
-        let isThinking = false;
-
         for await (const delta of fullStream) {
-          if (delta.type === 'text-delta') {
-            dataStream.writeData({
-              type: 'text-delta',
-              content: delta.textDelta,
-            });
-          }
-
           if (delta.type === 'reasoning') {
             if (!isThinking) {
               isThinking = true;
               thinkingStartTime = Date.now();
             }
 
+            thinkingText += delta.textDelta;
             dataStream.writeData({
               type: 'reasoning',
               content: delta.textDelta,

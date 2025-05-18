@@ -9,9 +9,10 @@ import type { ChatMetadata, LLMID, ModelParams } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   generateTitleFromUserMessage,
-  handleChatAndUserMessage,
+  handleChatAndMessages,
 } from '@/lib/ai/actions';
 import { removePdfContentFromMessages } from '@/lib/build-prompt-backend';
+import { waitUntil } from '@vercel/functions';
 
 interface WebSearchConfig {
   messages: any[];
@@ -150,7 +151,6 @@ export async function executeWebSearchTool({
     profile,
     dataStream,
     isLargeModel,
-    directToolCall,
     abortSignal,
     chatMetadata,
     model,
@@ -180,14 +180,33 @@ export async function executeWebSearchTool({
     });
   }
 
-  if (!directToolCall) {
-    dataStream.writeData({
-      type: 'tool-call',
-      content: 'websearch',
-    });
-  }
+  dataStream.writeData({
+    type: 'tool-call',
+    content: 'websearch',
+  });
 
   let generatedTitle: string | undefined;
+  let assistantMessage = '';
+  const citations: string[] = [];
+
+  abortSignal.addEventListener('abort', async () => {
+    if (chatMetadata.id) {
+      waitUntil(
+        handleChatAndMessages({
+          supabase: supabase as SupabaseClient,
+          modelParams,
+          chatMetadata,
+          profile,
+          model: config.model,
+          messages,
+          finishReason: 'stop',
+          title: generatedTitle,
+          assistantMessage,
+          citations,
+        }),
+      );
+    }
+  });
 
   try {
     await Promise.all([
@@ -236,7 +255,6 @@ export async function executeWebSearchTool({
           );
         }
 
-        const citations: string[] = [];
         let hasFirstTextDelta = false;
 
         for await (const delta of streamPerplexityResponse(response)) {
@@ -248,20 +266,9 @@ export async function executeWebSearchTool({
             if (!hasFirstTextDelta) {
               dataStream.writeData({ citations });
               hasFirstTextDelta = true;
-
-              if (!directToolCall) {
-                dataStream.writeData({
-                  type: 'tool-call',
-                  content: 'none',
-                });
-
-                dataStream.writeData({
-                  type: 'text-delta',
-                  content: '\n\n',
-                });
-              }
             }
 
+            assistantMessage += delta.textDelta;
             dataStream.writeData({
               type: 'text-delta',
               content: delta.textDelta,
@@ -270,7 +277,7 @@ export async function executeWebSearchTool({
         }
 
         if (supabase) {
-          await handleChatAndUserMessage({
+          await handleChatAndMessages({
             supabase,
             modelParams,
             chatMetadata,
@@ -279,6 +286,8 @@ export async function executeWebSearchTool({
             messages,
             finishReason: 'stop',
             title: generatedTitle,
+            assistantMessage,
+            citations,
           });
         }
       })(),

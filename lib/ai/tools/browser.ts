@@ -12,9 +12,10 @@ import type { ChatMetadata, LLMID, ModelParams } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   generateTitleFromUserMessage,
-  handleChatAndUserMessage,
+  handleChatAndMessages,
 } from '@/lib/ai/actions';
 import { truncateContentByTokens } from '@/lib/ai/terminal-utils';
+import { waitUntil } from '@vercel/functions';
 
 interface BrowserToolConfig {
   profile: any;
@@ -170,6 +171,7 @@ export async function executeBrowserTool({
     chatMetadata,
     supabase,
     userCountryCode,
+    abortSignal,
   } = config;
   const { systemPrompt, model } = await getProviderConfig(profile);
 
@@ -203,6 +205,25 @@ export async function executeBrowserTool({
     );
 
     let generatedTitle: string | undefined;
+    let assistantMessage = '';
+
+    abortSignal.addEventListener('abort', async () => {
+      if (chatMetadata.id) {
+        waitUntil(
+          handleChatAndMessages({
+            supabase: supabase as SupabaseClient,
+            modelParams,
+            chatMetadata,
+            profile,
+            model: config.model,
+            messages,
+            finishReason: 'stop',
+            title: generatedTitle,
+            assistantMessage,
+          }),
+        );
+      }
+    });
 
     await Promise.all([
       (async () => {
@@ -214,12 +235,16 @@ export async function executeBrowserTool({
             { role: 'user', content: browserPrompt },
           ],
           maxTokens: 2048,
+          abortSignal,
           onError: async (error) => {
             console.error('[BrowserTool] Stream Error:', error);
           },
-          onFinish: async ({ finishReason }: { finishReason: string }) => {
+          onFinish: async ({
+            finishReason,
+            text,
+          }: { finishReason: string; text: string }) => {
             if (supabase) {
-              await handleChatAndUserMessage({
+              await handleChatAndMessages({
                 supabase,
                 modelParams,
                 chatMetadata,
@@ -228,6 +253,7 @@ export async function executeBrowserTool({
                 messages,
                 finishReason,
                 title: generatedTitle,
+                assistantMessage: text,
               });
             }
           },
@@ -250,6 +276,7 @@ export async function executeBrowserTool({
               hasFirstTextDelta = true;
             }
 
+            assistantMessage += delta.textDelta;
             dataStream.writeData({
               type: 'text-delta',
               content: delta.textDelta,
