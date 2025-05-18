@@ -43,6 +43,7 @@ export const preferredRegion = [
 
 export async function POST(request: Request) {
   try {
+    const abortController = new AbortController();
     const userCountryCode = request.headers.get('x-vercel-ip-country');
     const { messages, model, modelParams, chatMetadata } = await request.json();
 
@@ -85,7 +86,11 @@ export async function POST(request: Request) {
       config.isPremiumUser,
     );
 
+    // Set up abort handling
     request.signal.addEventListener('abort', async () => {
+      console.log('Chat request aborted');
+      abortController.abort();
+
       if (chatMetadata.id && !toolUsed && !isReasoningModel) {
         waitUntil(
           handleChatAndMessages({
@@ -108,7 +113,7 @@ export async function POST(request: Request) {
       modelParams,
       profile,
       isLargeModel: config.isLargeModel,
-      abortSignal: request.signal,
+      abortSignal: abortController.signal,
       chatMetadata,
       model,
       supabase,
@@ -140,7 +145,7 @@ export async function POST(request: Request) {
             system: systemPrompt,
             messages: toVercelChatMessages(processedMessages, true),
             maxTokens: 2048,
-            abortSignal: request.signal,
+            abortSignal: abortController.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),
             onChunk: async (chunk: any) => {
               if (chunk.chunk.type === 'tool-call') {
@@ -156,7 +161,7 @@ export async function POST(request: Request) {
                 titleGenerationPromise = (async () => {
                   generatedTitle = await generateTitleFromUserMessage({
                     messages,
-                    abortSignal: request.signal,
+                    abortSignal: abortController.signal,
                   });
                   dataStream.writeData({ chatTitle: generatedTitle });
                 })();
@@ -186,7 +191,7 @@ export async function POST(request: Request) {
               modelParams,
               profile,
               dataStream,
-              abortSignal: request.signal,
+              abortSignal: abortController.signal,
               chatMetadata,
               model,
               supabase,
