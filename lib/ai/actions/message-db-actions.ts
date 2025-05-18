@@ -179,38 +179,6 @@ export const insertMessages = async (
   return createdMessages;
 };
 
-export const insertImageRelationships = async (
-  supabase: SupabaseClient,
-  userId: string,
-  messageId: string,
-  imagePaths: string[],
-): Promise<void> => {
-  if (imagePaths.length === 0) return;
-
-  const relationships = imagePaths.map((path) => ({
-    user_id: userId,
-    message_id: messageId,
-    image_path: path,
-  }));
-
-  const { error: relationshipError } = await supabase
-    .from('message_image_relationships')
-    .insert(relationships);
-
-  if (relationshipError) {
-    throw relationshipError;
-  }
-
-  const { error: updateError } = await supabase
-    .from('messages')
-    .update({ image_paths: imagePaths })
-    .eq('id', messageId);
-
-  if (updateError) {
-    throw updateError;
-  }
-};
-
 export const insertFileItemRelationships = async (
   supabase: SupabaseClient,
   userId: string,
@@ -219,18 +187,23 @@ export const insertFileItemRelationships = async (
 ): Promise<void> => {
   if (!fileItems || fileItems.length === 0) return;
 
-  const fileItemRelationships = fileItems.map((fileItem) => ({
-    user_id: userId,
-    message_id: messageId,
-    file_item_id: fileItem.id,
-  }));
+  try {
+    const fileItemRelationships = fileItems.map((fileItem) => ({
+      user_id: userId,
+      message_id: messageId,
+      file_item_id: fileItem.id,
+    }));
 
-  const { error: fileItemsError } = await supabase
-    .from('message_file_items')
-    .insert(fileItemRelationships);
+    const { error: fileItemsError } = await supabase
+      .from('message_file_items')
+      .insert(fileItemRelationships)
+      .select('*');
 
-  if (fileItemsError) {
-    throw fileItemsError;
+    if (fileItemsError) {
+      console.error('Error inserting file item relationships:', fileItemsError);
+    }
+  } catch (error) {
+    console.error('Error in insertFileItemRelationships:', error);
   }
 };
 
