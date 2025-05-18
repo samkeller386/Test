@@ -18,28 +18,8 @@ import {
 import { createClient } from '@/lib/supabase/server';
 import { waitUntil } from '@vercel/functions';
 
-// Increased max duration to allow for long reasoning tool responses
-export const maxDuration = 180;
 export const runtime = 'nodejs';
-export const preferredRegion = [
-  'iad1',
-  'arn1',
-  'bom1',
-  'cdg1',
-  'cle1',
-  'cpt1',
-  'dub1',
-  'fra1',
-  'gru1',
-  'hnd1',
-  'icn1',
-  'kix1',
-  'lhr1',
-  'pdx1',
-  'sfo1',
-  'sin1',
-  'syd1',
-];
+export const maxDuration = 180;
 
 export async function POST(request: Request) {
   try {
