@@ -22,8 +22,13 @@ export const runtime = 'nodejs';
 export const maxDuration = 180;
 
 export async function POST(request: Request) {
+  const abortController = new AbortController();
+
+  request.signal.addEventListener('abort', () => {
+    console.log('request aborted');
+    abortController.abort();
+  });
   try {
-    const abortController = new AbortController();
     const userCountryCode = request.headers.get('x-vercel-ip-country');
     const { messages, model, modelParams, chatMetadata } = await request.json();
 
