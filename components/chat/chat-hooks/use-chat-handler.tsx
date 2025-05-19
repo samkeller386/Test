@@ -146,7 +146,9 @@ export const useChatHandler = () => {
 
   const handleStopMessage = async () => {
     if (abortController && !abortController.signal.aborted) {
-      abortController.abort();
+      abortController.abort(
+        new DOMException('Generation stopped by user', 'AbortError'),
+      );
 
       if (selectedChat && toolInUse === PluginID.PENTEST_AGENT) {
         const updatedChat = {

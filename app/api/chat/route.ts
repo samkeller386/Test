@@ -18,7 +18,6 @@ import {
 import { createClient } from '@/lib/supabase/server';
 import { waitUntil } from '@vercel/functions';
 
-export const runtime = 'nodejs';
 export const maxDuration = 180;
 
 export async function POST(request: Request) {
@@ -28,6 +27,7 @@ export async function POST(request: Request) {
     console.log('request aborted');
     abortController.abort();
   });
+
   try {
     const userCountryCode = request.headers.get('x-vercel-ip-country');
     const { messages, model, modelParams, chatMetadata } = await request.json();

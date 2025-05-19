@@ -6,10 +6,16 @@ import { executePentestAgent } from '@/lib/ai/tools/pentest-agent';
 import { createClient } from '@/lib/supabase/server';
 import { processChatMessages } from '@/lib/ai/message-utils';
 
-export const runtime = 'nodejs';
-export const maxDuration = 600;
+export const maxDuration = 800;
 
 export async function POST(request: Request) {
+  const abortController = new AbortController();
+
+  request.signal.addEventListener('abort', () => {
+    console.log('request aborted');
+    abortController.abort();
+  });
+
   try {
     const userCountryCode = request.headers.get('x-vercel-ip-country');
     const { messages, model, modelParams, chatMetadata } = await request.json();
