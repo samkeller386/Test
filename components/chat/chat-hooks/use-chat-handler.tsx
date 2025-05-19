@@ -128,8 +128,6 @@ export const useChatHandler = () => {
 
     setChatFiles([]);
     setChatImages([]);
-    setNewMessageFiles([]);
-    setNewMessageImages([]);
     setUseRetrieval(false);
 
     setToolInUse('none');
