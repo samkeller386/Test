@@ -102,7 +102,7 @@ export const fetchChatResponse = async (
 ) => {
   const response = await fetch(apiEndpoint, {
     method: 'POST',
-    headers: { "Content-Type": "application/json" },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
     signal: controller.signal,
   });
