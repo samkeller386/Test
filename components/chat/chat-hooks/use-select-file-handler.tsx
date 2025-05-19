@@ -281,8 +281,9 @@ export const useSelectFileHandler = () => {
         prev.map((item) => (item.id === loadingId ? createdFile : item)),
       );
     } catch (error: any) {
-      console.error('Error processing file:', error);
-      toast.error('Error processing file. Please try again.');
+      toast.error(`${error?.message}`, {
+        duration: 10000,
+      });
       setNewMessageImages((prev) =>
         prev.filter((img) => img.messageId !== 'temp'),
       );
