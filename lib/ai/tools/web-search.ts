@@ -245,7 +245,10 @@ export async function executeWebSearchTool({
           },
         };
 
-        let { response, error } = await makePerplexityRequest(requestPayload, abortSignal);
+        let { response, error } = await makePerplexityRequest(
+          requestPayload,
+          abortSignal,
+        );
 
         // If we get a country code error, retry without user location
         if (error?.error?.type === 'invalid_country_code') {
@@ -253,7 +256,10 @@ export async function executeWebSearchTool({
             ...requestPayload,
             web_search_options: { search_context_size: 'medium' },
           };
-          ({ response, error } = await makePerplexityRequest(retryPayload, abortSignal));
+          ({ response, error } = await makePerplexityRequest(
+            retryPayload,
+            abortSignal,
+          ));
         }
 
         if (error) {
@@ -267,7 +273,9 @@ export async function executeWebSearchTool({
             responseBody: error,
             headers: Object.fromEntries(response.headers.entries()),
           });
-          throw new Error(`Web search failed: ${response.status} ${response.statusText}`);
+          throw new Error(
+            `Web search failed: ${response.status} ${response.statusText}`,
+          );
         }
 
         let hasFirstTextDelta = false;
