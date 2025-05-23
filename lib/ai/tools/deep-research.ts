@@ -24,7 +24,6 @@ interface DeepResearchConfig {
   userCountryCode: string | null;
   originalMessages: any[];
   systemPrompt: string;
-  pentestFiles: { path: string; data: string }[] | undefined;
   initialChatPromise: Promise<void>;
 }
 
@@ -339,7 +338,7 @@ export async function executeDeepResearchTool({
           }
         }
 
-        if (supabase && chatMetadata.id) {
+        if (supabase) {
           // Wait for initial chat handling to complete before final handling
           await initialChatPromise;
 

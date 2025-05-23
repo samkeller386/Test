@@ -44,18 +44,17 @@ export async function POST(request: Request) {
 
     const supabase = await createClient();
 
-    const { processedMessages, systemPrompt, pentestFiles } =
-      await processChatMessages(
-        messages,
-        'deep-research-model',
-        modelParams,
-        true,
-        profile,
-        false,
-        supabase,
-        true,
-        true,
-      );
+    const { processedMessages, systemPrompt } = await processChatMessages(
+      messages,
+      'deep-research-model',
+      modelParams,
+      true,
+      profile,
+      false,
+      supabase,
+      true,
+      true,
+    );
 
     // Handle initial chat creation and user message in parallel with other operations
     const initialChatPromise = handleInitialChatAndUserMessage({
@@ -87,7 +86,6 @@ export async function POST(request: Request) {
             userCountryCode,
             originalMessages: messages,
             systemPrompt,
-            pentestFiles,
             initialChatPromise,
           },
         });

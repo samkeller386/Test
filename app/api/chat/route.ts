@@ -185,7 +185,7 @@ export async function POST(request: Request) {
               finishReason,
               text,
             }: { finishReason: string; text: string }) => {
-              if (chatMetadata.id && !toolUsed) {
+              if (!toolUsed) {
                 // Wait for title generation if it's in progress
                 if (titleGenerationPromise) {
                   await titleGenerationPromise;
