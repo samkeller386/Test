@@ -62,6 +62,7 @@ interface StreamDelta {
 
 async function* streamDeepResearchResponse(
   response: Response,
+  dataStream: any,
 ): AsyncGenerator<StreamDelta> {
   const reader = response.body?.getReader();
   if (!reader) throw new Error('No response body');
@@ -69,8 +70,6 @@ async function* streamDeepResearchResponse(
   const decoder = new TextDecoder();
   let buffer = '';
   let citationsSent = false;
-  let isThinking = false;
-  let thinkingStartTime: number | null = null;
 
   try {
     while (true) {
@@ -101,8 +100,8 @@ async function* streamDeepResearchResponse(
               const content = delta.content;
 
               if (content.includes('<think>')) {
-                isThinking = true;
-                thinkingStartTime = Date.now();
+                dataStream.isThinking = true;
+                dataStream.thinkingStartTime = Date.now();
 
                 const [beforeThink, thinkingContent] = content.split('<think>');
                 if (beforeThink) {
@@ -114,13 +113,14 @@ async function* streamDeepResearchResponse(
                 continue;
               }
 
-              if (isThinking) {
+              if (dataStream.isThinking) {
                 if (content.includes('</think>')) {
-                  isThinking = false;
                   const thinkingElapsedSecs = calculateThinkingElapsedSecs(
-                    isThinking,
-                    thinkingStartTime,
+                    true,
+                    dataStream.thinkingStartTime,
                   );
+
+                  dataStream.isThinking = false;
 
                   const [finalThinking, afterThink] = content.split('</think>');
                   if (finalThinking) {
@@ -239,8 +239,9 @@ export async function executeDeepResearchTool({
   let assistantMessage = '';
   let reasoning = '';
   const citations: string[] = [];
-  let isThinking = false;
-  let thinkingStartTime: number | null = null;
+  dataStream.isThinking = false;
+  dataStream.thinkingStartTime = null;
+  let finalThinkingTime: number | null = null;
 
   try {
     await Promise.all([
@@ -294,7 +295,10 @@ export async function executeDeepResearchTool({
 
         let hasFirstTextDelta = false;
 
-        for await (const delta of streamDeepResearchResponse(response)) {
+        for await (const delta of streamDeepResearchResponse(
+          response,
+          dataStream,
+        )) {
           if (delta.type === 'citations' && delta.citations) {
             citations.push(...delta.citations);
           }
@@ -320,6 +324,7 @@ export async function executeDeepResearchTool({
             delta.type === 'thinking-time' &&
             delta.elapsed_secs !== undefined
           ) {
+            finalThinkingTime = delta.elapsed_secs;
             dataStream.writeData({
               type: 'thinking-time',
               elapsed_secs: delta.elapsed_secs,
@@ -343,10 +348,7 @@ export async function executeDeepResearchTool({
             assistantMessage,
             citations,
             thinkingText: reasoning || undefined,
-            thinkingElapsedSecs: calculateThinkingElapsedSecs(
-              isThinking,
-              thinkingStartTime,
-            ),
+            thinkingElapsedSecs: finalThinkingTime,
           });
         }
       })(),
