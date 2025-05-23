@@ -10,6 +10,7 @@ import {
   handleFinalChatAndAssistantMessage,
 } from '@/lib/ai/actions';
 import { removePdfContentFromMessages } from '@/lib/build-prompt-backend';
+import { ChatSDKError } from '@/lib/errors';
 
 interface DeepResearchConfig {
   messages: any[];
@@ -176,7 +177,13 @@ async function makeDeepResearchRequest(payload: any, abortSignal: AbortSignal) {
 
   if (!response.ok) {
     const responseBody = await getResponseBody(response);
-    const errorData = JSON.parse(responseBody);
+    let errorData;
+    try {
+      errorData = JSON.parse(responseBody);
+    } catch (e) {
+      // If parsing fails, create a ChatSDKError with the raw response body
+      throw new ChatSDKError('bad_request:api', responseBody);
+    }
     return { error: errorData, response };
   }
 
