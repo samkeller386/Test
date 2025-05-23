@@ -281,7 +281,6 @@ export async function processChatMessages(
     isTerminalContinuation: boolean;
     selectedPlugin: string;
   },
-  isLargeModel: boolean,
   profile: { user_id: string; profile_context: string },
   isReasoningModel: boolean,
   supabase: SupabaseClient,
@@ -314,7 +313,7 @@ export async function processChatMessages(
     !isReasoningModel
   ) {
     const { shouldUncensorResponse: moderationResult } =
-      await getModerationResult(processedMessages, apiKey, 10, isLargeModel);
+      await getModerationResult(processedMessages, apiKey, 10);
     shouldUncensor = moderationResult;
   }
 

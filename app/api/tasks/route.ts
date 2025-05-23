@@ -48,11 +48,9 @@ export async function POST(request: Request) {
       messages,
       'deep-research-model',
       modelParams,
-      true,
       profile,
       false,
       supabase,
-      true,
       true,
     );
 

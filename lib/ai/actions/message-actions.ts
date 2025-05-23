@@ -10,6 +10,7 @@ import {
   insertFileItemRelationships,
   updateLastAssistantMessage,
 } from './message-db-actions';
+import { createChat } from './chat-actions';
 
 // Find the last message with role 'user'
 export function getLastUserMessage(
@@ -40,148 +41,132 @@ export async function saveUserMessage({
   editSequenceNumber?: number;
   retrievedFileItems?: Tables<'file_items'>[];
 }): Promise<void> {
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000; // 1 second
+  // If regeneration, delete the last message
+  if (modelParams.isRegeneration) {
+    await deleteLastMessage(supabase, chatId);
+  }
 
-  const sleep = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms));
+  // Check if we should save the user message
+  const shouldSaveUserMessage =
+    !modelParams.isContinuation &&
+    !modelParams.isTerminalContinuation &&
+    !modelParams.isRegeneration;
 
-  const attemptSave = async (retryCount: number = 0): Promise<void> => {
-    try {
-      // If regeneration, delete the last message
-      if (modelParams.isRegeneration) {
-        await deleteLastMessage(supabase, chatId);
-      }
+  if (!shouldSaveUserMessage) {
+    return;
+  }
 
-      // Check if we should save the user message
-      const shouldSaveUserMessage =
-        !modelParams.isContinuation &&
-        !modelParams.isTerminalContinuation &&
-        !modelParams.isRegeneration;
+  // If editing, delete messages after the edited sequence
+  if (editSequenceNumber !== undefined) {
+    const { error } = await deleteMessagesIncludingAndAfter({
+      supabase,
+      userId,
+      chatId,
+      sequenceNumber: editSequenceNumber,
+      retrieveFiles: true,
+    });
 
-      if (!shouldSaveUserMessage) {
-        return;
-      }
-
-      // If editing, delete messages after the edited sequence
-      if (editSequenceNumber !== undefined) {
-        const { error } = await deleteMessagesIncludingAndAfter({
-          supabase,
-          userId,
-          chatId,
-          sequenceNumber: editSequenceNumber,
-          retrieveFiles: true,
-        });
-
-        if (error) {
-          throw new Error(`Failed to delete messages: ${error}`);
-        }
-      }
-
-      const lastUserMessage = getLastUserMessage(messages);
-      if (!lastUserMessage) {
-        throw new Error('No user message found');
-      }
-
-      const content = extractTextContent(lastUserMessage.content);
-      const sequence =
-        editSequenceNumber ?? (await getNextMessageSequence(supabase, chatId));
-      const thinkingEnabled = model === 'reasoning-model';
-
-      // Extract image paths before creating message
-      const imageContents = Array.isArray(lastUserMessage.content)
-        ? lastUserMessage.content.filter((item) => item.type === 'image_url')
-        : [];
-
-      const imagePaths = imageContents.map(
-        (imageContent) => imageContent.image_url.url,
-      );
-
-      const userMessageData: TablesInsert<'messages'> = {
-        chat_id: chatId,
-        user_id: userId,
-        content,
-        thinking_content: null,
-        thinking_enabled: thinkingEnabled,
-        thinking_elapsed_secs: null,
-        model,
-        plugin: modelParams.selectedPlugin,
-        role: 'user',
-        sequence_number: sequence,
-        image_paths: imagePaths,
-        citations: [],
-        attachments: [],
-      };
-
-      // Insert user message
-      const createdMessages = await insertMessages(supabase, [userMessageData]);
-      const savedUserMessage = createdMessages[0];
-
-      // Handle image relationships
-      if (savedUserMessage) {
-        // Handle file updates if there are any
-        const fileAttachments = lastUserMessage.attachments || [];
-        if (fileAttachments.length > 0) {
-          const fileIds = fileAttachments
-            .map((attachment) => attachment.file_id)
-            .filter((id) => id !== undefined);
-
-          if (fileIds.length > 0) {
-            const { error: filesError } = await supabase
-              .from('files')
-              .update({ message_id: savedUserMessage.id, chat_id: chatId })
-              .in('id', fileIds)
-              .is('message_id', null);
-
-            if (filesError) {
-              console.error('Error updating files:', filesError);
-            }
-          }
-        }
-
-        // Handle file items if there are any
-        if (retrievedFileItems && retrievedFileItems.length > 0) {
-          await insertFileItemRelationships(
-            supabase,
-            userId,
-            savedUserMessage.id,
-            retrievedFileItems,
-          );
-        }
-      }
-    } catch (error: any) {
-      // Check if it's a foreign key constraint error
-      if (
-        error?.code === '23503' &&
-        error?.message?.includes('messages_chat_id_fkey')
-      ) {
-        if (retryCount < MAX_RETRIES) {
-          console.warn(
-            `Chat ${chatId} not found. Retrying in ${RETRY_DELAY}ms... (Attempt ${retryCount + 1}/${MAX_RETRIES})`,
-          );
-          await sleep(RETRY_DELAY);
-          return attemptSave(retryCount + 1);
-        } else {
-          console.error(
-            `Failed to save user message after ${MAX_RETRIES} attempts. Chat ID: ${chatId}`,
-            {
-              error: error.message,
-              code: error.code,
-              details: error.details,
-              hint: error.hint,
-            },
-          );
-          throw new Error(
-            `Failed to save message: Chat ${chatId} does not exist after ${MAX_RETRIES} retries`,
-          );
-        }
-      }
-      // For other errors, just throw them
-      throw error;
+    if (error) {
+      throw new Error(`Failed to delete messages: ${error}`);
     }
+  }
+
+  const lastUserMessage = getLastUserMessage(messages);
+  if (!lastUserMessage) {
+    throw new Error('No user message found');
+  }
+
+  const content = extractTextContent(lastUserMessage.content);
+  const sequence =
+    editSequenceNumber ?? (await getNextMessageSequence(supabase, chatId));
+  const thinkingEnabled = model === 'reasoning-model';
+
+  // Extract image paths before creating message
+  const imageContents = Array.isArray(lastUserMessage.content)
+    ? lastUserMessage.content.filter((item) => item.type === 'image_url')
+    : [];
+
+  const imagePaths = imageContents.map(
+    (imageContent) => imageContent.image_url.url,
+  );
+
+  const userMessageData: TablesInsert<'messages'> = {
+    chat_id: chatId,
+    user_id: userId,
+    content,
+    thinking_content: null,
+    thinking_enabled: thinkingEnabled,
+    thinking_elapsed_secs: null,
+    model,
+    plugin: modelParams.selectedPlugin,
+    role: 'user',
+    sequence_number: sequence,
+    image_paths: imagePaths,
+    citations: [],
+    attachments: [],
   };
 
-  return attemptSave();
+  let createdMessages;
+  try {
+    // Insert user message
+    createdMessages = await insertMessages(supabase, [userMessageData]);
+  } catch (error: any) {
+    // Check if it's a foreign key constraint error
+    if (
+      error?.code === '23503' &&
+      error?.message?.includes('messages_chat_id_fkey')
+    ) {
+      // Try to create the chat if it doesn't exist
+      await createChat({
+        supabase,
+        chatId,
+        userId,
+        model,
+        content,
+        finishReason: 'stop',
+      });
+
+      // Try inserting the message again after creating the chat
+      createdMessages = await insertMessages(supabase, [userMessageData]);
+    } else {
+      throw error;
+    }
+  }
+
+  const savedUserMessage = createdMessages[0];
+
+  // Handle image relationships
+  if (savedUserMessage) {
+    // Handle file updates if there are any
+    const fileAttachments = lastUserMessage.attachments || [];
+    if (fileAttachments.length > 0) {
+      const fileIds = fileAttachments
+        .map((attachment) => attachment.file_id)
+        .filter((id) => id !== undefined);
+
+      if (fileIds.length > 0) {
+        const { error: filesError } = await supabase
+          .from('files')
+          .update({ message_id: savedUserMessage.id, chat_id: chatId })
+          .in('id', fileIds)
+          .is('message_id', null);
+
+        if (filesError) {
+          console.error('Error updating files:', filesError);
+        }
+      }
+    }
+
+    // Handle file items if there are any
+    if (retrievedFileItems && retrievedFileItems.length > 0) {
+      await insertFileItemRelationships(
+        supabase,
+        userId,
+        savedUserMessage.id,
+        retrievedFileItems,
+      );
+    }
+  }
 }
 
 export async function saveAssistantMessage({

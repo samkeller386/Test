@@ -69,7 +69,6 @@ export async function POST(request: Request) {
       messages,
       config.selectedModel,
       modelParams,
-      config.isLargeModel,
       profile,
       isReasoningModel,
       supabase,

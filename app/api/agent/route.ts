@@ -50,7 +50,6 @@ export async function POST(request: Request) {
         messages,
         'chat-model-agent',
         modelParams,
-        true,
         profile,
         false,
         supabase,
