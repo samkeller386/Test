@@ -60,10 +60,9 @@ export async function POST(request: Request) {
 
     // Handle initial chat creation and user message in parallel
     const initialChatPromise =
-      chatMetadata.id &&
-      (modelParams.confirmTerminalCommand ||
-        modelParams.isTerminalContinuation ||
-        modelParams.selectedPlugin === PluginID.PENTEST_AGENT)
+      modelParams.confirmTerminalCommand ||
+      modelParams.isTerminalContinuation ||
+      modelParams.selectedPlugin === PluginID.PENTEST_AGENT
         ? handleInitialChatAndUserMessage({
             supabase,
             modelParams,

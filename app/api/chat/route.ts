@@ -77,16 +77,14 @@ export async function POST(request: Request) {
     );
 
     // Handle initial chat creation and user message in parallel with other operations
-    const initialChatPromise = chatMetadata.id
-      ? handleInitialChatAndUserMessage({
-          supabase,
-          modelParams,
-          chatMetadata,
-          profile,
-          model,
-          messages,
-        })
-      : Promise.resolve();
+    const initialChatPromise = handleInitialChatAndUserMessage({
+      supabase,
+      modelParams,
+      chatMetadata,
+      profile,
+      model,
+      messages,
+    });
 
     const toolResponse = await handleToolExecution({
       messages: processedMessages,
@@ -179,7 +177,7 @@ export async function POST(request: Request) {
               userCountryCode,
               initialChatPromise,
             }).getSelectedSchemas(
-              config.isLargeModel && !modelParams.isTemporaryChat
+              config.isPremiumUser && !modelParams.isTemporaryChat
                 ? ['browser', 'webSearch', 'terminal']
                 : ['browser', 'webSearch'],
             ),
