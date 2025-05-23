@@ -63,7 +63,7 @@ export const toVercelChatMessages = (
       role: 'system',
       content: systemPrompt,
       providerOptions: {
-        anthropic: { cacheControl: { type: 'ephemeral' } },
+        anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } },
       },
     });
   }
