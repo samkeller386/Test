@@ -25,6 +25,7 @@ interface WebSearchConfig {
   model: LLMID;
   supabase: SupabaseClient | null;
   userCountryCode: string | null;
+  initialChatPromise: Promise<void>;
 }
 
 interface PerplexityResponse {
@@ -175,6 +176,7 @@ export async function executeWebSearchTool({
     model,
     supabase,
     userCountryCode,
+    initialChatPromise,
   } = config;
 
   // Filter out PDF content from messages
@@ -280,6 +282,9 @@ export async function executeWebSearchTool({
         }
 
         if (supabase) {
+          // Wait for initial chat handling to complete before final handling
+          await initialChatPromise;
+
           await handleFinalChatAndAssistantMessage({
             supabase,
             modelParams,

@@ -117,9 +117,10 @@ async function* streamDeepResearchResponse(
               if (isThinking) {
                 if (content.includes('</think>')) {
                   isThinking = false;
-                  const thinkingElapsedSecs = thinkingStartTime
-                    ? Math.round((Date.now() - thinkingStartTime) / 1000)
-                    : null;
+                  const thinkingElapsedSecs = calculateThinkingElapsedSecs(
+                    isThinking,
+                    thinkingStartTime,
+                  );
 
                   const [finalThinking, afterThink] = content.split('</think>');
                   if (finalThinking) {
@@ -182,6 +183,15 @@ async function makeDeepResearchRequest(payload: any, abortSignal: AbortSignal) {
   return { response };
 }
 
+function calculateThinkingElapsedSecs(
+  isThinking: boolean,
+  thinkingStartTime: number | null,
+): number | null {
+  return isThinking && thinkingStartTime
+    ? Math.round((Date.now() - thinkingStartTime) / 1000)
+    : null;
+}
+
 export async function executeDeepResearchTool({
   config,
 }: {
@@ -227,7 +237,10 @@ export async function executeDeepResearchTool({
 
   let generatedTitle: string | undefined;
   let assistantMessage = '';
+  let reasoning = '';
   const citations: string[] = [];
+  let isThinking = false;
+  let thinkingStartTime: number | null = null;
 
   try {
     await Promise.all([
@@ -298,6 +311,7 @@ export async function executeDeepResearchTool({
               content: delta.textDelta,
             });
           } else if (delta.type === 'reasoning' && delta.content) {
+            reasoning += delta.content;
             dataStream.writeData({
               type: 'reasoning',
               content: delta.content,
@@ -328,6 +342,11 @@ export async function executeDeepResearchTool({
             title: generatedTitle,
             assistantMessage,
             citations,
+            thinkingText: reasoning || undefined,
+            thinkingElapsedSecs: calculateThinkingElapsedSecs(
+              isThinking,
+              thinkingStartTime,
+            ),
           });
         }
       })(),

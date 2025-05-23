@@ -99,6 +99,7 @@ export async function POST(request: Request) {
       supabase,
       isReasoningModel,
       rateLimitInfo: config.rateLimitInfo,
+      initialChatPromise,
     });
     if (toolResponse) {
       return toolResponse;
@@ -176,6 +177,7 @@ export async function POST(request: Request) {
               model,
               supabase,
               userCountryCode,
+              initialChatPromise,
             }).getSelectedSchemas(
               config.isLargeModel && !modelParams.isTemporaryChat
                 ? ['browser', 'webSearch', 'terminal']
