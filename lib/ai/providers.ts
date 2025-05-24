@@ -6,6 +6,7 @@ import {
 import { openai } from '@ai-sdk/openai';
 import { openrouter } from '@openrouter/ai-sdk-provider';
 import { anthropic } from '@ai-sdk/anthropic';
+import { perplexity } from '@ai-sdk/perplexity';
 
 export const myProvider = customProvider({
   languageModels: {
@@ -27,5 +28,6 @@ export const myProvider = customProvider({
       }),
       middleware: extractReasoningMiddleware({ tagName: 'think' }),
     }),
+    'deep-research-model': perplexity('sonar-deep-research'),
   },
 });

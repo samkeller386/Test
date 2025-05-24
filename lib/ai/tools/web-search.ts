@@ -1,7 +1,7 @@
 import { buildSystemPrompt } from '@/lib/ai/prompts';
 import {
   toVercelChatMessages,
-  validateWebSearchMessages,
+  validatePerplexityMessages,
 } from '@/lib/ai/message-utils';
 import llmConfig from '@/lib/models/llm-config';
 import PostHogClient from '@/app/posthog';
@@ -190,7 +190,7 @@ export async function executeWebSearchTool({
   const filteredMessages = removePdfContentFromMessages(messages);
 
   // Validate messages for proper alternating roles
-  const validatedMessages = validateWebSearchMessages(filteredMessages);
+  const validatedMessages = validatePerplexityMessages(filteredMessages);
 
   const { systemPrompt, selectedModel } = await getProviderConfig(
     isLargeModel,

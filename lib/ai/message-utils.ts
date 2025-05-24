@@ -378,7 +378,7 @@ export function extractTextContent(
  * @param messages - Array of messages to validate
  * @returns Filtered array with valid messages only
  */
-export function validateWebSearchMessages(
+export function validatePerplexityMessages(
   messages: BuiltChatMessage[],
 ): BuiltChatMessage[] {
   // First run the regular validation

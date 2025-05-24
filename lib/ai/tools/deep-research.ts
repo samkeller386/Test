@@ -1,6 +1,6 @@
 import {
   toVercelChatMessages,
-  validateWebSearchMessages,
+  validatePerplexityMessages,
 } from '@/lib/ai/message-utils';
 import PostHogClient from '@/app/posthog';
 import type { ChatMetadata, LLMID, ModelParams } from '@/types';
@@ -10,7 +10,8 @@ import {
   handleFinalChatAndAssistantMessage,
 } from '@/lib/ai/actions';
 import { removePdfContentFromMessages } from '@/lib/build-prompt-backend';
-import { ChatSDKError } from '@/lib/errors';
+import { streamText } from 'ai';
+import { myProvider } from '@/lib/ai/providers';
 
 interface DeepResearchConfig {
   messages: any[];
@@ -25,177 +26,6 @@ interface DeepResearchConfig {
   originalMessages: any[];
   systemPrompt: string;
   initialChatPromise: Promise<void>;
-}
-
-interface DeepResearchResponse {
-  id: string;
-  model: string;
-  created: number;
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-  citations: string[];
-  object: string;
-  choices: Array<{
-    index: number;
-    finish_reason: string | null;
-    message?: {
-      role: string;
-      content: string;
-    };
-    delta?: {
-      role?: string;
-      content?: string;
-    };
-  }>;
-}
-
-interface StreamDelta {
-  type: 'text-delta' | 'citations' | 'reasoning' | 'thinking-time';
-  textDelta?: string;
-  citations?: string[];
-  content?: string;
-  elapsed_secs?: number | null;
-}
-
-async function* streamDeepResearchResponse(
-  response: Response,
-  dataStream: any,
-): AsyncGenerator<StreamDelta> {
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error('No response body');
-
-  const decoder = new TextDecoder();
-  let buffer = '';
-  let citationsSent = false;
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data === '[DONE]') return;
-
-          try {
-            const parsed: DeepResearchResponse = JSON.parse(data);
-
-            // Handle citations from the first message
-            if (!citationsSent && parsed.citations?.length > 0) {
-              yield { type: 'citations', citations: parsed.citations };
-              citationsSent = true;
-            }
-
-            // Handle content from delta
-            const delta = parsed.choices[0]?.delta;
-            if (delta?.content) {
-              const content = delta.content;
-
-              if (content.includes('<think>')) {
-                dataStream.isThinking = true;
-                dataStream.thinkingStartTime = Date.now();
-
-                const [beforeThink, thinkingContent] = content.split('<think>');
-                if (beforeThink) {
-                  yield { type: 'text-delta', textDelta: beforeThink };
-                }
-                if (thinkingContent) {
-                  yield { type: 'reasoning', content: thinkingContent };
-                }
-                continue;
-              }
-
-              if (dataStream.isThinking) {
-                if (content.includes('</think>')) {
-                  const thinkingElapsedSecs = calculateThinkingElapsedSecs(
-                    true,
-                    dataStream.thinkingStartTime,
-                  );
-
-                  dataStream.isThinking = false;
-
-                  const [finalThinking, afterThink] = content.split('</think>');
-                  if (finalThinking) {
-                    yield { type: 'reasoning', content: finalThinking };
-                  }
-
-                  yield {
-                    type: 'thinking-time',
-                    elapsed_secs: thinkingElapsedSecs,
-                  };
-
-                  if (afterThink) {
-                    yield { type: 'text-delta', textDelta: afterThink };
-                  }
-                } else {
-                  yield { type: 'reasoning', content };
-                }
-              } else {
-                yield { type: 'text-delta', textDelta: content };
-              }
-            }
-          } catch (e) {
-            console.error('Error parsing SSE data:', e);
-          }
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
-
-async function getResponseBody(response: Response): Promise<string> {
-  try {
-    const clone = response.clone();
-    const text = await clone.text();
-    return text;
-  } catch (e) {
-    return 'Unable to read response body';
-  }
-}
-
-async function makeDeepResearchRequest(payload: any, abortSignal: AbortSignal) {
-  const response = await fetch('https://api.perplexity.ai/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-    signal: abortSignal,
-  });
-
-  if (!response.ok) {
-    const responseBody = await getResponseBody(response);
-    let errorData;
-    try {
-      errorData = JSON.parse(responseBody);
-    } catch (e) {
-      // If parsing fails, create a ChatSDKError with the raw response body
-      throw new ChatSDKError('bad_request:api', responseBody);
-    }
-    return { error: errorData, response };
-  }
-
-  return { response };
-}
-
-function calculateThinkingElapsedSecs(
-  isThinking: boolean,
-  thinkingStartTime: number | null,
-): number | null {
-  return isThinking && thinkingStartTime
-    ? Math.round((Date.now() - thinkingStartTime) / 1000)
-    : null;
 }
 
 export async function executeDeepResearchTool({
@@ -226,7 +56,7 @@ export async function executeDeepResearchTool({
   const filteredMessages = removePdfContentFromMessages(messages);
 
   // Validate messages for proper alternating roles
-  const validatedMessages = validateWebSearchMessages(filteredMessages);
+  const validatedMessages = validatePerplexityMessages(filteredMessages);
 
   const posthog = PostHogClient();
   if (posthog) {
@@ -245,117 +75,137 @@ export async function executeDeepResearchTool({
   let assistantMessage = '';
   let reasoning = '';
   const citations: string[] = [];
-  dataStream.isThinking = false;
-  dataStream.thinkingStartTime = null;
+  let isThinking = false;
+  let thinkingStartTime: number | null = null;
   let finalThinkingTime: number | null = null;
 
   try {
     await Promise.all([
       (async () => {
-        const requestPayload = {
-          model: 'sonar-deep-research',
+        const { fullStream } = streamText({
+          model: myProvider.languageModel('deep-research-model'),
           system: systemPrompt,
           messages: toVercelChatMessages(validatedMessages),
-          stream: true,
-          max_tokens: 8192,
-          web_search_options: {
-            search_context_size: 'medium',
-            ...(userCountryCode && {
-              user_location: { country: userCountryCode },
-            }),
-          },
-        };
-
-        let { response, error } = await makeDeepResearchRequest(
-          requestPayload,
-          abortSignal,
-        );
-
-        // If we get a country code error, retry without user location
-        if (error?.error?.type === 'invalid_country_code') {
-          const retryPayload = {
-            ...requestPayload,
-            web_search_options: { search_context_size: 'medium' },
-          };
-          ({ response, error } = await makeDeepResearchRequest(
-            retryPayload,
-            abortSignal,
-          ));
-        }
-
-        if (error) {
-          console.error('[DeepResearch] Error Details:', {
-            status: response.status,
-            statusText: response.statusText,
-            requestPayload: {
-              model: requestPayload.model,
-              messageCount: requestPayload.messages.length,
+          maxTokens: 8192,
+          providerOptions: {
+            perplexity: {
+              web_search_options: {
+                search_context_size: 'medium',
+                ...(userCountryCode && {
+                  user_location: { country: userCountryCode },
+                }),
+              },
             },
-            responseBody: error,
-            headers: Object.fromEntries(response.headers.entries()),
-          });
-          throw new Error(
-            `Deep research failed: ${response.status} ${response.statusText}`,
-          );
-        }
+          },
+          onError: async (error) => {
+            console.error('[DeepResearch] Stream Error:', error);
+          },
+          onFinish: async () => {
+            if (supabase) {
+              // Wait for initial chat handling to complete before final handling
+              await initialChatPromise;
+
+              await handleFinalChatAndAssistantMessage({
+                supabase,
+                modelParams,
+                chatMetadata,
+                profile,
+                model,
+                messages: originalMessages,
+                finishReason: 'stop',
+                title: generatedTitle,
+                assistantMessage,
+                citations,
+                thinkingText: reasoning || undefined,
+                thinkingElapsedSecs: finalThinkingTime,
+              });
+            }
+          },
+        });
 
         let hasFirstTextDelta = false;
 
-        for await (const delta of streamDeepResearchResponse(
-          response,
-          dataStream,
-        )) {
-          if (delta.type === 'citations' && delta.citations) {
-            citations.push(...delta.citations);
+        for await (const delta of fullStream) {
+          if (delta.type === 'source') {
+            if (delta.source.sourceType === 'url') {
+              citations.push(delta.source.url);
+            }
           }
 
-          if (delta.type === 'text-delta' && delta.textDelta) {
-            if (!hasFirstTextDelta) {
+          if (delta.type === 'text-delta') {
+            const { textDelta } = delta;
+
+            if (!hasFirstTextDelta && textDelta.trim() !== '') {
               dataStream.writeData({ citations });
               hasFirstTextDelta = true;
             }
 
-            assistantMessage += delta.textDelta;
-            dataStream.writeData({
-              type: 'text-delta',
-              content: delta.textDelta,
-            });
-          } else if (delta.type === 'reasoning' && delta.content) {
-            reasoning += delta.content;
-            dataStream.writeData({
-              type: 'reasoning',
-              content: delta.content,
-            });
-          } else if (
-            delta.type === 'thinking-time' &&
-            delta.elapsed_secs !== undefined
-          ) {
-            finalThinkingTime = delta.elapsed_secs;
-            dataStream.writeData({
-              type: 'thinking-time',
-              elapsed_secs: delta.elapsed_secs,
-            });
+            if (textDelta.includes('<think>')) {
+              isThinking = true;
+              thinkingStartTime = Date.now();
+
+              const [beforeThink, thinkingContent] = textDelta.split('<think>');
+              if (beforeThink) {
+                dataStream.writeData({
+                  type: 'text-delta',
+                  content: beforeThink,
+                });
+                assistantMessage += beforeThink;
+              }
+              if (thinkingContent) {
+                dataStream.writeData({
+                  type: 'reasoning',
+                  content: thinkingContent,
+                });
+                reasoning += thinkingContent;
+              }
+              continue;
+            }
+
+            if (isThinking) {
+              if (textDelta.includes('</think>')) {
+                isThinking = false;
+                const thinkingElapsedSecs = thinkingStartTime
+                  ? Math.round((Date.now() - thinkingStartTime) / 1000)
+                  : null;
+                finalThinkingTime = thinkingElapsedSecs;
+
+                const [finalThinking, afterThink] = textDelta.split('</think>');
+                if (finalThinking) {
+                  dataStream.writeData({
+                    type: 'reasoning',
+                    content: finalThinking,
+                  });
+                  reasoning += finalThinking;
+                }
+
+                dataStream.writeData({
+                  type: 'thinking-time',
+                  elapsed_secs: thinkingElapsedSecs,
+                });
+
+                if (afterThink) {
+                  dataStream.writeData({
+                    type: 'text-delta',
+                    content: afterThink,
+                  });
+                  assistantMessage += afterThink;
+                }
+              } else {
+                dataStream.writeData({
+                  type: 'reasoning',
+                  content: textDelta,
+                });
+                reasoning += textDelta;
+              }
+            } else {
+              dataStream.writeData({
+                type: 'text-delta',
+                content: textDelta,
+              });
+              assistantMessage += textDelta;
+            }
           }
-        }
-
-        if (supabase) {
-          // Wait for initial chat handling to complete before final handling
-          await initialChatPromise;
-
-          await handleFinalChatAndAssistantMessage({
-            supabase,
-            modelParams,
-            chatMetadata,
-            profile,
-            model,
-            messages: originalMessages,
-            finishReason: 'stop',
-            title: generatedTitle,
-            assistantMessage,
-            citations,
-            thinkingText: reasoning || undefined,
-            thinkingElapsedSecs: finalThinkingTime,
-          });
         }
       })(),
       (async () => {
