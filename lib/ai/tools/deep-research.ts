@@ -28,6 +28,9 @@ interface DeepResearchConfig {
   initialChatPromise: Promise<void>;
 }
 
+// Keepalive interval in milliseconds
+const KEEPALIVE_INTERVAL = 30000; // 30 seconds
+
 export async function executeDeepResearchTool({
   config,
 }: {
@@ -78,6 +81,16 @@ export async function executeDeepResearchTool({
   let isThinking = false;
   let thinkingStartTime: number | null = null;
   let finalThinkingTime: number | null = null;
+
+  // Set up keepalive interval
+  const keepaliveInterval = setInterval(() => {
+    if (!abortSignal.aborted) {
+      dataStream.writeData({
+        type: 'keepalive',
+        content: '',
+      });
+    }
+  }, KEEPALIVE_INTERVAL);
 
   try {
     await Promise.all([
@@ -227,5 +240,8 @@ export async function executeDeepResearchTool({
       });
     }
     throw error;
+  } finally {
+    // Clear keepalive interval
+    clearInterval(keepaliveInterval);
   }
 }

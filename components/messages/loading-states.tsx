@@ -33,7 +33,7 @@ export const loadingStates = {
   },
   [PluginID.DEEP_RESEARCH]: {
     icon: <Search size={20} />,
-    text: 'Researching... (takes 1-2 minutes)',
+    text: 'Researching... (takes 1-5 minutes)',
   },
 
   [PluginID.PENTEST_AGENT]: {

@@ -53,20 +53,20 @@ export const toVercelChatMessages = (
   messages: BuiltChatMessage[],
   supportsImages = false,
   isPerplexity = false,
-  systemPrompt?: string,
+  // systemPrompt?: string,
 ): CoreMessage[] => {
   const result: CoreMessage[] = [];
 
-  // Add system prompt with caching if provided
-  if (systemPrompt) {
-    result.push({
-      role: 'system',
-      content: systemPrompt,
-      providerOptions: {
-        anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } },
-      },
-    });
-  }
+  // // Add system prompt with caching if provided
+  // if (systemPrompt) {
+  //   result.push({
+  //     role: 'system',
+  //     content: systemPrompt,
+  //     providerOptions: {
+  //       anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } },
+  //     },
+  //   });
+  // }
 
   // Add the rest of the messages
   messages.forEach((message) => {
