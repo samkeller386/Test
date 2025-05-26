@@ -31,10 +31,11 @@ export default function PrivacyPolicyPage() {
         <div className="mt-4 text-lg leading-relaxed">
           <p className="mb-6">
             Welcome to PentestGPT. This Privacy Policy explains how HackerAI LLC
-            ("we," "us," or "our") collects, uses, shares, and protects
-            information in relation to our website and any associated services,
-            software, and content (collectively, the "Service"). By accessing or
-            using our Service, you ("you" or "User") understand and agree to the
+            (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) collects, uses,
+            shares, and protects information in relation to our website and any
+            associated services, software, and content (collectively, the
+            &quot;Service&quot;). By accessing or using our Service, you
+            (&quot;you&quot; or &quot;User&quot;) understand and agree to the
             collection and use of information in accordance with this policy.
           </p>
 
