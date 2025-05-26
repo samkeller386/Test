@@ -4,7 +4,9 @@ import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 
 if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
-  throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not defined. Please check your environment configuration.');
+  throw new Error(
+    'NEXT_PUBLIC_CONVEX_URL environment variable is not defined. Please check your environment configuration.',
+  );
 }
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
