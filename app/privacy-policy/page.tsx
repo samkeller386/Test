@@ -80,11 +80,14 @@ export default function PrivacyPolicyPage() {
               </ul>
             </li>
             <li className="mb-3">
-              <strong>No Expectation of Privacy:</strong> By using the Service,
-              you agree that there is no expectation of privacy. You acknowledge
-              that the Service, being in a beta phase, may have inherent risks
-              of privacy breaches, and you agree that HackerAI LLC assumes no
-              liability for any such breaches.
+              <strong>Privacy and Beta Service Considerations:</strong> While we 
+              implement reasonable privacy protections for your data, you acknowledge 
+              that the Service is in beta phase and may have inherent limitations in 
+              its privacy and security measures. We are committed to protecting your 
+              privacy and continuously improving our security practices, but we cannot 
+              guarantee the same level of protection as a production service. 
+              By using the Service, you understand these limitations while we work to 
+              enhance our privacy and security measures.
             </li>
             <li className="mb-3">
               <strong>Security:</strong> We strive to use commercially
