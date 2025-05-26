@@ -29,16 +29,13 @@ export default function HomePage() {
       </Link>
 
       <div className="mt-8 flex gap-4 text-sm text-muted-foreground">
-        <Link 
+        <Link
           href="/privacy-policy"
           className="hover:text-primary transition-colors"
         >
           Privacy Policy
         </Link>
-        <Link 
-          href="/terms"
-          className="hover:text-primary transition-colors"
-        >
+        <Link href="/terms" className="hover:text-primary transition-colors">
           Terms of Use
         </Link>
       </div>
