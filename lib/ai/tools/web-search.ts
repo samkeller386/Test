@@ -204,9 +204,6 @@ export async function executeWebSearchTool({
     posthog.capture({
       distinctId: profile.user_id,
       event: 'web_search_executed',
-      properties: {
-        model: selectedModel,
-      },
     });
   }
 

@@ -68,9 +68,6 @@ export async function executeReasonLLMTool({
     posthog.capture({
       distinctId: profile.user_id,
       event: 'reason_llm_executed',
-      properties: {
-        model: selectedModel,
-      },
     });
   }
 

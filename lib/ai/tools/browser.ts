@@ -183,9 +183,6 @@ export async function executeBrowserTool({
     posthog.capture({
       distinctId: profile.user_id,
       event: 'browser_executed',
-      properties: {
-        model: model,
-      },
     });
   }
 
@@ -208,7 +205,6 @@ export async function executeBrowserTool({
     );
 
     let generatedTitle: string | undefined;
-    let assistantMessage = '';
 
     await Promise.all([
       (async () => {
@@ -265,7 +261,6 @@ export async function executeBrowserTool({
               hasFirstTextDelta = true;
             }
 
-            assistantMessage += delta.textDelta;
             dataStream.writeData({
               type: 'text-delta',
               content: delta.textDelta,
