@@ -249,6 +249,10 @@ export const processResponse = async (
               chatTitle = firstValue.chatTitle;
             }
 
+            if (firstValue?.messageId) {
+              assistantMessageId = firstValue.messageId;
+            }
+
             // Handle finishReason
             if (firstValue?.finishReason) {
               if (firstValue.finishReason === 'tool-calls') {
