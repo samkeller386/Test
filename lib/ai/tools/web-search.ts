@@ -27,6 +27,7 @@ interface WebSearchConfig {
   supabase: SupabaseClient | null;
   userCountryCode: string | null;
   initialChatPromise: Promise<void>;
+  assistantMessageId: string;
 }
 
 interface PerplexityResponse {
@@ -184,6 +185,7 @@ export async function executeWebSearchTool({
     supabase,
     userCountryCode,
     initialChatPromise,
+    assistantMessageId,
   } = config;
 
   // Filter out PDF content from messages
@@ -303,6 +305,7 @@ export async function executeWebSearchTool({
             title: generatedTitle,
             assistantMessage,
             citations,
+            assistantMessageId,
           });
         }
       })(),

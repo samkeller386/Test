@@ -27,6 +27,7 @@ interface BrowserToolConfig {
   supabase: SupabaseClient | null;
   userCountryCode: string | null;
   initialChatPromise: Promise<void>;
+  assistantMessageId: string;
 }
 
 async function getProviderConfig(profile: any) {
@@ -173,6 +174,7 @@ export async function executeBrowserTool({
     userCountryCode,
     abortSignal,
     initialChatPromise,
+    assistantMessageId,
   } = config;
   const { systemPrompt, model } = await getProviderConfig(profile);
 
@@ -240,6 +242,7 @@ export async function executeBrowserTool({
                 finishReason,
                 title: generatedTitle,
                 assistantMessage: text,
+                assistantMessageId,
               });
             }
           },

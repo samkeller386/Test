@@ -478,7 +478,6 @@ export const useChatHandler = () => {
       let generatedText = '';
       let thinkingText = '';
       let thinkingElapsedSecs: number | null = null;
-      let finishReason = '';
       let citations: string[] = [];
 
       setToolInUse(
@@ -496,11 +495,12 @@ export const useChatHandler = () => {
         fullText,
         thinkingText: thinkingTextFromResponse,
         thinkingElapsedSecs: thinkingElapsedSecsFromResponse,
-        finishReason: finishReasonFromResponse,
+        finishReason,
         selectedPlugin: updatedSelectedPlugin,
         citations: citationsFromResponse,
         chatTitle,
         fileAttachments,
+        assistantMessageId,
       } = await handleHostedChat(
         payload,
         tempAssistantChatMessage,
@@ -520,7 +520,6 @@ export const useChatHandler = () => {
       generatedText = fullText;
       thinkingText = thinkingTextFromResponse;
       thinkingElapsedSecs = thinkingElapsedSecsFromResponse;
-      finishReason = finishReasonFromResponse;
       selectedPlugin = updatedSelectedPlugin;
       citations = citationsFromResponse;
 
@@ -585,6 +584,7 @@ export const useChatHandler = () => {
           newMessageFiles,
           setChatFiles,
           fileAttachments,
+          assistantMessageId,
         );
       }
 

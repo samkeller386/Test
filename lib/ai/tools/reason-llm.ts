@@ -11,15 +11,7 @@ import {
 import { myProvider } from '../providers';
 import { z } from 'zod';
 import { getPageContent } from './browser';
-
-function calculateThinkingElapsedSecs(
-  isThinking: boolean,
-  thinkingStartTime: number | null,
-): number | null {
-  return isThinking && thinkingStartTime
-    ? Math.round((Date.now() - thinkingStartTime) / 1000)
-    : null;
-}
+import { v4 as uuidv4 } from 'uuid';
 
 interface ReasonLLMConfig {
   messages: any[];
@@ -88,15 +80,14 @@ export async function executeReasonLLMTool({
   });
 
   let generatedTitle: string | undefined;
-  let assistantMessage = '';
-  let thinkingText = '';
   let thinkingStartTime: number | null = null;
   let isThinking = false;
+  const assistantMessageId = uuidv4();
 
   try {
     await Promise.all([
       (async () => {
-        const { textStream } = streamText({
+        const result = streamText({
           model: selectedModel,
           system: systemPrompt,
           messages: toVercelChatMessages(messages),
@@ -136,8 +127,9 @@ beneficial for the user's needs.`,
               },
             }),
           },
-          onChunk: async (chuck) => {
-            if (chuck.chunk.type === 'tool-result') {
+          experimental_generateMessageId: () => assistantMessageId,
+          onChunk: async (chunk) => {
+            if (chunk.chunk.type === 'tool-result') {
               dataStream.writeData({
                 type: 'agent-status',
                 content: 'none',
@@ -147,22 +139,15 @@ beneficial for the user's needs.`,
                 type: 'reasoning',
                 content: '\n\n',
               });
-            } else if (chuck.chunk.type === 'text-delta') {
-              dataStream.writeData({
-                type: 'text-delta',
-                content: chuck.chunk.textDelta,
-              });
-              assistantMessage += chuck.chunk.textDelta;
-            } else if (chuck.chunk.type === 'reasoning') {
+            } else if (chunk.chunk.type === 'reasoning') {
               if (!isThinking) {
                 isThinking = true;
                 thinkingStartTime = Date.now();
               }
 
-              thinkingText += chuck.chunk.textDelta;
               dataStream.writeData({
                 type: 'reasoning',
-                content: chuck.chunk.textDelta,
+                content: chunk.chunk.textDelta,
               });
             }
           },
@@ -178,6 +163,18 @@ beneficial for the user's needs.`,
             text: string;
             reasoning: string | undefined;
           }) => {
+            let thinkingElapsedSecs = null;
+            if (isThinking && thinkingStartTime) {
+              isThinking = false;
+              thinkingElapsedSecs = Math.round(
+                (Date.now() - thinkingStartTime) / 1000,
+              );
+              dataStream.writeData({
+                type: 'thinking-time',
+                elapsed_secs: thinkingElapsedSecs,
+              });
+            }
+
             if (supabase) {
               // Wait for initial chat handling to complete before final handling
               await initialChatPromise;
@@ -193,31 +190,14 @@ beneficial for the user's needs.`,
                 title: generatedTitle,
                 assistantMessage: text,
                 thinkingText: reasoning || undefined,
-                thinkingElapsedSecs: calculateThinkingElapsedSecs(
-                  isThinking,
-                  thinkingStartTime,
-                ),
+                thinkingElapsedSecs,
+                assistantMessageId,
               });
             }
           },
         });
 
-        // Consume the stream to keep it active
-        for await (const _ of textStream) {
-          // Stream is already handled in onChunk
-        }
-
-        // Handle stream completion
-        if (isThinking && thinkingStartTime) {
-          isThinking = false;
-          const thinkingElapsedSecs = Math.round(
-            (Date.now() - thinkingStartTime) / 1000,
-          );
-          dataStream.writeData({
-            type: 'thinking-time',
-            elapsed_secs: thinkingElapsedSecs,
-          });
-        }
+        result.mergeIntoDataStream(dataStream);
       })(),
       (async () => {
         if (chatMetadata.id && chatMetadata.newChat) {
