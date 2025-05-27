@@ -116,11 +116,6 @@ export async function executeDeepResearchTool({
                 isThinking = true;
                 thinkingStartTime = Date.now();
               }
-
-              dataStream.writeData({
-                type: 'reasoning',
-                content: chunk.chunk.textDelta,
-              });
             }
           },
           onError: async (error) => {
@@ -169,7 +164,7 @@ export async function executeDeepResearchTool({
           }
         }
 
-        result.mergeIntoDataStream(dataStream);
+        result.mergeIntoDataStream(dataStream, { sendReasoning: true });
       })(),
       (async () => {
         if (chatMetadata.id && chatMetadata.newChat) {

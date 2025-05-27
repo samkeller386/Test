@@ -325,6 +325,28 @@ export const processResponse = async (
             assistantMessageId = value.messageId;
           }
         },
+        onReasoningPart: (value) => {
+          if (isFirstChunk) {
+            setFirstTokenReceived(true);
+            isFirstChunk = false;
+          }
+
+          thinkingText += value;
+
+          setChatMessages((prev) =>
+            prev.map((chatMessage) =>
+              chatMessage.message.id === lastChatMessage.message.id
+                ? {
+                    ...chatMessage,
+                    message: {
+                      ...chatMessage.message,
+                      thinking_content: thinkingText,
+                    },
+                  }
+                : chatMessage,
+            ),
+          );
+        },
         onFinishMessagePart: (value) => {
           if (finishReason === '' && !controller.signal.aborted) {
             // Only set finishReason if it hasn't been set before
