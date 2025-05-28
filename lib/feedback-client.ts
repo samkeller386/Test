@@ -5,14 +5,20 @@ import type { Feedback } from '@/types/feedback';
 // Create a single instance of the Convex client
 const convex = new ConvexClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-export const getFeedbackForMessages = async (
+export const getFeedbackByChatId = async (
   messageIds: string[],
   chat_id: string,
+  limit?: number,
+  lastSequenceNumber?: number,
 ): Promise<(Feedback | null)[]> => {
   try {
     const feedbackResults = await convex.query(
-      api.feedback.getFeedbackByMessageIds,
-      { chat_id },
+      api.feedback.getFeedbackByChatId,
+      {
+        chat_id,
+        limit,
+        last_sequence_number: lastSequenceNumber,
+      },
     );
 
     // Create a map of message ID to feedback

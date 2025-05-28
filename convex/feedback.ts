@@ -1,9 +1,11 @@
 import { mutation, internalMutation, query } from './_generated/server';
 import { v } from 'convex/values';
 
-export const getFeedbackByMessageIds = query({
+export const getFeedbackByChatId = query({
   args: {
     chat_id: v.string(),
+    limit: v.optional(v.number()),
+    last_sequence_number: v.optional(v.number()),
   },
   returns: v.array(
     v.object({
@@ -23,11 +25,22 @@ export const getFeedbackByMessageIds = query({
     }),
   ),
   handler: async (ctx, args) => {
-    // Get all feedback records for the chat in a single query
-    const feedbackRecords = await ctx.db
+    const query = ctx.db
       .query('feedback')
-      .withIndex('by_chat', (q) => q.eq('chat_id', args.chat_id))
-      .collect();
+      .withIndex('by_chat_and_sequence', (q) =>
+        q
+          .eq('chat_id', args.chat_id)
+          .lt(
+            'sequence_number',
+            args.last_sequence_number ?? Number.MAX_SAFE_INTEGER,
+          ),
+      )
+      .order('desc');
+
+    const feedbackRecords =
+      args.limit !== undefined
+        ? await query.take(args.limit)
+        : await query.collect();
 
     // Return feedback without system fields
     return feedbackRecords.map((feedback) => {

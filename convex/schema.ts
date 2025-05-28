@@ -34,5 +34,6 @@ export default defineSchema({
     .index('by_message', ['message_id'])
     .index('by_user', ['user_id'])
     .index('by_updated_at', ['updated_at'])
-    .index('by_chat', ['chat_id']),
+    .index('by_chat', ['chat_id'])
+    .index('by_chat_and_sequence', ['chat_id', 'sequence_number']),
 });

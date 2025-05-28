@@ -1,7 +1,5 @@
 import { supabase } from '@/lib/supabase/browser-client';
-import { getFeedbackForMessages } from '@/lib/feedback-client';
-import type { Feedback } from '@/types/feedback';
-// import type { Tables, TablesInsert, TablesUpdate } from '@/supabase/types';
+import { getFeedbackByChatId } from '@/lib/feedback-client';
 
 export const getMessagesByChatId = async (
   chatId: string,
@@ -27,100 +25,18 @@ export const getMessagesByChatId = async (
 
   // Get feedback for all messages in one query
   const messageIds = messages.map((message) => message.id);
-  const feedbackResults = await getFeedbackForMessages(messageIds, chatId);
-
-  // Create a map of message ID to feedback
-  const feedbackMap = new Map<string, Feedback | null>(
-    feedbackResults.map((feedback: Feedback | null, index: number) => [
-      messageIds[index],
-      feedback,
-    ]),
+  const feedbackResults = await getFeedbackByChatId(
+    messageIds,
+    chatId,
+    limit,
+    lastSequenceNumber,
   );
 
   // Combine messages with their feedback
-  const messagesWithFeedback = messages.map((message) => ({
+  const messagesWithFeedback = messages.map((message, index) => ({
     ...message,
-    feedback: feedbackMap.get(message.id) ? [feedbackMap.get(message.id)] : [],
+    feedback: feedbackResults[index] ? [feedbackResults[index]] : [],
   }));
 
   return messagesWithFeedback.reverse();
 };
-
-// export const createMessage = async (message: TablesInsert<'messages'>) => {
-//   const { data: createdMessage, error } = await supabase
-//     .from('messages')
-//     .insert([message])
-//     .select('*')
-//     .single();
-
-//   if (error) {
-//     throw new Error(error.message);
-//   }
-
-//   return createdMessage;
-// };
-
-// export const createMessages = async (
-//   messages: TablesInsert<'messages'>[],
-//   newChatFiles: { id: string }[],
-//   userMessageId: string | null,
-//   setChatFiles?: React.Dispatch<React.SetStateAction<Tables<'files'>[]>>,
-// ) => {
-//   const { data: createdMessages, error } = await supabase
-//     .from('messages')
-//     .insert(messages)
-//     .select('*');
-
-//   if (error) {
-//     throw new Error(error.message);
-//   }
-
-//   const fileIds = newChatFiles
-//     .map((file) => file.id)
-//     .filter((id) => id !== undefined);
-
-//   if (fileIds.length > 0) {
-//     if (setChatFiles) {
-//       setChatFiles((prev) =>
-//         prev.map((file) =>
-//           fileIds.includes(file.id)
-//             ? { ...file, message_id: userMessageId }
-//             : file,
-//         ),
-//       );
-//     }
-//   }
-
-//   return createdMessages;
-// };
-
-// export const updateMessage = async (
-//   messageId: string,
-//   message: TablesUpdate<'messages'>,
-// ) => {
-//   const { data: updatedMessage, error } = await supabase
-//     .from('messages')
-//     .update(message)
-//     .eq('id', messageId)
-//     .select('*')
-//     .single();
-
-//   if (error) {
-//     throw new Error(error.message);
-//   }
-
-//   return updatedMessage;
-// };
-
-// export const deleteMessage = async (messageId: string) => {
-//   const { error } = await supabase
-//     .from('messages')
-//     .delete()
-//     .eq('id', messageId);
-
-//   if (error) {
-//     throw new Error(error.message);
-//   }
-
-//   return true;
-// };
