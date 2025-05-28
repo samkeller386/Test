@@ -7,15 +7,21 @@ const convex = new ConvexClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export const getFeedbackForMessages = async (
   messageIds: string[],
+  chat_id: string,
 ): Promise<(Feedback | null)[]> => {
   try {
     const feedbackResults = await convex.query(
       api.feedback.getFeedbackByMessageIds,
-      {
-        message_ids: messageIds,
-      },
+      { chat_id },
     );
-    return feedbackResults || [];
+
+    // Create a map of message ID to feedback
+    const feedbackMap = new Map(
+      feedbackResults.map((feedback) => [feedback.message_id, feedback]),
+    );
+
+    // Return array matching input message_ids order, with null for missing feedback
+    return messageIds.map((messageId) => feedbackMap.get(messageId) ?? null);
   } catch (error) {
     console.error('Error fetching feedback:', error);
     return [];

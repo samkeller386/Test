@@ -27,7 +27,7 @@ export const getMessagesByChatId = async (
 
   // Get feedback for all messages in one query
   const messageIds = messages.map((message) => message.id);
-  const feedbackResults = await getFeedbackForMessages(messageIds);
+  const feedbackResults = await getFeedbackForMessages(messageIds, chatId);
 
   // Create a map of message ID to feedback
   const feedbackMap = new Map<string, Feedback | null>(

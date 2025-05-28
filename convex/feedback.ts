@@ -3,43 +3,37 @@ import { v } from 'convex/values';
 
 export const getFeedbackByMessageIds = query({
   args: {
-    message_ids: v.array(v.string()),
+    chat_id: v.string(),
   },
   returns: v.array(
-    v.union(
-      v.object({
-        message_id: v.string(),
-        user_id: v.string(),
-        chat_id: v.string(),
-        feedback: v.union(v.literal('good'), v.literal('bad')),
-        reason: v.optional(v.string()),
-        detailed_feedback: v.optional(v.string()),
-        model: v.string(),
-        updated_at: v.number(),
-        sequence_number: v.number(),
-        allow_email: v.optional(v.boolean()),
-        allow_sharing: v.optional(v.boolean()),
-        has_files: v.boolean(),
-        plugin: v.string(),
-      }),
-      v.null(),
-    ),
+    v.object({
+      message_id: v.string(),
+      user_id: v.string(),
+      chat_id: v.string(),
+      feedback: v.union(v.literal('good'), v.literal('bad')),
+      reason: v.optional(v.string()),
+      detailed_feedback: v.optional(v.string()),
+      model: v.string(),
+      updated_at: v.number(),
+      sequence_number: v.number(),
+      allow_email: v.optional(v.boolean()),
+      allow_sharing: v.optional(v.boolean()),
+      has_files: v.boolean(),
+      plugin: v.string(),
+    }),
   ),
   handler: async (ctx, args) => {
-    const feedbackPromises = args.message_ids.map(async (messageId) => {
-      const feedback = await ctx.db
-        .query('feedback')
-        .withIndex('by_message', (q) => q.eq('message_id', messageId))
-        .first();
+    // Get all feedback records for the chat in a single query
+    const feedbackRecords = await ctx.db
+      .query('feedback')
+      .withIndex('by_chat', (q) => q.eq('chat_id', args.chat_id))
+      .collect();
 
-      if (!feedback) return null;
-
-      // Return feedback without _id and _creationTime
+    // Return feedback without system fields
+    return feedbackRecords.map((feedback) => {
       const { _id, _creationTime, ...feedbackWithoutSystemFields } = feedback;
       return feedbackWithoutSystemFields;
     });
-
-    return await Promise.all(feedbackPromises);
   },
 });
 
