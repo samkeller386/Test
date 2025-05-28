@@ -100,7 +100,9 @@ export const deleteOldFeedback = internalMutation({
       await ctx.db.delete(feedback._id);
     }
 
-    console.log(`Successfully deleted ${oldFeedback.length} old feedback entries`);
+    console.log(
+      `Successfully deleted ${oldFeedback.length} old feedback entries`,
+    );
     return oldFeedback.length; // Return number of deleted entries
   },
 });
