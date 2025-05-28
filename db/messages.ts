@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase/browser-client';
+import { getFeedbackForMessages } from '@/lib/feedback-client';
+import type { Feedback } from '@/types/feedback';
 // import type { Tables, TablesInsert, TablesUpdate } from '@/supabase/types';
 
 export const getMessagesByChatId = async (
@@ -8,7 +10,7 @@ export const getMessagesByChatId = async (
 ) => {
   let query = supabase
     .from('messages')
-    .select('*, feedback(*), file_items (*)')
+    .select('*, file_items (*)')
     .eq('chat_id', chatId)
     .order('sequence_number', { ascending: false })
     .limit(limit);
@@ -23,7 +25,25 @@ export const getMessagesByChatId = async (
     throw new Error('Messages not found');
   }
 
-  return messages.reverse();
+  // Get feedback for all messages in one query
+  const messageIds = messages.map((message) => message.id);
+  const feedbackResults = await getFeedbackForMessages(messageIds);
+
+  // Create a map of message ID to feedback
+  const feedbackMap = new Map<string, Feedback | null>(
+    feedbackResults.map((feedback: Feedback | null, index: number) => [
+      messageIds[index],
+      feedback,
+    ]),
+  );
+
+  // Combine messages with their feedback
+  const messagesWithFeedback = messages.map((message) => ({
+    ...message,
+    feedback: feedbackMap.get(message.id) ? [feedbackMap.get(message.id)] : [],
+  }));
+
+  return messagesWithFeedback.reverse();
 };
 
 // export const createMessage = async (message: TablesInsert<'messages'>) => {
