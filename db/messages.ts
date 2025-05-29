@@ -1,42 +1,29 @@
-import { supabase } from '@/lib/supabase/browser-client';
-import { getFeedbackByChatId } from '@/lib/feedback-client';
+import { ConvexClient } from 'convex/browser';
+import { api } from '@/convex/_generated/api';
+
+// Create a single instance of the Convex client
+const convex = new ConvexClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export const getMessagesByChatId = async (
   chatId: string,
   limit = 20,
   lastSequenceNumber?: number,
 ) => {
-  let query = supabase
-    .from('messages')
-    .select('*, file_items (*)')
-    .eq('chat_id', chatId)
-    .order('sequence_number', { ascending: false })
-    .limit(limit);
+  try {
+    // Get messages with feedback and file items from Convex
+    const messages = await convex.query(api.messages.getMessagesWithFiles, {
+      chatId,
+      limit,
+      lastSequenceNumber,
+    });
 
-  if (lastSequenceNumber !== undefined) {
-    query = query.lt('sequence_number', lastSequenceNumber);
+    if (!messages) {
+      throw new Error('Messages not found');
+    }
+
+    return messages;
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    throw error;
   }
-
-  const { data: messages } = await query;
-
-  if (!messages) {
-    throw new Error('Messages not found');
-  }
-
-  // Get feedback for all messages in one query
-  const messageIds = messages.map((message) => message.id);
-  const feedbackResults = await getFeedbackByChatId(
-    messageIds,
-    chatId,
-    limit,
-    lastSequenceNumber,
-  );
-
-  // Combine messages with their feedback
-  const messagesWithFeedback = messages.map((message, index) => ({
-    ...message,
-    feedback: feedbackResults[index] ? [feedbackResults[index]] : [],
-  }));
-
-  return messagesWithFeedback.reverse();
 };
