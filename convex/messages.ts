@@ -207,117 +207,6 @@ export const insertMessages = mutation({
 });
 
 /**
- * Get messages with feedback for a chat with pagination
- */
-export const getMessagesWithFeedback = query({
-  args: {
-    chatId: v.string(),
-    limit: v.optional(v.number()),
-    lastSequenceNumber: v.optional(v.number()),
-  },
-  returns: v.array(
-    v.object({
-      _id: v.id('messages'),
-      _creationTime: v.number(),
-      id: v.string(),
-      chat_id: v.string(),
-      user_id: v.string(),
-      content: v.string(),
-      model: v.string(),
-      plugin: v.optional(v.string()),
-      role: v.string(),
-      sequence_number: v.number(),
-      thinking_content: v.optional(v.string()),
-      thinking_elapsed_secs: v.optional(v.number()),
-      thinking_enabled: v.boolean(),
-      image_paths: v.array(v.string()),
-      citations: v.array(v.string()),
-      attachments: v.array(v.any()),
-      updated_at: v.optional(v.number()),
-      created_at: v.number(),
-      feedback: v.array(
-        v.object({
-          message_id: v.string(),
-          user_id: v.string(),
-          chat_id: v.string(),
-          feedback: v.union(v.literal('good'), v.literal('bad')),
-          reason: v.optional(v.string()),
-          detailed_feedback: v.optional(v.string()),
-          model: v.string(),
-          updated_at: v.number(),
-          sequence_number: v.number(),
-          allow_email: v.optional(v.boolean()),
-          allow_sharing: v.optional(v.boolean()),
-          has_files: v.boolean(),
-          plugin: v.string(),
-        }),
-      ),
-      file_items: v.array(v.any()),
-    }),
-  ),
-  handler: async (ctx, args) => {
-    // Get messages
-    let messagesQuery = ctx.db
-      .query('messages')
-      .withIndex('by_chat_and_sequence', (q) => q.eq('chat_id', args.chatId))
-      .order('desc');
-
-    if (args.lastSequenceNumber !== undefined) {
-      messagesQuery = messagesQuery.filter((q) =>
-        q.lt(q.field('sequence_number'), args.lastSequenceNumber!),
-      );
-    }
-
-    const messages = await messagesQuery.take(args.limit ?? 20);
-
-    // Get feedback for these messages using the internal function
-    const feedback = await ctx.runQuery(
-      internal.feedback.internalGetFeedbackByChatId,
-      {
-        chat_id: args.chatId,
-        limit: args.limit,
-        last_sequence_number: args.lastSequenceNumber,
-      },
-    );
-
-    // Create a map of feedback by message ID
-    const feedbackMap = new Map();
-    for (const fb of feedback) {
-      if (!feedbackMap.has(fb.message_id)) {
-        feedbackMap.set(fb.message_id, []);
-      }
-      feedbackMap.get(fb.message_id).push(fb);
-    }
-
-    // Combine messages with their feedback
-    return messages
-      .map((msg) => ({
-        _id: msg._id,
-        _creationTime: msg._creationTime,
-        id: msg.id,
-        chat_id: msg.chat_id,
-        user_id: msg.user_id,
-        content: msg.content,
-        model: msg.model,
-        plugin: msg.plugin,
-        role: msg.role,
-        sequence_number: msg.sequence_number,
-        thinking_content: msg.thinking_content,
-        thinking_elapsed_secs: msg.thinking_elapsed_secs,
-        thinking_enabled: msg.thinking_enabled,
-        image_paths: msg.image_paths,
-        citations: msg.citations,
-        attachments: msg.attachments || [],
-        updated_at: msg.updated_at,
-        created_at: msg._creationTime,
-        feedback: feedbackMap.get(msg.id) || [],
-        file_items: [],
-      }))
-      .reverse();
-  },
-});
-
-/**
  * Internal query to get messages at a specific sequence number
  */
 export const internalGetMessagesAtSequence = internalQuery({
@@ -374,9 +263,9 @@ export const internalGetMessagesAtSequence = internalQuery({
 });
 
 /**
- * Get messages with feedback and file items for a chat with pagination
+ * Internal query to get messages with feedback and file items for a chat with pagination
  */
-export const getMessagesWithFiles = query({
+export const internalGetMessagesWithFiles = internalQuery({
   args: {
     chatId: v.string(),
     limit: v.optional(v.number()),
