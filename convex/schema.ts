@@ -32,9 +32,6 @@ export default defineSchema({
     plugin: v.string(),
   })
     .index('by_message', ['message_id'])
-    .index('by_user', ['user_id'])
-    .index('by_updated_at', ['updated_at'])
-    .index('by_chat', ['chat_id'])
     .index('by_chat_and_sequence', ['chat_id', 'sequence_number']),
 
   messages: defineTable({
@@ -54,9 +51,7 @@ export default defineSchema({
     citations: v.array(v.string()),
   })
     .index('by_chat', ['chat_id'])
-    .index('by_user', ['user_id'])
     .index('by_chat_and_sequence', ['chat_id', 'sequence_number'])
-    .index('by_updated_at', ['updated_at'])
     .index('by_message_id', ['id']),
 
   files: defineTable({
@@ -74,7 +69,6 @@ export default defineSchema({
     .index('by_message', ['message_id'])
     .index('by_chat', ['chat_id'])
     .index('by_user', ['user_id'])
-    .index('by_updated_at', ['updated_at'])
     .index('by_file_id', ['id']),
 
   file_items: defineTable({
@@ -91,10 +85,6 @@ export default defineSchema({
   })
     .index('by_file_id', ['file_id'])
     .index('by_file_and_sequence', ['file_id', 'sequence_number'])
-    .index('by_name', ['name'])
-    .index('by_user', ['user_id'])
-    .index('by_updated_at', ['updated_at'])
     .index('by_message', ['message_id'])
-    .index('by_chat', ['chat_id'])
-    .index('by_message_and_chat', ['message_id', 'chat_id']),
+    .index('by_message_id', ['id']),
 });
