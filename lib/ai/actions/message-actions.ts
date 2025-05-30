@@ -104,7 +104,6 @@ export async function saveUserMessage({
     user_id: userId,
     content,
     thinking_content: undefined,
-    thinking_enabled: thinkingEnabled,
     thinking_elapsed_secs: undefined,
     model,
     plugin: modelParams.selectedPlugin || undefined,

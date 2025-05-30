@@ -544,7 +544,6 @@ export const useChatHandler = () => {
                   ...msg.message,
                   content: generatedText,
                   thinking_content: thinkingText,
-                  thinking_enabled: !!thinkingText,
                   thinking_elapsed_secs: thinkingElapsedSecs || undefined,
                   citations: citations || [],
                 },

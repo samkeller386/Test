@@ -25,7 +25,6 @@ export interface BuiltChatMessage {
 }
 
 export interface ProviderMetadata {
-  thinking_enabled?: boolean;
   thinking_elapsed_secs?: number | null;
   citations?: string[];
 }

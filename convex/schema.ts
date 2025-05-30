@@ -49,7 +49,6 @@ export default defineSchema({
     sequence_number: v.number(),
     thinking_content: v.optional(v.string()),
     thinking_elapsed_secs: v.optional(v.number()),
-    thinking_enabled: v.boolean(),
     updated_at: v.optional(v.number()),
     attachments: v.optional(v.array(v.any())),
     citations: v.array(v.string()),
