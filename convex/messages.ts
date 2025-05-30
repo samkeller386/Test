@@ -306,7 +306,6 @@ export const internalGetMessagesWithFiles = internalQuery({
         v.object({
           _id: v.id('file_items'),
           _creationTime: v.number(),
-          id: v.string(),
           file_id: v.string(),
           user_id: v.string(),
           content: v.string(),
