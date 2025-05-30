@@ -11,13 +11,13 @@ import {
 } from '@tabler/icons-react';
 import type { FC } from 'react';
 import { WithTooltip } from '../ui/with-tooltip';
-import type { Doc } from '@/convex/_generated/dataModel';
+import type { Doc, Id } from '@/convex/_generated/dataModel';
 
 interface FileItemProps {
   file: Doc<'files'>;
   isLoading?: boolean;
   showRemoveButton: boolean;
-  onRemove?: (fileId: string) => void;
+  onRemove?: (fileId: Id<'files'>) => void;
   onClick?: () => void;
 }
 

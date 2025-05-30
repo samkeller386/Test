@@ -6,8 +6,11 @@ import { toast } from 'sonner';
 import { uploadFile } from '@/db/storage/files';
 import type { Id } from '@/convex/_generated/dataModel';
 
-// Create a single instance of the Convex client
-const convex = new ConvexClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+  throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not defined');
+}
+
+const convex = new ConvexClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 
 export const getFileById = async (fileId: Id<'files'>) => {
   const file = await convex.query(api.files.getFile, { fileId });
@@ -41,7 +44,7 @@ export const createFileBasedOnExtension = async (
 const createBaseFile = async (
   file: File,
   fileRecord: TablesInsert<'files'>,
-  processFile: (fileId: string) => Promise<void>,
+  processFile: (fileId: Id<'files'>) => Promise<void>,
 ) => {
   const filesCounts = await convex.query(api.files.getAllFilesCount, {});
   const maxFiles = Number.parseInt(

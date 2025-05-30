@@ -28,7 +28,7 @@ export async function uploadFileToSandbox(
   sandbox: Sandbox,
   dataStream: any,
 ): Promise<FileUploadResult> {
-  let name = 'unknown';
+  let name = fileId.toString();
   try {
     const { content, name: fileName } =
       await getFileContentFromSupabase(fileId);
