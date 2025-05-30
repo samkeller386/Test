@@ -13,6 +13,7 @@ import type { FileItemChunk } from '@/types';
 import { NextResponse } from 'next/server';
 import { ConvexClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 
 const convex = new ConvexClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
     const supabaseAdmin = createSupabaseAdminClient();
     const profile = await getServerProfile();
     const formData = await req.formData();
-    const file_id = formData.get('file_id') as string;
+    const file_id = formData.get('file_id') as Id<'files'>;
 
     const fileMetadata = await convex.query(api.files.getFile, {
       fileId: file_id,

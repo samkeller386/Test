@@ -43,10 +43,10 @@ export const ChatFilesDisplay: FC = () => {
   ];
 
   const handleRemoveFile = (fileId: string) => {
-    const fileToRemove = newMessageFiles.find((f) => f.id === fileId);
+    const fileToRemove = newMessageFiles.find((f) => f._id === fileId);
     if (fileToRemove) {
-      deleteFile(fileToRemove.id);
-      setNewMessageFiles(newMessageFiles.filter((f) => f.id !== fileId));
+      deleteFile(fileToRemove._id);
+      setNewMessageFiles(newMessageFiles.filter((f) => f._id !== fileId));
     }
   };
 
@@ -164,9 +164,9 @@ export const ChatFilesDisplay: FC = () => {
 
               {newMessageFiles.map((file) => (
                 <ChatFileItem
-                  key={file.id}
+                  key={file._id}
                   file={file}
-                  isLoading={file.id.startsWith('loading')}
+                  isLoading={file._id.startsWith('loading')}
                   showRemoveButton={isMobile || isHovering}
                   onRemove={handleRemoveFile}
                   onClick={() => {

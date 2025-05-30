@@ -1,19 +1,18 @@
 import { query } from './_generated/server';
 import { v } from 'convex/values';
 import { mutation } from './_generated/server';
-import { v4 as uuidv4 } from 'uuid';
+import type { Id } from './_generated/dataModel';
 
 /**
  * Get file items by file ID
  */
 export const getFileItemsByFileId = query({
-  args: { fileId: v.string() },
+  args: { fileId: v.id('files') },
   returns: v.array(
     v.object({
       _id: v.id('file_items'),
       _creationTime: v.number(),
-      id: v.string(),
-      file_id: v.string(),
+      file_id: v.id('files'),
       user_id: v.string(),
       content: v.string(),
       tokens: v.number(),
@@ -39,13 +38,12 @@ export const getFileItemsByFileId = query({
  * Get all file items for multiple file IDs in a single query
  */
 export const getAllFileItemsByFileIds = query({
-  args: { fileIds: v.array(v.string()) },
+  args: { fileIds: v.array(v.id('files')) },
   returns: v.array(
     v.object({
       _id: v.id('file_items'),
       _creationTime: v.number(),
-      id: v.string(),
-      file_id: v.string(),
+      file_id: v.id('files'),
       user_id: v.string(),
       content: v.string(),
       tokens: v.number(),
@@ -73,7 +71,7 @@ export const upsertFileItems = mutation({
   args: {
     fileItems: v.array(
       v.object({
-        file_id: v.string(),
+        file_id: v.id('files'),
         user_id: v.string(),
         sequence_number: v.number(),
         content: v.string(),
@@ -107,7 +105,6 @@ export const upsertFileItems = mutation({
       } else {
         // Insert new item
         await ctx.db.insert('file_items', {
-          id: uuidv4(),
           file_id: item.file_id,
           user_id: item.user_id,
           content: item.content,
@@ -129,8 +126,8 @@ export const updateFileItemsWithMessage = mutation({
   args: {
     fileItems: v.array(
       v.object({
-        id: v.string(),
-        file_id: v.string(),
+        _id: v.id('file_items'),
+        file_id: v.id('files'),
         user_id: v.string(),
         content: v.string(),
         tokens: v.number(),
@@ -146,18 +143,15 @@ export const updateFileItemsWithMessage = mutation({
   handler: async (ctx, args) => {
     try {
       // Keep track of unique file IDs we've processed
-      const processedFileIds = new Set<string>();
+      const processedFileIds = new Set<Id<'files'>>();
 
       for (const fileItem of args.fileItems) {
         // Find the file item by ID
-        const existingItem = await ctx.db
-          .query('file_items')
-          .filter((q) => q.eq(q.field('id'), fileItem.id))
-          .unique();
+        const existingItem = await ctx.db.get(fileItem._id);
 
         if (existingItem) {
           // Update existing file item
-          await ctx.db.patch(existingItem._id, {
+          await ctx.db.patch(fileItem._id, {
             message_id: args.messageId,
             chat_id: args.chatId,
             updated_at: Date.now(),
@@ -177,10 +171,7 @@ export const updateFileItemsWithMessage = mutation({
           processedFileIds.add(fileItem.file_id);
 
           // Find and update the associated file
-          const file = await ctx.db
-            .query('files')
-            .withIndex('by_file_id', (q) => q.eq('id', fileItem.file_id))
-            .unique();
+          const file = await ctx.db.get(fileItem.file_id);
 
           if (file) {
             // Update the file with message and chat relationships
@@ -207,50 +198,33 @@ export const getFileItemsByMessageId = query({
   args: {
     messageId: v.string(),
   },
-  returns: v.object({
-    id: v.string(),
-    file_items: v.array(
-      v.object({
-        _id: v.id('file_items'),
-        _creationTime: v.number(),
-        id: v.string(),
-        file_id: v.string(),
-        user_id: v.string(),
-        content: v.string(),
-        tokens: v.number(),
-        name: v.optional(v.string()),
-        sequence_number: v.number(),
-        updated_at: v.optional(v.number()),
-        message_id: v.optional(v.string()),
-        chat_id: v.optional(v.string()),
-      }),
-    ),
-  }),
+  returns: v.array(
+    v.object({
+      _id: v.id('file_items'),
+      _creationTime: v.number(),
+      file_id: v.id('files'),
+      user_id: v.string(),
+      content: v.string(),
+      tokens: v.number(),
+      name: v.optional(v.string()),
+      sequence_number: v.number(),
+      updated_at: v.optional(v.number()),
+      message_id: v.optional(v.string()),
+      chat_id: v.optional(v.string()),
+    }),
+  ),
   handler: async (ctx, args) => {
     try {
-      // Get the message to verify it exists
-      const message = await ctx.db
-        .query('messages')
-        .withIndex('by_message_id', (q) => q.eq('id', args.messageId))
-        .unique();
-
-      if (!message) {
-        return { id: args.messageId, file_items: [] };
-      }
-
       // Get file items for this message
       const fileItems = await ctx.db
         .query('file_items')
         .withIndex('by_message', (q) => q.eq('message_id', args.messageId))
         .collect();
 
-      return {
-        id: args.messageId,
-        file_items: fileItems,
-      };
+      return fileItems;
     } catch (error) {
       console.error('[getFileItemsByMessageId] Error:', error);
-      return { id: args.messageId, file_items: [] };
+      return [];
     }
   },
 });

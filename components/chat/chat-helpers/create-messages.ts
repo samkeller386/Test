@@ -31,7 +31,7 @@ export const handleCreateMessages = async (
   citations?: string[],
   thinkingText?: string,
   thinkingElapsedSecs?: number | null,
-  newChatFiles?: { id: string }[],
+  newChatFiles?: { _id: Id<'files'> }[],
   setChatFiles?: React.Dispatch<React.SetStateAction<Doc<'files'>[]>>,
   fileAttachments?: FileAttachment[],
   assistantMessageId?: string | null,
@@ -122,14 +122,14 @@ export const handleCreateMessages = async (
       finalChatMessages = [...chatMessages.slice(0, -1), updatedMessage];
     } else {
       const fileIds = newChatFiles
-        ? newChatFiles.map((file) => file.id).filter((id) => id !== undefined)
+        ? newChatFiles.map((file) => file._id).filter((id) => id !== undefined)
         : [];
 
       if (fileIds.length > 0) {
         if (setChatFiles) {
           setChatFiles((prev) =>
             prev.map((file) =>
-              fileIds.includes(file.id)
+              fileIds.includes(file._id)
                 ? { ...file, message_id: userMessage.message.id }
                 : file,
             ),

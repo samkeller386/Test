@@ -4,6 +4,7 @@ import type { FileItemChunk } from '@/types';
 import { NextResponse } from 'next/server';
 import { ConvexClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 
 // Create a single instance of the Convex client
 const convex = new ConvexClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
   const json = await req.json();
   const { text, fileId, fileExtension } = json as {
     text: string;
-    fileId: string;
+    fileId: Id<'files'>;
     fileExtension: string;
   };
 

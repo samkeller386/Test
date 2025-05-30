@@ -3,7 +3,7 @@ import { extractTextContent } from '../message-utils';
 import { api } from '@/convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
 import { v4 as uuidv4 } from 'uuid';
-import type { Doc } from '@/convex/_generated/dataModel';
+import type { Doc, Id } from '@/convex/_generated/dataModel';
 
 if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
   throw new Error(
@@ -128,7 +128,7 @@ export async function saveUserMessage({
     if (fileAttachments.length > 0) {
       const fileIds = fileAttachments
         .map((attachment) => attachment.file_id)
-        .filter((id): id is string => id !== undefined);
+        .filter((id): id is Id<'files'> => id !== undefined);
 
       if (fileIds.length > 0) {
         const success = await convex.mutation(api.files.updateFilesMessage, {
@@ -149,7 +149,7 @@ export async function saveUserMessage({
         api.file_items.updateFileItemsWithMessage,
         {
           fileItems: retrievedFileItems.map((item) => ({
-            id: item.id,
+            _id: item._id,
             file_id: item.file_id,
             user_id: item.user_id,
             content: item.content,

@@ -4,12 +4,12 @@ import type { TablesInsert, TablesUpdate } from '@/supabase/types';
 import mammoth from 'mammoth';
 import { toast } from 'sonner';
 import { uploadFile } from '@/db/storage/files';
-import { v4 as uuidv4 } from 'uuid';
+import type { Id } from '@/convex/_generated/dataModel';
 
 // Create a single instance of the Convex client
 const convex = new ConvexClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-export const getFileById = async (fileId: string) => {
+export const getFileById = async (fileId: Id<'files'>) => {
   const file = await convex.query(api.files.getFile, { fileId });
 
   if (!file) {
@@ -59,7 +59,6 @@ const createBaseFile = async (
   }
 
   const fileData = {
-    id: fileRecord.id || uuidv4(),
     user_id: fileRecord.user_id,
     file_path: fileRecord.file_path,
     name: fileRecord.name,
@@ -81,19 +80,19 @@ const createBaseFile = async (
     file_id: createdFile.name,
   });
 
-  await updateFile(createdFile.id, {
+  await updateFile(createdFile._id, {
     file_path: filePath,
   });
 
   try {
-    await processFile(createdFile.id);
+    await processFile(createdFile._id);
   } catch (error) {
-    await deleteFile(createdFile.id);
+    await deleteFile(createdFile._id);
     throw error;
   }
 
-  const fetchedFile = await getFileById(createdFile.id);
-  await getFileItemsByFileId(createdFile.id);
+  const fetchedFile = await getFileById(createdFile._id);
+  await getFileItemsByFileId(createdFile._id);
 
   return fetchedFile;
 };
@@ -170,7 +169,7 @@ export const createDocXFile = async (
 };
 
 export const updateFile = async (
-  fileId: string,
+  fileId: Id<'files'>,
   file: TablesUpdate<'files'>,
 ) => {
   const fileData = {
@@ -191,7 +190,7 @@ export const updateFile = async (
   return updatedFile;
 };
 
-export const deleteFile = async (fileId: string) => {
+export const deleteFile = async (fileId: Id<'files'>) => {
   const success = await convex.mutation(api.files.deleteFile, {
     fileId,
   });
@@ -203,7 +202,7 @@ export const deleteFile = async (fileId: string) => {
   return true;
 };
 
-export const getFileItemsByFileId = async (fileId: string) => {
+export const getFileItemsByFileId = async (fileId: Id<'files'>) => {
   const fileItems = await convex.query(api.file_items.getFileItemsByFileId, {
     fileId: fileId,
   });

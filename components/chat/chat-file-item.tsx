@@ -86,7 +86,7 @@ export const ChatFileItem: FC<FileItemProps> = ({
               className="bg-secondary border-primary absolute right-[-6px] top-[-6px] flex size-5 cursor-pointer items-center justify-center rounded-full border text-[10px] hover:border-red-500 hover:bg-white hover:text-red-500"
               onClick={(e) => {
                 e.stopPropagation();
-                onRemove?.(file.id);
+                onRemove?.(file._id);
               }}
             />
           }

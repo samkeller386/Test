@@ -2,7 +2,6 @@ import { createSupabaseAdminClient } from '@/lib/server/server-utils';
 import type { TablesInsert } from '@/supabase/types';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
-import { v4 as uuidv4 } from 'uuid';
 
 if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
   throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not defined');
@@ -47,7 +46,6 @@ const uploadAdminFile = async (
 // Helper function to convert Supabase file record to Convex format
 const convertToConvexFile = (fileRecord: TablesInsert<'files'>) => {
   return {
-    id: fileRecord.id,
     user_id: fileRecord.user_id,
     file_path: fileRecord.file_path,
     name: fileRecord.name,
@@ -92,7 +90,7 @@ export const createAdminFile = async (
     if (existingFile) {
       // Update the existing file
       createdFile = await convex.mutation(api.files.updateFile, {
-        fileId: existingFile.id,
+        fileId: existingFile._id,
         fileData: {
           size: file.size,
         },
@@ -105,7 +103,6 @@ export const createAdminFile = async (
     createdFile = await convex.mutation(api.files.createFile, {
       fileData: {
         ...convertToConvexFile(fileRecord),
-        id: uuidv4(),
         size: file.size,
       },
     });
@@ -115,12 +112,12 @@ export const createAdminFile = async (
   const filePath = await uploadAdminFile(file, {
     name: createdFile.name,
     user_id: createdFile.user_id,
-    file_id: createdFile.id,
+    file_id: createdFile._id,
     supabaseAdmin,
   });
 
   const finalFile = await convex.mutation(api.files.updateFile, {
-    fileId: createdFile.id,
+    fileId: createdFile._id,
     fileData: {
       file_path: filePath,
     },

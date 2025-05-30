@@ -55,7 +55,6 @@ export default defineSchema({
     .index('by_message_id', ['id']),
 
   files: defineTable({
-    id: v.string(),
     user_id: v.string(),
     file_path: v.string(),
     name: v.string(),
@@ -68,12 +67,10 @@ export default defineSchema({
   })
     .index('by_message', ['message_id'])
     .index('by_chat', ['chat_id'])
-    .index('by_user', ['user_id'])
-    .index('by_file_id', ['id']),
+    .index('by_user', ['user_id']),
 
   file_items: defineTable({
-    id: v.string(),
-    file_id: v.string(),
+    file_id: v.id('files'),
     user_id: v.string(),
     content: v.string(),
     tokens: v.number(),
@@ -85,6 +82,5 @@ export default defineSchema({
   })
     .index('by_file_id', ['file_id'])
     .index('by_file_and_sequence', ['file_id', 'sequence_number'])
-    .index('by_message', ['message_id'])
-    .index('by_message_id', ['id']),
+    .index('by_message', ['message_id']),
 });

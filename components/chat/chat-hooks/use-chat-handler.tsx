@@ -366,7 +366,7 @@ export const useChatHandler = () => {
         );
 
         lastMessageRetrievedFileItems =
-          messageFileItems.file_items.sort((a, b) => {
+          messageFileItems.sort((a, b) => {
             // First sort by file_id
             if (a.file_id < b.file_id) return -1;
             if (a.file_id > b.file_id) return 1;
@@ -393,7 +393,7 @@ export const useChatHandler = () => {
           setChatFiles((prev) =>
             prev.map((file) =>
               editedMessageFiles?.some(
-                (editedFile) => editedFile.id === file.id,
+                (editedFile) => editedFile._id === file._id,
               )
                 ? { ...file, message_id: tempUserChatMessage.message.id }
                 : file,

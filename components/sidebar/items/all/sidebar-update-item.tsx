@@ -10,6 +10,7 @@ import {
 import { PentestGPTContext } from '@/context/context';
 import { updateChat } from '@/db/chats';
 import { updateFile } from '@/db/files';
+import type { Id } from '@/convex/_generated/dataModel';
 import type { TablesUpdate } from '@/supabase/types';
 import type { ContentType, DataItemType } from '@/types';
 import {
@@ -72,7 +73,7 @@ export const SidebarUpdateItem: FC<SidebarUpdateItemProps> = ({
 
   const updateFunctions = {
     chats: updateChat,
-    files: async (fileId: string, updateState: TablesUpdate<'files'>) => {
+    files: async (fileId: Id<'files'>, updateState: TablesUpdate<'files'>) => {
       const updatedFile = await updateFile(fileId, updateState);
       return updatedFile;
     },

@@ -20,7 +20,7 @@ export const getAllFilesCount = query({
  */
 export const updateFilesMessage = mutation({
   args: {
-    fileIds: v.array(v.string()),
+    fileIds: v.array(v.id('files')),
     messageId: v.string(),
     chatId: v.string(),
   },
@@ -42,7 +42,7 @@ export const updateFilesMessage = mutation({
     // Update each file that exists and is unassigned
     let updated = false;
     for (const file of existingFiles) {
-      if (fileIdSet.has(file.id)) {
+      if (fileIdSet.has(file._id)) {
         await ctx.db.patch(file._id, {
           message_id: args.messageId,
           chat_id: args.chatId,
@@ -69,7 +69,6 @@ export const retrieveAndUpdateFilesForMessage = mutation({
       v.object({
         _id: v.id('files'),
         _creationTime: v.number(),
-        id: v.string(),
         user_id: v.string(),
         file_path: v.string(),
         name: v.string(),
@@ -142,7 +141,7 @@ export const retrieveAndUpdateFilesForMessage = mutation({
  */
 export const getFile = query({
   args: {
-    fileId: v.optional(v.string()),
+    fileId: v.optional(v.id('files')),
     userId: v.optional(v.string()),
     fileName: v.optional(v.string()),
   },
@@ -150,7 +149,6 @@ export const getFile = query({
     v.object({
       _id: v.id('files'),
       _creationTime: v.number(),
-      id: v.string(),
       user_id: v.string(),
       file_path: v.string(),
       name: v.string(),
@@ -167,10 +165,7 @@ export const getFile = query({
     try {
       // If fileId is provided, get file by ID
       if (args.fileId) {
-        const file = await ctx.db
-          .query('files')
-          .withIndex('by_file_id', (q) => q.eq('id', args.fileId as string))
-          .unique();
+        const file = await ctx.db.get(args.fileId);
         return file;
       }
 
@@ -204,7 +199,6 @@ export const getFiles = query({
       v.object({
         _id: v.id('files'),
         _creationTime: v.number(),
-        id: v.string(),
         user_id: v.string(),
         file_path: v.string(),
         name: v.string(),
@@ -238,7 +232,6 @@ export const getFiles = query({
 export const createFile = mutation({
   args: {
     fileData: v.object({
-      id: v.string(),
       user_id: v.string(),
       file_path: v.string(),
       name: v.string(),
@@ -253,7 +246,6 @@ export const createFile = mutation({
   returns: v.object({
     _id: v.id('files'),
     _creationTime: v.number(),
-    id: v.string(),
     user_id: v.string(),
     file_path: v.string(),
     name: v.string(),
@@ -282,7 +274,7 @@ export const createFile = mutation({
  */
 export const updateFile = mutation({
   args: {
-    fileId: v.string(),
+    fileId: v.id('files'),
     fileData: v.object({
       file_path: v.optional(v.string()),
       name: v.optional(v.string()),
@@ -296,7 +288,6 @@ export const updateFile = mutation({
   returns: v.object({
     _id: v.id('files'),
     _creationTime: v.number(),
-    id: v.string(),
     user_id: v.string(),
     file_path: v.string(),
     name: v.string(),
@@ -308,10 +299,7 @@ export const updateFile = mutation({
     updated_at: v.optional(v.number()),
   }),
   handler: async (ctx, args) => {
-    const file = await ctx.db
-      .query('files')
-      .withIndex('by_file_id', (q) => q.eq('id', args.fileId))
-      .unique();
+    const file = await ctx.db.get(args.fileId);
 
     if (!file) {
       throw new Error('File not found');
@@ -335,16 +323,13 @@ export const updateFile = mutation({
  */
 export const deleteFile = mutation({
   args: {
-    fileId: v.string(),
+    fileId: v.id('files'),
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
     try {
       // First find the file to verify it exists
-      const file = await ctx.db
-        .query('files')
-        .withIndex('by_file_id', (q) => q.eq('id', args.fileId))
-        .unique();
+      const file = await ctx.db.get(args.fileId);
 
       if (!file) {
         throw new Error('File not found');
