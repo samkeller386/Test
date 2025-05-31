@@ -63,7 +63,6 @@ export async function POST(request: Request) {
       modelParams.isTerminalContinuation ||
       modelParams.selectedPlugin === PluginID.PENTEST_AGENT
         ? handleInitialChatAndUserMessage({
-            supabase,
             modelParams,
             chatMetadata,
             profile,

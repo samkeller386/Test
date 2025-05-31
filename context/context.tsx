@@ -40,8 +40,12 @@ interface PentestGPTContextType {
   membershipData: ProcessedTeamMember | null;
 
   // ITEMS STORE
-  chats: Tables<'chats'>[];
-  setChats: Dispatch<SetStateAction<Tables<'chats'>[]>>;
+  chats: Doc<'chats'>[];
+  setChats: Dispatch<SetStateAction<Doc<'chats'>[]>>;
+  chatsCursor: string | null;
+  setChatsCursor: Dispatch<SetStateAction<string | null>>;
+  chatsIsDone: boolean;
+  setChatsIsDone: Dispatch<SetStateAction<boolean>>;
 
   // PASSIVE CHAT STORE
   userInput: string;
@@ -50,8 +54,8 @@ interface PentestGPTContextType {
   setChatMessages: Dispatch<SetStateAction<ChatMessage[]>>;
   chatSettings: ChatSettings | null;
   setChatSettings: Dispatch<SetStateAction<ChatSettings>>;
-  selectedChat: Tables<'chats'> | null;
-  setSelectedChat: Dispatch<SetStateAction<Tables<'chats'> | null>>;
+  selectedChat: Doc<'chats'> | null;
+  setSelectedChat: Dispatch<SetStateAction<Doc<'chats'> | null>>;
   temporaryChatMessages: ChatMessage[];
   setTemporaryChatMessages: Dispatch<SetStateAction<ChatMessage[]>>;
 
@@ -120,6 +124,10 @@ export const PentestGPTContext = createContext<PentestGPTContextType>({
   // ITEMS STORE
   chats: [],
   setChats: () => {},
+  chatsCursor: null,
+  setChatsCursor: () => {},
+  chatsIsDone: false,
+  setChatsIsDone: () => {},
 
   // PASSIVE CHAT STORE
   userInput: '',

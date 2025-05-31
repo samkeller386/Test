@@ -57,7 +57,9 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
   const [membershipData, setMembershipData] =
     useState<ProcessedTeamMember | null>(null);
   // ITEMS STORE
-  const [chats, setChats] = useState<Tables<'chats'>[]>([]);
+  const [chats, setChats] = useState<Doc<'chats'>[]>([]);
+  const [chatsCursor, setChatsCursor] = useState<string | null>(null);
+  const [chatsIsDone, setChatsIsDone] = useState<boolean>(false);
 
   // PASSIVE CHAT STORE
   const [userInput, setUserInput] = useState<string>('');
@@ -68,9 +70,7 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
   const [chatSettings, setChatSettings] = useState<ChatSettings>({
     model: 'mistral-medium',
   });
-  const [selectedChat, setSelectedChat] = useState<Tables<'chats'> | null>(
-    null,
-  );
+  const [selectedChat, setSelectedChat] = useState<Doc<'chats'> | null>(null);
 
   // ACTIVE CHAT STORE
   const [abortController, setAbortController] =
@@ -322,6 +322,19 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
     }
 
     try {
+      // First, try to find the chat in the existing chats array
+      const existingChat = chats.find((chat) => chat.id === chatId);
+
+      if (existingChat) {
+        // Chat found in existing data, use it directly
+        setSelectedChat(existingChat);
+        setChatSettings({
+          model: existingChat.model as LLMID,
+        });
+        return;
+      }
+
+      // Only make API call if chat is not found in existing data
       const chat = await getChatById(chatId);
       if (!chat) {
         // Chat not found, redirect to the chat page
@@ -370,6 +383,10 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
         // ITEMS STORE
         chats,
         setChats,
+        chatsCursor,
+        setChatsCursor,
+        chatsIsDone,
+        setChatsIsDone,
 
         // PASSIVE CHAT STORE
         userInput,

@@ -31,8 +31,24 @@ export default defineSchema({
     has_files: v.boolean(),
     plugin: v.string(),
   })
-    .index('by_message', ['message_id'])
+    .index('by_message_id', ['message_id'])
     .index('by_chat_and_sequence', ['chat_id', 'sequence_number']),
+
+  chats: defineTable({
+    id: v.string(),
+    user_id: v.string(),
+    model: v.string(),
+    name: v.string(),
+    finish_reason: v.optional(v.string()),
+    sharing: v.union(v.literal('private'), v.literal('public')),
+    last_shared_message_id: v.optional(v.string()),
+    shared_at: v.optional(v.number()),
+    shared_by: v.optional(v.string()),
+    updated_at: v.optional(v.number()),
+  })
+    .index('by_chat_id', ['id'])
+    .index('by_user_id', ['user_id'])
+    .index('by_user_and_updated', ['user_id', 'updated_at']),
 
   messages: defineTable({
     id: v.string(),
@@ -50,7 +66,7 @@ export default defineSchema({
     attachments: v.optional(v.array(v.any())),
     citations: v.array(v.string()),
   })
-    .index('by_chat', ['chat_id'])
+    .index('by_chat_id', ['chat_id'])
     .index('by_chat_and_sequence', ['chat_id', 'sequence_number'])
     .index('by_message_id', ['id']),
 
@@ -65,9 +81,9 @@ export default defineSchema({
     chat_id: v.optional(v.string()),
     updated_at: v.optional(v.number()),
   })
-    .index('by_message', ['message_id'])
-    .index('by_chat', ['chat_id'])
-    .index('by_user', ['user_id']),
+    .index('by_message_id', ['message_id'])
+    .index('by_chat_id', ['chat_id'])
+    .index('by_user_id', ['user_id']),
 
   file_items: defineTable({
     file_id: v.id('files'),
@@ -82,5 +98,5 @@ export default defineSchema({
   })
     .index('by_file_id', ['file_id'])
     .index('by_file_and_sequence', ['file_id', 'sequence_number'])
-    .index('by_message', ['message_id']),
+    .index('by_message_id', ['message_id']),
 });

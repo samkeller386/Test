@@ -13,6 +13,8 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as chats from "../chats.js";
+import type * as chatsHttp from "../chatsHttp.js";
 import type * as crons from "../crons.js";
 import type * as feedback from "../feedback.js";
 import type * as file_items from "../file_items.js";
@@ -31,6 +33,8 @@ import type * as sandboxes from "../sandboxes.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  chats: typeof chats;
+  chatsHttp: typeof chatsHttp;
   crons: typeof crons;
   feedback: typeof feedback;
   file_items: typeof file_items;

@@ -18,11 +18,16 @@ interface WorkspaceLayoutProps {
 const fetchWorkspaceData = async (
   userId: string,
   setChats: (chats: any[]) => void,
+  setChatsCursor: (cursor: string | null) => void,
+  setChatsIsDone: (isDone: boolean) => void,
 ) => {
   try {
-    const chats = await getChatsByUserId(userId);
+    const result = await getChatsByUserId(userId);
 
-    setChats(chats);
+    setChats(result.chats);
+    setChatsCursor(result.continueCursor);
+    setChatsIsDone(result.isDone);
+
     return true;
   } catch (error) {
     console.error('Error fetching workspace data:', error);
@@ -38,6 +43,8 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
   const {
     setChatSettings,
     setChats,
+    setChatsCursor,
+    setChatsIsDone,
     setSelectedChat,
     setChatMessages,
     setUserInput,
@@ -81,7 +88,12 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
         setFirstTokenReceived(false);
 
         // Fetch workspace data
-        const success = await fetchWorkspaceData(user.id, setChats);
+        const success = await fetchWorkspaceData(
+          user.id,
+          setChats,
+          setChatsCursor,
+          setChatsIsDone,
+        );
         if (!success) {
           router.push('/');
           return;
@@ -122,7 +134,7 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
       return () => clearInterval(intervalId);
     }
 
-    return setupPeriodicChecks(15); // Check every 15 minutes
+    return setupPeriodicChecks(60); // Check every 60 minutes
   }, [router]);
 
   if (loading) {

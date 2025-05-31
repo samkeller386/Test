@@ -106,7 +106,7 @@ export const retrieveAndUpdateFilesForMessage = mutation({
       // Get files associated with this message
       const files = (await ctx.db
         .query('files')
-        .withIndex('by_message', (q) => q.eq('message_id', message.id))
+        .withIndex('by_message_id', (q) => q.eq('message_id', message.id))
         .collect()) as Doc<'files'>[];
 
       // Update files to remove message_id
@@ -173,7 +173,9 @@ export const getFile = query({
       if (args.userId && args.fileName) {
         const file = await ctx.db
           .query('files')
-          .withIndex('by_user', (q) => q.eq('user_id', args.userId as string))
+          .withIndex('by_user_id', (q) =>
+            q.eq('user_id', args.userId as string),
+          )
           .filter((q) => q.eq('name', args.fileName as string))
           .unique();
         return file;
@@ -216,7 +218,7 @@ export const getFiles = query({
     try {
       const files = await ctx.db
         .query('files')
-        .withIndex('by_chat', (q) => q.eq('chat_id', args.chatId))
+        .withIndex('by_chat_id', (q) => q.eq('chat_id', args.chatId))
         .collect();
       return files.length > 0 ? files : null;
     } catch (error) {

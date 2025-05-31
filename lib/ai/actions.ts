@@ -17,14 +17,12 @@ import { DEFAULT_TITLE_GENERATION_PROMPT_TEMPLATE } from './prompts';
 import { z } from 'zod';
 
 export async function handleInitialChatAndUserMessage({
-  supabase,
   modelParams,
   chatMetadata,
   profile,
   model,
   messages,
 }: {
-  supabase: SupabaseClient;
   modelParams: ModelParams;
   chatMetadata: ChatMetadata;
   profile: { user_id: string };
@@ -37,7 +35,6 @@ export async function handleInitialChatAndUserMessage({
 
   if (chatMetadata.newChat) {
     await createChat({
-      supabase,
       chatId: chatMetadata.id,
       userId: profile.user_id,
       model,
@@ -58,12 +55,11 @@ export async function handleInitialChatAndUserMessage({
 }
 
 export async function handleFinalChatAndAssistantMessage({
-  supabase,
   modelParams,
   chatMetadata,
   profile,
   model,
-  messages,
+  // messages,
   finishReason,
   title,
   assistantMessage,
@@ -90,15 +86,10 @@ export async function handleFinalChatAndAssistantMessage({
 }) {
   if (!chatMetadata.id) return;
 
-  const content = extractTextContent(messages[messages.length - 1].content);
-
   await updateChat({
-    supabase,
     chatId: chatMetadata.id,
-    userId: profile.user_id,
     model,
     title,
-    content,
     finishReason,
     newChat: chatMetadata.newChat,
   });

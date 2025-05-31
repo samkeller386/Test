@@ -218,7 +218,7 @@ export const getFileItemsByMessageId = query({
       // Get file items for this message
       const fileItems = await ctx.db
         .query('file_items')
-        .withIndex('by_message', (q) => q.eq('message_id', args.messageId))
+        .withIndex('by_message_id', (q) => q.eq('message_id', args.messageId))
         .collect();
 
       return fileItems;

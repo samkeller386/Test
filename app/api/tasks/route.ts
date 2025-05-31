@@ -56,7 +56,6 @@ export async function POST(request: Request) {
 
     // Handle initial chat creation and user message in parallel with other operations
     const initialChatPromise = handleInitialChatAndUserMessage({
-      supabase,
       modelParams,
       chatMetadata,
       profile,

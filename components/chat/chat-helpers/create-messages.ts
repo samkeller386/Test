@@ -14,7 +14,7 @@ import type { Doc, Id } from '@/convex/_generated/dataModel';
 
 export const handleCreateMessages = async (
   chatMessages: ChatMessage[],
-  currentChat: Tables<'chats'> | null,
+  currentChat: Doc<'chats'> | null,
   profile: Tables<'profiles'>,
   modelData: LLM,
   messageContent: string | null,

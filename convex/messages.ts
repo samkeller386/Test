@@ -65,7 +65,7 @@ export const saveAssistantMessage = mutation({
     if (isContinuation || isTerminalContinuation) {
       const lastAssistantMessage = await ctx.db
         .query('messages')
-        .withIndex('by_chat', (q) => q.eq('chat_id', chatId))
+        .withIndex('by_chat_id', (q) => q.eq('chat_id', chatId))
         .filter((q) => q.eq(q.field('role'), 'assistant'))
         .order('desc')
         .first();
@@ -135,7 +135,7 @@ export const deleteLastMessage = mutation({
   handler: async (ctx, args): Promise<boolean> => {
     const lastMessage = await ctx.db
       .query('messages')
-      .withIndex('by_chat', (q) => q.eq('chat_id', args.chatId))
+      .withIndex('by_chat_id', (q) => q.eq('chat_id', args.chatId))
       .order('desc')
       .first();
 
@@ -358,7 +358,7 @@ export const internalGetMessagesWithFiles = internalQuery({
     for (const message of messages) {
       const fileItems = await ctx.db
         .query('file_items')
-        .withIndex('by_message', (q) => q.eq('message_id', message.id))
+        .withIndex('by_message_id', (q) => q.eq('message_id', message.id))
         .collect();
 
       fileItemsMap.set(message.id, fileItems);
