@@ -1,4 +1,9 @@
-import { internalMutation, internalQuery, mutation } from './_generated/server';
+import {
+  internalMutation,
+  internalQuery,
+  mutation,
+  MutationCtx,
+} from './_generated/server';
 import { v } from 'convex/values';
 import { paginationOptsValidator } from 'convex/server';
 
@@ -20,6 +25,18 @@ export const createChat = mutation({
   }),
   handler: async (ctx, args) => {
     try {
+      // Check if chat with this ID already exists
+      const existingChat = await ctx.db
+        .query('chats')
+        .withIndex('by_chat_id', (q) => q.eq('id', args.chat.id))
+        .first();
+
+      if (existingChat) {
+        // Chat already exists, return success
+        return { success: true };
+      }
+
+      // Chat doesn't exist, create new one
       await ctx.db.insert('chats', args.chat);
       return { success: true };
     } catch (error) {
@@ -34,7 +51,7 @@ export const createChat = mutation({
 
 // Helper function for shared chat update logic
 const updateChatHelper = async (
-  ctx: any,
+  ctx: MutationCtx,
   chatId: string,
   updates: {
     name?: string;
@@ -50,12 +67,8 @@ const updateChatHelper = async (
   try {
     const chat = await ctx.db
       .query('chats')
-      .withIndex(
-        'by_chat_id',
-        (q: { eq: (field: string, value: string) => any }) =>
-          q.eq('id', chatId),
-      )
-      .unique();
+      .withIndex('by_chat_id', (q) => q.eq('id', chatId))
+      .first();
 
     if (!chat) {
       return { success: false, error: 'Chat not found' };
@@ -149,7 +162,7 @@ export const getChatById = internalQuery({
       const chat = await ctx.db
         .query('chats')
         .withIndex('by_chat_id', (q) => q.eq('id', args.chatId))
-        .unique();
+        .first();
       return chat ?? null;
     } catch (error) {
       console.error('Error getting chat by ID:', error);
@@ -173,7 +186,7 @@ export const deleteChat = internalMutation({
       const chat = await ctx.db
         .query('chats')
         .withIndex('by_chat_id', (q) => q.eq('id', args.chatId))
-        .unique();
+        .first();
 
       if (!chat) {
         return { success: false, error: 'Chat not found' };
@@ -327,6 +340,77 @@ export const getChatsByUserId = internalQuery({
 //     } catch (error) {
 //       console.error('Error getting shared chats by user ID:', error);
 //       throw new Error(error instanceof Error ? error.message : 'Failed to get shared chats');
+//     }
+//   },
+// });
+
+/**
+ * Clean up duplicate chats by keeping only one chat for each id
+ * This is a one-time operation to fix duplicate chats after migration
+ */
+// export const cleanupDuplicateChats = mutation({
+//   args: {
+//     paginationOpts: paginationOptsValidator, // Required pagination options
+//   },
+//   returns: v.object({
+//     totalProcessed: v.number(),
+//     duplicatesRemoved: v.number(),
+//     errors: v.array(v.string()),
+//     isDone: v.boolean(), // Whether we've processed all chats
+//     continueCursor: v.union(v.string(), v.null()), // Cursor for the next batch
+//   }),
+//   handler: async (ctx, args) => {
+//     const stats = {
+//       totalProcessed: 0,
+//       duplicatesRemoved: 0,
+//       errors: [] as string[],
+//       isDone: false,
+//       continueCursor: null as string | null,
+//     };
+
+//     try {
+//       // Get chats with pagination
+//       const result = await ctx.db
+//         .query("chats")
+//         .order("desc")
+//         .paginate(args.paginationOpts);
+
+//       const chatsToProcess = result.page;
+//       stats.totalProcessed = chatsToProcess.length;
+//       stats.isDone = result.isDone;
+//       stats.continueCursor = result.continueCursor;
+
+//       // Group chats by id
+//       const chatsById = new Map<string, typeof chatsToProcess>();
+//       for (const chat of chatsToProcess) {
+//         const existing = chatsById.get(chat.id) || [];
+//         existing.push(chat);
+//         chatsById.set(chat.id, existing);
+//       }
+
+//       // For each group with duplicates, keep one and delete others
+//       for (const [id, chats] of chatsById.entries()) {
+//         if (chats.length <= 1) continue; // Skip if no duplicates
+
+//         // Since creation times are the same, we'll keep the first one we find
+//         // and delete the rest
+//         const [keepChat, ...duplicates] = chats;
+
+//         // Delete all duplicates
+//         for (const duplicate of duplicates) {
+//           try {
+//             await ctx.db.delete(duplicate._id);
+//             stats.duplicatesRemoved++;
+//           } catch (error) {
+//             stats.errors.push(`Failed to delete duplicate chat ${duplicate._id}: ${error}`);
+//           }
+//         }
+//       }
+
+//       return stats;
+//     } catch (error) {
+//       stats.errors.push(`Failed to process chats: ${error}`);
+//       return stats;
 //     }
 //   },
 // });
