@@ -32,6 +32,51 @@ export const createChat = mutation({
   },
 });
 
+// Helper function for shared chat update logic
+const updateChatHelper = async (
+  ctx: any,
+  chatId: string,
+  updates: {
+    name?: string;
+    updated_at?: number;
+    finish_reason?: string;
+    model?: string;
+    sharing?: 'private' | 'public';
+    last_shared_message_id?: string;
+    shared_by?: string;
+    shared_at?: number;
+  },
+) => {
+  try {
+    const chat = await ctx.db
+      .query('chats')
+      .withIndex(
+        'by_chat_id',
+        (q: { eq: (field: string, value: string) => any }) =>
+          q.eq('id', chatId),
+      )
+      .unique();
+
+    if (!chat) {
+      return { success: false, error: 'Chat not found' };
+    }
+
+    const updateData = { ...updates };
+    if (updateData.updated_at === undefined) {
+      updateData.updated_at = Date.now();
+    }
+
+    await ctx.db.patch(chat._id, updateData);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating chat:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
+
 export const updateChat = mutation({
   args: {
     chatId: v.string(),
@@ -51,30 +96,7 @@ export const updateChat = mutation({
     error: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
-    try {
-      const chat = await ctx.db
-        .query('chats')
-        .withIndex('by_chat_id', (q) => q.eq('id', args.chatId))
-        .unique();
-
-      if (!chat) {
-        return { success: false, error: 'Chat not found' };
-      }
-
-      const updates = { ...args.updates };
-      if (updates.updated_at === undefined) {
-        updates.updated_at = Date.now();
-      }
-
-      await ctx.db.patch(chat._id, updates);
-      return { success: true };
-    } catch (error) {
-      console.error('Error updating chat:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
+    return updateChatHelper(ctx, args.chatId, args.updates);
   },
 });
 
@@ -97,30 +119,7 @@ export const InternalUpdateChat = internalMutation({
     error: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
-    try {
-      const chat = await ctx.db
-        .query('chats')
-        .withIndex('by_chat_id', (q) => q.eq('id', args.chatId))
-        .unique();
-
-      if (!chat) {
-        return { success: false, error: 'Chat not found' };
-      }
-
-      const updates = { ...args.updates };
-      if (updates.updated_at === undefined) {
-        updates.updated_at = Date.now();
-      }
-
-      await ctx.db.patch(chat._id, updates);
-      return { success: true };
-    } catch (error) {
-      console.error('Error updating chat:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
+    return updateChatHelper(ctx, args.chatId, args.updates);
   },
 });
 
