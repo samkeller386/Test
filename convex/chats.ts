@@ -181,10 +181,55 @@ export const deleteChat = internalMutation({
         return { success: false, error: 'Chat not found' };
       }
 
+      // First delete all files and their items associated with this chat
+      const files = await ctx.db
+        .query('files')
+        .withIndex('by_chat_id', (q) => q.eq('chat_id', args.chatId))
+        .collect();
+
+      // Delete all file items and files
+      for (const file of files) {
+        try {
+          // Get and delete all file items for this file
+          const fileItems = await ctx.db
+            .query('file_items')
+            .withIndex('by_file_id', (q) => q.eq('file_id', file._id))
+            .collect();
+
+          // Delete all file items
+          for (const item of fileItems) {
+            await ctx.db.delete(item._id);
+          }
+
+          // Delete the file itself
+          await ctx.db.delete(file._id);
+        } catch (deleteError) {
+          console.error(`Error deleting file ${file._id}:`, deleteError);
+          // Continue with other deletions even if one fails
+        }
+      }
+
+      // Then delete all messages associated with this chat
+      const messages = await ctx.db
+        .query('messages')
+        .withIndex('by_chat_id', (q) => q.eq('chat_id', args.chatId))
+        .collect();
+
+      // Delete all messages
+      for (const message of messages) {
+        try {
+          await ctx.db.delete(message._id);
+        } catch (deleteError) {
+          console.error(`Error deleting message ${message.id}:`, deleteError);
+          // Continue with other deletions even if one fails
+        }
+      }
+
+      // Finally delete the chat itself
       await ctx.db.delete(chat._id);
       return { success: true };
     } catch (error) {
-      console.error('Error deleting chat:', error);
+      console.error('Error deleting chat and associated data:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -203,11 +248,61 @@ export const deleteAllChats = internalMutation({
   }),
   handler: async (ctx, args) => {
     try {
+      // First delete all file items for this user
+      const fileItems = await ctx.db
+        .query('file_items')
+        .filter((q) => q.eq('user_id', args.userId))
+        .collect();
+
+      // Delete all file items
+      for (const item of fileItems) {
+        try {
+          await ctx.db.delete(item._id);
+        } catch (deleteError) {
+          console.error(`Error deleting file item ${item._id}:`, deleteError);
+          // Continue with other deletions even if one fails
+        }
+      }
+
+      // Then delete all files for this user
+      const files = await ctx.db
+        .query('files')
+        .withIndex('by_user_id', (q) => q.eq('user_id', args.userId))
+        .collect();
+
+      // Delete all files
+      for (const file of files) {
+        try {
+          await ctx.db.delete(file._id);
+        } catch (deleteError) {
+          console.error(`Error deleting file ${file._id}:`, deleteError);
+          // Continue with other deletions even if one fails
+        }
+      }
+
+      // Then delete all messages for this user
+      const messages = await ctx.db
+        .query('messages')
+        .withIndex('by_user_id', (q) => q.eq('user_id', args.userId))
+        .collect();
+
+      // Delete all messages
+      for (const message of messages) {
+        try {
+          await ctx.db.delete(message._id);
+        } catch (deleteError) {
+          console.error(`Error deleting message ${message.id}:`, deleteError);
+          // Continue with other deletions even if one fails
+        }
+      }
+
+      // Finally delete all chats for this user
       const chats = await ctx.db
         .query('chats')
         .withIndex('by_user_id', (q) => q.eq('user_id', args.userId))
         .collect();
 
+      // Delete all chats
       for (const chat of chats) {
         try {
           await ctx.db.delete(chat._id);
@@ -219,7 +314,7 @@ export const deleteAllChats = internalMutation({
 
       return { success: true };
     } catch (error) {
-      console.error('Error deleting all chats:', error);
+      console.error('Error deleting all chats and associated data:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
