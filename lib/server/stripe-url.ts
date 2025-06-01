@@ -133,11 +133,14 @@ export async function getBillingPortalUrl(): Promise<Result<string>> {
   if (!user) {
     return errStr('User not found');
   }
-  const { data: subscription } = await supabase
+  const { data: subscriptions } = await supabase
     .from('subscriptions')
     .select('*')
     .eq('user_id', user.id)
-    .single();
+    .eq('status', 'active')
+    .limit(1);
+
+  const subscription = subscriptions?.[0];
   if (!subscription) {
     return errStr('Subscription not found');
   }
