@@ -215,104 +215,103 @@ export async function executeWebSearchTool({
   let generatedTitle: string | undefined;
   let assistantMessage = '';
   const citations: string[] = [];
+  let titleGenerationPromise: Promise<void> | null = null;
 
   try {
-    await Promise.all([
-      (async () => {
-        const requestPayload = {
-          model: selectedModel,
-          system: systemPrompt,
-          messages: toVercelChatMessages(validatedMessages, true, true),
-          stream: true,
-          max_tokens: 2048,
-          web_search_options: {
-            search_context_size: 'medium',
-            ...(userCountryCode && {
-              user_location: { country: userCountryCode },
-            }),
-          },
-        };
-
-        let { response, error } = await makePerplexityRequest(
-          requestPayload,
-          abortSignal,
-        );
-
-        // If we get a country code error, retry without user location
-        if (error?.error?.type === 'invalid_country_code') {
-          const retryPayload = {
-            ...requestPayload,
-            web_search_options: { search_context_size: 'medium' },
-          };
-          ({ response, error } = await makePerplexityRequest(
-            retryPayload,
-            abortSignal,
-          ));
-        }
-
-        if (error) {
-          console.error('[WebSearch] Error Details:', {
-            status: response.status,
-            statusText: response.statusText,
-            requestPayload: {
-              model: requestPayload.model,
-              messageCount: requestPayload.messages.length,
-            },
-            responseBody: error,
-            headers: Object.fromEntries(response.headers.entries()),
-          });
-          throw new Error(
-            `Web search failed: ${response.status} ${response.statusText}`,
-          );
-        }
-
-        let hasFirstTextDelta = false;
-
-        for await (const delta of streamPerplexityResponse(response)) {
-          if (delta.type === 'citations' && delta.citations) {
-            citations.push(...delta.citations);
-          }
-
-          if (delta.type === 'text-delta' && delta.textDelta) {
-            if (!hasFirstTextDelta) {
-              dataStream.writeData({ citations });
-              hasFirstTextDelta = true;
-            }
-
-            assistantMessage += delta.textDelta;
-            dataStream.writeData({
-              type: 'text-delta',
-              content: delta.textDelta,
-            });
-          }
-        }
-
-        // Wait for initial chat handling to complete before final handling
-        await initialChatPromise;
-
-        await handleFinalChatAndAssistantMessage({
-          modelParams,
-          chatMetadata,
-          profile,
-          model,
-          chat,
-          finishReason: 'stop',
-          title: generatedTitle,
-          assistantMessage,
-          citations,
-          assistantMessageId,
+    // Start title generation if needed
+    if (chatMetadata.id && !chat) {
+      titleGenerationPromise = (async () => {
+        generatedTitle = await generateTitleFromUserMessage({
+          messages,
+          abortSignal: config.abortSignal,
         });
-      })(),
-      (async () => {
-        if (chatMetadata.id && !chat) {
-          generatedTitle = await generateTitleFromUserMessage({
-            messages,
-            abortSignal: config.abortSignal,
-          });
-          dataStream.writeData({ chatTitle: generatedTitle });
+        dataStream.writeData({ chatTitle: generatedTitle });
+      })();
+    }
+
+    const requestPayload = {
+      model: selectedModel,
+      system: systemPrompt,
+      messages: toVercelChatMessages(validatedMessages, true, true),
+      stream: true,
+      max_tokens: 2048,
+      web_search_options: {
+        search_context_size: 'medium',
+        ...(userCountryCode && {
+          user_location: { country: userCountryCode },
+        }),
+      },
+    };
+
+    let { response, error } = await makePerplexityRequest(
+      requestPayload,
+      abortSignal,
+    );
+
+    // If we get a country code error, retry without user location
+    if (error?.error?.type === 'invalid_country_code') {
+      const retryPayload = {
+        ...requestPayload,
+        web_search_options: { search_context_size: 'medium' },
+      };
+      ({ response, error } = await makePerplexityRequest(
+        retryPayload,
+        abortSignal,
+      ));
+    }
+
+    if (error) {
+      console.error('[WebSearch] Error Details:', {
+        status: response.status,
+        statusText: response.statusText,
+        requestPayload: {
+          model: requestPayload.model,
+          messageCount: requestPayload.messages.length,
+        },
+        responseBody: error,
+        headers: Object.fromEntries(response.headers.entries()),
+      });
+      throw new Error(
+        `Web search failed: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    let hasFirstTextDelta = false;
+
+    for await (const delta of streamPerplexityResponse(response)) {
+      if (delta.type === 'citations' && delta.citations) {
+        citations.push(...delta.citations);
+      }
+
+      if (delta.type === 'text-delta' && delta.textDelta) {
+        if (!hasFirstTextDelta) {
+          dataStream.writeData({ citations });
+          hasFirstTextDelta = true;
         }
-      })(),
-    ]);
+
+        assistantMessage += delta.textDelta;
+        dataStream.writeData({
+          type: 'text-delta',
+          content: delta.textDelta,
+        });
+      }
+    }
+
+    // Wait for both title generation and initial chat handling to complete
+    await Promise.all([titleGenerationPromise, initialChatPromise]);
+
+    await handleFinalChatAndAssistantMessage({
+      modelParams,
+      chatMetadata,
+      profile,
+      model,
+      chat,
+      finishReason: 'stop',
+      title: generatedTitle,
+      assistantMessage,
+      citations,
+      assistantMessageId,
+    });
 
     return 'Web search completed';
   } catch (error) {

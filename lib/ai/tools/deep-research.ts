@@ -80,6 +80,7 @@ export async function executeDeepResearchTool({
   let isThinking = false;
   let thinkingStartTime: number | null = null;
   const assistantMessageId = uuidv4();
+  let titleGenerationPromise: Promise<void> | null = null;
 
   // Set up keepalive interval
   const keepaliveInterval = setInterval(() => {
@@ -92,87 +93,85 @@ export async function executeDeepResearchTool({
   }, KEEPALIVE_INTERVAL);
 
   try {
-    await Promise.all([
-      (async () => {
-        const result = streamText({
-          model: myProvider.languageModel('deep-research-model'),
-          system: systemPrompt,
-          messages: toVercelChatMessages(validatedMessages),
-          maxTokens: 8192,
-          experimental_generateMessageId: () => assistantMessageId,
-          providerOptions: {
-            perplexity: {
-              web_search_options: {
-                search_context_size: 'medium',
-                ...(userCountryCode && {
-                  user_location: { country: userCountryCode },
-                }),
-              },
-            },
-          },
-          onChunk: async (chunk) => {
-            if (chunk.chunk.type === 'reasoning') {
-              if (!isThinking) {
-                isThinking = true;
-                thinkingStartTime = Date.now();
-              }
-            }
-          },
-          onError: async (error) => {
-            console.error('[DeepResearch] Stream Error:', error);
-          },
-          onFinish: async ({ text, reasoning }) => {
-            let thinkingElapsedSecs = null;
-            if (isThinking && thinkingStartTime) {
-              isThinking = false;
-              thinkingElapsedSecs = Math.round(
-                (Date.now() - thinkingStartTime) / 1000,
-              );
-              dataStream.writeData({
-                type: 'thinking-time',
-                elapsed_secs: thinkingElapsedSecs,
-              });
-            }
-
-            // Wait for initial chat handling to complete before final handling
-            await initialChatPromise;
-
-            await handleFinalChatAndAssistantMessage({
-              modelParams,
-              chatMetadata,
-              profile,
-              model,
-              chat,
-              finishReason: 'stop',
-              title: generatedTitle,
-              assistantMessage: text,
-              citations,
-              thinkingText: reasoning || undefined,
-              thinkingElapsedSecs,
-              assistantMessageId,
-            });
-          },
+    // Start title generation if needed
+    if (chatMetadata.id && !chat) {
+      titleGenerationPromise = (async () => {
+        generatedTitle = await generateTitleFromUserMessage({
+          messages: originalMessages,
+          abortSignal,
         });
+        dataStream.writeData({ chatTitle: generatedTitle });
+      })();
+    }
 
-        for await (const part of result.fullStream) {
-          if (part.type === 'source' && part.source.sourceType === 'url') {
-            citations.push(part.source.url);
-            dataStream.writeData({ citations });
+    const result = streamText({
+      model: myProvider.languageModel('deep-research-model'),
+      system: systemPrompt,
+      messages: toVercelChatMessages(validatedMessages),
+      maxTokens: 8192,
+      experimental_generateMessageId: () => assistantMessageId,
+      providerOptions: {
+        perplexity: {
+          web_search_options: {
+            search_context_size: 'medium',
+            ...(userCountryCode && {
+              user_location: { country: userCountryCode },
+            }),
+          },
+        },
+      },
+      onChunk: async (chunk) => {
+        if (chunk.chunk.type === 'reasoning') {
+          if (!isThinking) {
+            isThinking = true;
+            thinkingStartTime = Date.now();
           }
         }
-
-        result.mergeIntoDataStream(dataStream, { sendReasoning: true });
-      })(),
-      (async () => {
-        if (chatMetadata.id && !chat) {
-          generatedTitle = await generateTitleFromUserMessage({
-            messages: originalMessages,
-            abortSignal,
+      },
+      onError: async (error) => {
+        console.error('[DeepResearch] Stream Error:', error);
+      },
+      onFinish: async ({ text, reasoning }) => {
+        let thinkingElapsedSecs = null;
+        if (isThinking && thinkingStartTime) {
+          isThinking = false;
+          thinkingElapsedSecs = Math.round(
+            (Date.now() - thinkingStartTime) / 1000,
+          );
+          dataStream.writeData({
+            type: 'thinking-time',
+            elapsed_secs: thinkingElapsedSecs,
           });
-          dataStream.writeData({ chatTitle: generatedTitle });
         }
-      })(),
-    ]);
+
+        // Wait for both title generation and initial chat handling to complete
+        await Promise.all([titleGenerationPromise, initialChatPromise]);
+
+        await handleFinalChatAndAssistantMessage({
+          modelParams,
+          chatMetadata,
+          profile,
+          model,
+          chat,
+          finishReason: 'stop',
+          title: generatedTitle,
+          assistantMessage: text,
+          citations,
+          thinkingText: reasoning || undefined,
+          thinkingElapsedSecs,
+          assistantMessageId,
+        });
+      },
+    });
+
+    for await (const part of result.fullStream) {
+      if (part.type === 'source' && part.source.sourceType === 'url') {
+        citations.push(part.source.url);
+        dataStream.writeData({ citations });
+      }
+    }
+
+    result.mergeIntoDataStream(dataStream, { sendReasoning: true });
 
     return 'Deep research completed';
   } catch (error) {
