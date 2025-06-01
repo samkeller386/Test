@@ -5,7 +5,6 @@ import type {
   ModelParams,
   BuiltChatMessage,
 } from '@/types';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   saveUserMessage,
   saveAssistantMessage,
@@ -15,25 +14,28 @@ import { generateObject } from 'ai';
 import { myProvider } from './providers';
 import { DEFAULT_TITLE_GENERATION_PROMPT_TEMPLATE } from './prompts';
 import { z } from 'zod';
+import type { Doc } from '@/convex/_generated/dataModel';
 
 export async function handleInitialChatAndUserMessage({
   modelParams,
   chatMetadata,
   profile,
   model,
+  chat,
   messages,
 }: {
   modelParams: ModelParams;
   chatMetadata: ChatMetadata;
   profile: { user_id: string };
   model: LLMID;
+  chat: Doc<'chats'> | null;
   messages: any[];
 }) {
   if (!chatMetadata.id) return;
 
   const content = extractTextContent(messages[messages.length - 1].content);
 
-  if (chatMetadata.newChat) {
+  if (!chat) {
     await createChat({
       chatId: chatMetadata.id,
       userId: profile.user_id,
@@ -59,7 +61,7 @@ export async function handleFinalChatAndAssistantMessage({
   chatMetadata,
   profile,
   model,
-  // messages,
+  chat,
   finishReason,
   title,
   assistantMessage,
@@ -69,12 +71,11 @@ export async function handleFinalChatAndAssistantMessage({
   fileAttachments,
   assistantMessageId,
 }: {
-  supabase: SupabaseClient;
   modelParams: ModelParams;
   chatMetadata: ChatMetadata;
   profile: { user_id: string };
   model: LLMID;
-  messages: any[];
+  chat: Doc<'chats'> | null;
   finishReason: string;
   title?: string;
   assistantMessage?: string;
@@ -91,7 +92,7 @@ export async function handleFinalChatAndAssistantMessage({
     model,
     title,
     finishReason,
-    newChat: chatMetadata.newChat,
+    newChat: !chat,
   });
 
   await saveAssistantMessage({

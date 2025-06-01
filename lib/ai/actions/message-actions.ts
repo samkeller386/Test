@@ -131,14 +131,18 @@ export async function saveUserMessage({
         .filter((id): id is Id<'files'> => id !== undefined);
 
       if (fileIds.length > 0) {
-        const success = await convex.mutation(api.files.updateFilesMessage, {
+        const result = await convex.mutation(api.files.updateFilesMessage, {
           fileIds,
           messageId: savedUserMessageId,
           chatId: chatId,
         });
 
-        if (!success) {
-          console.error('Error updating files');
+        if (!result.success) {
+          console.error('Error updating files:', {
+            error: result.error,
+            messageId: savedUserMessageId,
+            chatId: chatId,
+          });
         }
       }
     }

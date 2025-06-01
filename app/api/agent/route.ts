@@ -9,6 +9,7 @@ import { postRequestBodySchema, type PostRequestBody } from '../chat/schema';
 import { ChatSDKError } from '@/lib/errors';
 import { handleInitialChatAndUserMessage } from '@/lib/ai/actions';
 import { PluginID } from '@/types';
+import { validateChatAccess } from '@/lib/ai/actions/chat-validation';
 
 export const maxDuration = 800;
 
@@ -43,6 +44,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const chat = await validateChatAccess({
+      chatMetadata,
+      userId: profile.user_id,
+    });
+
     const supabase = await createClient();
 
     const { processedMessages, systemPrompt, pentestFiles } =
@@ -67,6 +73,7 @@ export async function POST(request: Request) {
             chatMetadata,
             profile,
             model,
+            chat,
             messages,
           })
         : Promise.resolve();
@@ -82,6 +89,7 @@ export async function POST(request: Request) {
 
         await executePentestAgent({
           config: {
+            chat,
             messages: processedMessages,
             modelParams,
             profile,
@@ -89,7 +97,6 @@ export async function POST(request: Request) {
             abortSignal: abortController.signal,
             chatMetadata,
             model,
-            supabase,
             userCountryCode,
             originalMessages: messages,
             systemPrompt,

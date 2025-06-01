@@ -8,6 +8,7 @@ import { postRequestBodySchema, type PostRequestBody } from '../chat/schema';
 import { ChatSDKError } from '@/lib/errors';
 import { handleInitialChatAndUserMessage } from '@/lib/ai/actions';
 import { executeDeepResearchTool } from '@/lib/ai/tools/deep-research';
+import { validateChatAccess } from '@/lib/ai/actions/chat-validation';
 
 export const maxDuration = 800;
 
@@ -42,6 +43,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const chat = await validateChatAccess({
+      chatMetadata,
+      userId: profile.user_id,
+    });
+
     const supabase = await createClient();
 
     const { processedMessages, systemPrompt } = await processChatMessages(
@@ -60,6 +66,7 @@ export async function POST(request: Request) {
       chatMetadata,
       profile,
       model,
+      chat,
       messages,
     });
 
@@ -72,6 +79,7 @@ export async function POST(request: Request) {
 
         await executeDeepResearchTool({
           config: {
+            chat,
             messages: processedMessages,
             modelParams,
             profile,
@@ -79,7 +87,6 @@ export async function POST(request: Request) {
             abortSignal: abortController.signal,
             chatMetadata,
             model,
-            supabase,
             userCountryCode,
             originalMessages: messages,
             systemPrompt,

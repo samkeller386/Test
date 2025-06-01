@@ -2,7 +2,8 @@ import {
   internalMutation,
   internalQuery,
   mutation,
-  MutationCtx,
+  type MutationCtx,
+  query,
 } from './_generated/server';
 import { v } from 'convex/values';
 import { paginationOptsValidator } from 'convex/server';
@@ -25,18 +26,6 @@ export const createChat = mutation({
   }),
   handler: async (ctx, args) => {
     try {
-      // Check if chat with this ID already exists
-      const existingChat = await ctx.db
-        .query('chats')
-        .withIndex('by_chat_id', (q) => q.eq('id', args.chat.id))
-        .first();
-
-      if (existingChat) {
-        // Chat already exists, return success
-        return { success: true };
-      }
-
-      // Chat doesn't exist, create new one
       await ctx.db.insert('chats', args.chat);
       return { success: true };
     } catch (error) {
@@ -414,3 +403,50 @@ export const getChatsByUserId = internalQuery({
 //     }
 //   },
 // });
+
+export const getChatByIdWithValidation = query({
+  args: {
+    chatId: v.string(),
+    userId: v.string(),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id('chats'),
+      _creationTime: v.number(),
+      id: v.string(),
+      user_id: v.string(),
+      model: v.string(),
+      name: v.string(),
+      finish_reason: v.optional(v.string()),
+      sharing: v.union(v.literal('private'), v.literal('public')),
+      last_shared_message_id: v.optional(v.string()),
+      shared_at: v.optional(v.number()),
+      shared_by: v.optional(v.string()),
+      updated_at: v.optional(v.number()),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    try {
+      const chat = await ctx.db
+        .query('chats')
+        .withIndex('by_chat_id', (q) => q.eq('id', args.chatId))
+        .first();
+
+      // If chat doesn't exist, return null
+      if (!chat) {
+        return null;
+      }
+
+      if (chat.user_id === args.userId) {
+        return chat;
+      }
+
+      // If user is not authorized, throw an error
+      throw new Error('Unauthorized access to chat');
+    } catch (error) {
+      console.error('Error validating chat access:', error);
+      throw error;
+    }
+  },
+});

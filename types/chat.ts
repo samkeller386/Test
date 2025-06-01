@@ -33,6 +33,5 @@ export type SubscriptionInfo = {
 
 export type ChatMetadata = {
   id?: string;
-  newChat: boolean;
   retrievedFileItems?: Doc<'file_items'>[];
 };

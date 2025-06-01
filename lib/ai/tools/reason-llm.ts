@@ -3,7 +3,6 @@ import { toVercelChatMessages } from '@/lib/ai/message-utils';
 import { streamText, tool } from 'ai';
 import PostHogClient from '@/app/posthog';
 import type { ChatMetadata, LLMID, RateLimitInfo, ModelParams } from '@/types';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   handleFinalChatAndAssistantMessage,
   generateTitleFromUserMessage,
@@ -12,8 +11,10 @@ import { myProvider } from '../providers';
 import { z } from 'zod';
 import { getPageContent } from './browser';
 import { v4 as uuidv4 } from 'uuid';
+import type { Doc } from '@/convex/_generated/dataModel';
 
 interface ReasonLLMConfig {
+  chat: Doc<'chats'> | null;
   messages: any[];
   profile: any;
   modelParams: ModelParams;
@@ -22,7 +23,6 @@ interface ReasonLLMConfig {
   abortSignal: AbortSignal;
   chatMetadata: ChatMetadata;
   model: LLMID;
-  supabase: SupabaseClient | null;
   rateLimitInfo: RateLimitInfo;
   initialChatPromise: Promise<void>;
 }
@@ -50,6 +50,7 @@ export async function executeReasonLLMTool({
   }
 
   const {
+    chat,
     messages,
     modelParams,
     profile,
@@ -57,7 +58,6 @@ export async function executeReasonLLMTool({
     abortSignal,
     chatMetadata,
     model,
-    supabase,
     initialChatPromise,
   } = config;
   const { systemPrompt, model: selectedModel } =
@@ -167,32 +167,29 @@ beneficial for the user's needs.`,
               });
             }
 
-            if (supabase) {
-              // Wait for initial chat handling to complete before final handling
-              await initialChatPromise;
+            // Wait for initial chat handling to complete before final handling
+            await initialChatPromise;
 
-              await handleFinalChatAndAssistantMessage({
-                supabase,
-                modelParams,
-                chatMetadata,
-                profile,
-                model,
-                messages,
-                finishReason,
-                title: generatedTitle,
-                assistantMessage: text,
-                thinkingText: reasoning || undefined,
-                thinkingElapsedSecs,
-                assistantMessageId,
-              });
-            }
+            await handleFinalChatAndAssistantMessage({
+              modelParams,
+              chatMetadata,
+              profile,
+              model,
+              chat,
+              finishReason,
+              title: generatedTitle,
+              assistantMessage: text,
+              thinkingText: reasoning || undefined,
+              thinkingElapsedSecs,
+              assistantMessageId,
+            });
           },
         });
 
         result.mergeIntoDataStream(dataStream, { sendReasoning: true });
       })(),
       (async () => {
-        if (chatMetadata.id && chatMetadata.newChat) {
+        if (chatMetadata.id && !chat) {
           generatedTitle = await generateTitleFromUserMessage({
             messages,
             abortSignal: config.abortSignal,

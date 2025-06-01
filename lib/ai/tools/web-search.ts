@@ -6,15 +6,16 @@ import {
 import llmConfig from '@/lib/models/llm-config';
 import PostHogClient from '@/app/posthog';
 import type { ChatMetadata, LLMID, ModelParams } from '@/types';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   generateTitleFromUserMessage,
   handleFinalChatAndAssistantMessage,
 } from '@/lib/ai/actions';
 import { removePdfContentFromMessages } from '@/lib/build-prompt-backend';
 import { ChatSDKError } from '@/lib/errors';
+import type { Doc } from '@/convex/_generated/dataModel';
 
 interface WebSearchConfig {
+  chat: Doc<'chats'> | null;
   messages: any[];
   modelParams: ModelParams;
   profile: any;
@@ -24,7 +25,6 @@ interface WebSearchConfig {
   abortSignal: AbortSignal;
   chatMetadata: ChatMetadata;
   model: LLMID;
-  supabase: SupabaseClient | null;
   userCountryCode: string | null;
   initialChatPromise: Promise<void>;
   assistantMessageId: string;
@@ -174,6 +174,7 @@ export async function executeWebSearchTool({
   }
 
   const {
+    chat,
     messages,
     modelParams,
     profile,
@@ -182,7 +183,6 @@ export async function executeWebSearchTool({
     abortSignal,
     chatMetadata,
     model,
-    supabase,
     userCountryCode,
     initialChatPromise,
     assistantMessageId,
@@ -287,27 +287,24 @@ export async function executeWebSearchTool({
           }
         }
 
-        if (supabase) {
-          // Wait for initial chat handling to complete before final handling
-          await initialChatPromise;
+        // Wait for initial chat handling to complete before final handling
+        await initialChatPromise;
 
-          await handleFinalChatAndAssistantMessage({
-            supabase,
-            modelParams,
-            chatMetadata,
-            profile,
-            model,
-            messages,
-            finishReason: 'stop',
-            title: generatedTitle,
-            assistantMessage,
-            citations,
-            assistantMessageId,
-          });
-        }
+        await handleFinalChatAndAssistantMessage({
+          modelParams,
+          chatMetadata,
+          profile,
+          model,
+          chat,
+          finishReason: 'stop',
+          title: generatedTitle,
+          assistantMessage,
+          citations,
+          assistantMessageId,
+        });
       })(),
       (async () => {
-        if (chatMetadata.id && chatMetadata.newChat) {
+        if (chatMetadata.id && !chat) {
           generatedTitle = await generateTitleFromUserMessage({
             messages,
             abortSignal: config.abortSignal,

@@ -451,10 +451,9 @@ export const useChatHandler = () => {
       };
       const chatId = currentChat?.id ?? uuidv4();
       const chatMetadata: ChatMetadata = isTemporaryChat
-        ? { newChat: !currentChat, retrievedFileItems }
+        ? { retrievedFileItems }
         : {
             id: chatId,
-            newChat: !currentChat,
             retrievedFileItems,
           };
 

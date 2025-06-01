@@ -4,7 +4,6 @@ import {
 } from '@/lib/ai/message-utils';
 import PostHogClient from '@/app/posthog';
 import type { ChatMetadata, LLMID, ModelParams } from '@/types';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   generateTitleFromUserMessage,
   handleFinalChatAndAssistantMessage,
@@ -13,8 +12,10 @@ import { removePdfContentFromMessages } from '@/lib/build-prompt-backend';
 import { streamText } from 'ai';
 import { myProvider } from '@/lib/ai/providers';
 import { v4 as uuidv4 } from 'uuid';
+import type { Doc } from '@/convex/_generated/dataModel';
 
 interface DeepResearchConfig {
+  chat: Doc<'chats'> | null;
   messages: any[];
   profile: any;
   dataStream: any;
@@ -22,7 +23,6 @@ interface DeepResearchConfig {
   abortSignal: AbortSignal;
   chatMetadata: ChatMetadata;
   model: LLMID;
-  supabase: SupabaseClient | null;
   userCountryCode: string | null;
   originalMessages: any[];
   systemPrompt: string;
@@ -42,12 +42,12 @@ export async function executeDeepResearchTool({
   }
 
   const {
+    chat,
     messages,
     profile,
     dataStream,
     modelParams,
     chatMetadata,
-    supabase,
     userCountryCode,
     abortSignal,
     model,
@@ -134,26 +134,23 @@ export async function executeDeepResearchTool({
               });
             }
 
-            if (supabase) {
-              // Wait for initial chat handling to complete before final handling
-              await initialChatPromise;
+            // Wait for initial chat handling to complete before final handling
+            await initialChatPromise;
 
-              await handleFinalChatAndAssistantMessage({
-                supabase,
-                modelParams,
-                chatMetadata,
-                profile,
-                model,
-                messages: originalMessages,
-                finishReason: 'stop',
-                title: generatedTitle,
-                assistantMessage: text,
-                citations,
-                thinkingText: reasoning || undefined,
-                thinkingElapsedSecs,
-                assistantMessageId,
-              });
-            }
+            await handleFinalChatAndAssistantMessage({
+              modelParams,
+              chatMetadata,
+              profile,
+              model,
+              chat,
+              finishReason: 'stop',
+              title: generatedTitle,
+              assistantMessage: text,
+              citations,
+              thinkingText: reasoning || undefined,
+              thinkingElapsedSecs,
+              assistantMessageId,
+            });
           },
         });
 
@@ -167,7 +164,7 @@ export async function executeDeepResearchTool({
         result.mergeIntoDataStream(dataStream, { sendReasoning: true });
       })(),
       (async () => {
-        if (chatMetadata.id && chatMetadata.newChat) {
+        if (chatMetadata.id && !chat) {
           generatedTitle = await generateTitleFromUserMessage({
             messages: originalMessages,
             abortSignal,

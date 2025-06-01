@@ -16,6 +16,7 @@ import {
   handleInitialChatAndUserMessage,
   handleFinalChatAndAssistantMessage,
 } from '@/lib/ai/actions';
+import { validateChatAccess } from '@/lib/ai/actions/chat-validation';
 import { createClient } from '@/lib/supabase/server';
 import { postRequestBodySchema, type PostRequestBody } from './schema';
 import { ChatSDKError } from '@/lib/errors';
@@ -58,10 +59,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const chat = await validateChatAccess({
+      chatMetadata,
+      userId: profile.user_id,
+    });
+
     const supabase = await createClient();
     const isReasoningModel = model === 'reasoning-model';
     let generatedTitle: string | undefined;
-    let assistantMessage = '';
     let toolUsed = '';
     let hasGeneratedTitle = false;
     let titleGenerationPromise: Promise<void> | null = null;
@@ -82,10 +87,12 @@ export async function POST(request: Request) {
       chatMetadata,
       profile,
       model,
+      chat,
       messages,
     });
 
     const toolResponse = await handleToolExecution({
+      chat,
       messages: processedMessages,
       modelParams,
       profile,
@@ -93,7 +100,6 @@ export async function POST(request: Request) {
       abortSignal: abortController.signal,
       chatMetadata,
       model,
-      supabase,
       isReasoningModel,
       rateLimitInfo: config.rateLimitInfo,
       initialChatPromise,
@@ -134,7 +140,7 @@ export async function POST(request: Request) {
               } else if (
                 !hasGeneratedTitle &&
                 chatMetadata.id &&
-                chatMetadata.newChat &&
+                !chat &&
                 !toolUsed &&
                 chunk.chunk.type === 'text-delta'
               ) {
@@ -146,10 +152,6 @@ export async function POST(request: Request) {
                   });
                   dataStream.writeData({ chatTitle: generatedTitle });
                 })();
-              }
-
-              if (chunk.chunk.type === 'text-delta') {
-                assistantMessage += chunk.chunk.textDelta;
               }
             },
             onError: async (error) => {
@@ -168,6 +170,7 @@ export async function POST(request: Request) {
               }
             },
             tools: createToolSchemas({
+              chat,
               messages: processedMessages,
               modelParams,
               profile,
@@ -175,7 +178,6 @@ export async function POST(request: Request) {
               abortSignal: abortController.signal,
               chatMetadata,
               model,
-              supabase,
               userCountryCode,
               initialChatPromise,
               assistantMessageId,
@@ -193,12 +195,11 @@ export async function POST(request: Request) {
                 // Wait for initial chat handling to complete before final handling
                 await initialChatPromise;
                 await handleFinalChatAndAssistantMessage({
-                  supabase,
                   modelParams,
                   chatMetadata,
                   profile,
                   model,
-                  messages,
+                  chat,
                   finishReason,
                   title: generatedTitle,
                   assistantMessage: text,

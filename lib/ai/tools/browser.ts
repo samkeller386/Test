@@ -9,22 +9,22 @@ import { myProvider } from '@/lib/ai/providers';
 import FirecrawlApp, { type ScrapeResponse } from '@mendable/firecrawl-js';
 import PostHogClient from '@/app/posthog';
 import type { ChatMetadata, LLMID, ModelParams } from '@/types';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   generateTitleFromUserMessage,
   handleFinalChatAndAssistantMessage,
 } from '@/lib/ai/actions';
 import { truncateContentByTokens } from '@/lib/ai/terminal-utils';
+import type { Doc } from '@/convex/_generated/dataModel';
 
 interface BrowserToolConfig {
   profile: any;
+  chat: Doc<'chats'> | null;
   messages: any[];
   modelParams: ModelParams;
   dataStream: any;
   abortSignal: AbortSignal;
   chatMetadata: ChatMetadata;
   model: LLMID;
-  supabase: SupabaseClient | null;
   userCountryCode: string | null;
   initialChatPromise: Promise<void>;
   assistantMessageId: string;
@@ -166,11 +166,11 @@ export async function executeBrowserTool({
 
   const {
     profile,
+    chat,
     messages,
     modelParams,
     dataStream,
     chatMetadata,
-    supabase,
     userCountryCode,
     abortSignal,
     initialChatPromise,
@@ -224,23 +224,20 @@ export async function executeBrowserTool({
             finishReason,
             text,
           }: { finishReason: string; text: string }) => {
-            if (supabase) {
-              // Wait for initial chat handling to complete before final handling
-              await initialChatPromise;
+            // Wait for initial chat handling to complete before final handling
+            await initialChatPromise;
 
-              await handleFinalChatAndAssistantMessage({
-                supabase,
-                modelParams,
-                chatMetadata,
-                profile,
-                model: config.model,
-                messages,
-                finishReason,
-                title: generatedTitle,
-                assistantMessage: text,
-                assistantMessageId,
-              });
-            }
+            await handleFinalChatAndAssistantMessage({
+              modelParams,
+              chatMetadata,
+              profile,
+              model: config.model,
+              chat,
+              finishReason,
+              title: generatedTitle,
+              assistantMessage: text,
+              assistantMessageId,
+            });
           },
         });
 
@@ -269,7 +266,7 @@ export async function executeBrowserTool({
         }
       })(),
       (async () => {
-        if (chatMetadata.id && chatMetadata.newChat) {
+        if (chatMetadata.id && !chat) {
           generatedTitle = await generateTitleFromUserMessage({
             messages,
             abortSignal: config.abortSignal,
