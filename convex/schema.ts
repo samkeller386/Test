@@ -115,7 +115,6 @@ export default defineSchema({
     team_name: v.optional(v.string()),
     team_id: v.optional(v.string()),
     quantity: v.number(),
-    updated_at: v.optional(v.number()),
   })
     .index('by_subscription_id', ['subscription_id'])
     .index('by_user_id', ['user_id'])

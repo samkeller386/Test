@@ -119,7 +119,6 @@ export const upsertSubscription = mutation({
       plan_type: args.planType,
       team_name: args.teamName,
       quantity: args.quantity,
-      updated_at: Date.now(),
     };
 
     let newSubscription;
@@ -221,7 +220,6 @@ export const manageTeamOnSubscriptionChange = internalMutation({
       if (subscription) {
         await ctx.db.patch(subscription._id, {
           team_id: teamId,
-          updated_at: Date.now(),
         });
       }
 
@@ -310,7 +308,6 @@ export const manageTeamOnSubscriptionChange = internalMutation({
       if (subscription) {
         await ctx.db.patch(subscription._id, {
           team_id: undefined,
-          updated_at: Date.now(),
         });
       }
     }
@@ -571,7 +568,6 @@ export const getSubscriptionByUserId = internalQuery({
       team_name: v.optional(v.string()),
       team_id: v.optional(v.string()),
       quantity: v.number(),
-      updated_at: v.optional(v.number()),
     }),
     v.null(),
   ),
@@ -613,7 +609,6 @@ export const getSubscriptionByTeamId = internalQuery({
       team_name: v.optional(v.string()),
       team_id: v.optional(v.string()),
       quantity: v.number(),
-      updated_at: v.optional(v.number()),
     }),
     v.null(),
   ),
@@ -655,7 +650,6 @@ export const getSubscriptionByUserIdPublic = query({
       team_name: v.optional(v.string()),
       team_id: v.optional(v.string()),
       quantity: v.number(),
-      updated_at: v.optional(v.number()),
     }),
     v.null(),
   ),

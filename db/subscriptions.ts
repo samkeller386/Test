@@ -12,7 +12,6 @@ export async function getSubscriptionByUserId(userId: string) {
       user_id: userId,
       customer_id: 'cus_env_override',
       created_at: new Date().toISOString(),
-      updated_at: null,
       status: 'active',
       start_date: new Date().toISOString(),
       cancel_at: null,
