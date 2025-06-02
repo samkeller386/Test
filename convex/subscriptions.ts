@@ -106,30 +106,44 @@ export const upsertSubscription = mutation({
       )
       .first();
 
-    const subscriptionData = {
-      id: uuidv4(),
-      subscription_id: args.subscriptionId,
-      user_id: args.userId,
-      customer_id: args.customerId,
-      status: args.status,
-      start_date: args.startDate,
-      cancel_at: args.cancelAt,
-      canceled_at: args.canceledAt,
-      ended_at: args.endedAt,
-      plan_type: args.planType,
-      team_name: args.teamName,
-      quantity: args.quantity,
-    };
-
     let newSubscription;
     const oldSubscription = existingSubscription;
 
     if (existingSubscription) {
-      // Update existing subscription
+      // Update existing subscription - preserve the existing id
+      const subscriptionData = {
+        subscription_id: args.subscriptionId,
+        user_id: args.userId,
+        customer_id: args.customerId,
+        status: args.status,
+        start_date: args.startDate,
+        cancel_at: args.cancelAt,
+        canceled_at: args.canceledAt,
+        ended_at: args.endedAt,
+        plan_type: args.planType,
+        team_name: args.teamName,
+        quantity: args.quantity,
+      };
+
       await ctx.db.patch(existingSubscription._id, subscriptionData);
       newSubscription = { ...existingSubscription, ...subscriptionData };
     } else {
-      // Create new subscription
+      // Create new subscription - generate new UUID for id
+      const subscriptionData = {
+        id: uuidv4(),
+        subscription_id: args.subscriptionId,
+        user_id: args.userId,
+        customer_id: args.customerId,
+        status: args.status,
+        start_date: args.startDate,
+        cancel_at: args.cancelAt,
+        canceled_at: args.canceledAt,
+        ended_at: args.endedAt,
+        plan_type: args.planType,
+        team_name: args.teamName,
+        quantity: args.quantity,
+      };
+
       const subscriptionId = await ctx.db.insert(
         'subscriptions',
         subscriptionData,
