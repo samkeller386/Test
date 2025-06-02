@@ -28,6 +28,7 @@ export const getNextMessageSequence = query({
  */
 export const saveAssistantMessage = mutation({
   args: {
+    serviceKey: v.string(),
     chatId: v.string(),
     userId: v.string(),
     content: v.string(),
@@ -43,84 +44,113 @@ export const saveAssistantMessage = mutation({
     editSequenceNumber: v.optional(v.number()),
     assistantMessageId: v.optional(v.string()),
   },
-  returns: v.id('messages'),
-  handler: async (ctx, args): Promise<Id<'messages'>> => {
-    const {
-      chatId,
-      userId,
-      content,
-      model,
-      plugin,
-      thinkingContent,
-      thinkingElapsedSecs,
-      citations,
-      attachments,
-      isContinuation,
-      isTerminalContinuation,
-      editSequenceNumber,
-      assistantMessageId,
-    } = args;
-
-    // If this is a continuation, update the last assistant message
-    if (isContinuation || isTerminalContinuation) {
-      const lastAssistantMessage = await ctx.db
-        .query('messages')
-        .withIndex('by_chat_id', (q) => q.eq('chat_id', chatId))
-        .filter((q) => q.eq(q.field('role'), 'assistant'))
-        .order('desc')
-        .first();
-
-      if (!lastAssistantMessage) {
-        throw new Error('No assistant message found to continue');
-      }
-
-      // Update the existing message
-      await ctx.db.patch(lastAssistantMessage._id, {
-        content: lastAssistantMessage.content + content,
-        thinking_content: lastAssistantMessage.thinking_content
-          ? lastAssistantMessage.thinking_content + (thinkingContent || '')
-          : thinkingContent || undefined,
-        thinking_elapsed_secs: lastAssistantMessage.thinking_elapsed_secs
-          ? lastAssistantMessage.thinking_elapsed_secs +
-            (thinkingElapsedSecs || 0)
-          : thinkingElapsedSecs || undefined,
-        citations: [...(lastAssistantMessage.citations || []), ...citations],
-        attachments: [
-          ...(lastAssistantMessage.attachments || []),
-          ...(attachments || []),
-        ],
-        updated_at: Date.now(),
-      });
-
-      return lastAssistantMessage._id;
+  returns: v.object({
+    success: v.boolean(),
+    messageId: v.optional(v.id('messages')),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    // Verify service role key
+    if (args.serviceKey !== process.env.CONVEX_SERVICE_ROLE_KEY) {
+      return {
+        success: false,
+        error: 'Unauthorized: Invalid service key',
+      };
     }
 
-    // Get the sequence number - use editSequenceNumber if provided, otherwise get next sequence
-    const sequenceNumber =
-      editSequenceNumber ??
-      (await ctx.runQuery(api.messages.getNextMessageSequence, {
+    try {
+      const {
         chatId,
-      }));
+        userId,
+        content,
+        model,
+        plugin,
+        thinkingContent,
+        thinkingElapsedSecs,
+        citations,
+        attachments,
+        isContinuation,
+        isTerminalContinuation,
+        editSequenceNumber,
+        assistantMessageId,
+      } = args;
 
-    // Create a new message
-    const messageId: Id<'messages'> = await ctx.db.insert('messages', {
-      id: assistantMessageId || uuidv4(),
-      chat_id: chatId,
-      user_id: userId,
-      content,
-      model,
-      plugin,
-      role: 'assistant',
-      sequence_number: sequenceNumber,
-      thinking_content: thinkingContent || undefined,
-      thinking_elapsed_secs: thinkingElapsedSecs || undefined,
-      citations,
-      attachments: attachments || [],
-      updated_at: Date.now(),
-      image_paths: [],
-    });
+      // If this is a continuation, update the last assistant message
+      if (isContinuation || isTerminalContinuation) {
+        const lastAssistantMessage = await ctx.db
+          .query('messages')
+          .withIndex('by_chat_id', (q) => q.eq('chat_id', chatId))
+          .filter((q) => q.eq(q.field('role'), 'assistant'))
+          .order('desc')
+          .first();
 
-    return messageId;
+        if (!lastAssistantMessage) {
+          return {
+            success: false,
+            error: 'No assistant message found to continue',
+          };
+        }
+
+        // Update the existing message
+        await ctx.db.patch(lastAssistantMessage._id, {
+          content: lastAssistantMessage.content + content,
+          thinking_content: lastAssistantMessage.thinking_content
+            ? lastAssistantMessage.thinking_content + (thinkingContent || '')
+            : thinkingContent || undefined,
+          thinking_elapsed_secs: lastAssistantMessage.thinking_elapsed_secs
+            ? lastAssistantMessage.thinking_elapsed_secs +
+              (thinkingElapsedSecs || 0)
+            : thinkingElapsedSecs || undefined,
+          citations: [...(lastAssistantMessage.citations || []), ...citations],
+          attachments: [
+            ...(lastAssistantMessage.attachments || []),
+            ...(attachments || []),
+          ],
+          updated_at: Date.now(),
+        });
+
+        return {
+          success: true,
+          messageId: lastAssistantMessage._id,
+        };
+      }
+
+      // Get the sequence number - use editSequenceNumber if provided, otherwise get next sequence
+      const sequenceNumber =
+        editSequenceNumber ??
+        (await ctx.runQuery(api.messages.getNextMessageSequence, {
+          chatId,
+        }));
+
+      // Create a new message
+      const messageId: Id<'messages'> = await ctx.db.insert('messages', {
+        id: assistantMessageId || uuidv4(),
+        chat_id: chatId,
+        user_id: userId,
+        content,
+        model,
+        plugin,
+        role: 'assistant',
+        sequence_number: sequenceNumber,
+        thinking_content: thinkingContent || undefined,
+        thinking_elapsed_secs: thinkingElapsedSecs || undefined,
+        citations,
+        attachments: attachments || [],
+        updated_at: Date.now(),
+        image_paths: [],
+      });
+
+      return {
+        success: true,
+        messageId,
+      };
+    } catch (error) {
+      console.error('Error saving assistant message:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   },
 });
 
@@ -129,22 +159,45 @@ export const saveAssistantMessage = mutation({
  */
 export const deleteLastMessage = mutation({
   args: {
+    serviceKey: v.string(),
     chatId: v.string(),
   },
-  returns: v.boolean(),
-  handler: async (ctx, args): Promise<boolean> => {
-    const lastMessage = await ctx.db
-      .query('messages')
-      .withIndex('by_chat_id', (q) => q.eq('chat_id', args.chatId))
-      .order('desc')
-      .first();
-
-    if (!lastMessage) {
-      return false;
+  returns: v.object({
+    success: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    // Verify service role key
+    if (args.serviceKey !== process.env.CONVEX_SERVICE_ROLE_KEY) {
+      return {
+        success: false,
+        error: 'Unauthorized: Invalid service key',
+      };
     }
 
-    await ctx.db.delete(lastMessage._id);
-    return true;
+    try {
+      const lastMessage = await ctx.db
+        .query('messages')
+        .withIndex('by_chat_id', (q) => q.eq('chat_id', args.chatId))
+        .order('desc')
+        .first();
+
+      if (!lastMessage) {
+        return {
+          success: false,
+          error: 'No message found to delete',
+        };
+      }
+
+      await ctx.db.delete(lastMessage._id);
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting last message:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   },
 });
 
@@ -153,22 +206,42 @@ export const deleteLastMessage = mutation({
  */
 export const deleteMessagesIncludingAndAfter = mutation({
   args: {
+    serviceKey: v.string(),
     chatId: v.string(),
     sequenceNumber: v.number(),
   },
-  returns: v.boolean(),
-  handler: async (ctx, args): Promise<boolean> => {
-    const messagesToDelete = await ctx.db
-      .query('messages')
-      .withIndex('by_chat_and_sequence', (q) => q.eq('chat_id', args.chatId))
-      .filter((q) => q.gte(q.field('sequence_number'), args.sequenceNumber))
-      .collect();
-
-    for (const message of messagesToDelete) {
-      await ctx.db.delete(message._id);
+  returns: v.object({
+    success: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    // Verify service role key
+    if (args.serviceKey !== process.env.CONVEX_SERVICE_ROLE_KEY) {
+      return {
+        success: false,
+        error: 'Unauthorized: Invalid service key',
+      };
     }
 
-    return true;
+    try {
+      const messagesToDelete = await ctx.db
+        .query('messages')
+        .withIndex('by_chat_and_sequence', (q) => q.eq('chat_id', args.chatId))
+        .filter((q) => q.gte(q.field('sequence_number'), args.sequenceNumber))
+        .collect();
+
+      for (const message of messagesToDelete) {
+        await ctx.db.delete(message._id);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting messages:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   },
 });
 
@@ -177,6 +250,7 @@ export const deleteMessagesIncludingAndAfter = mutation({
  */
 export const insertMessages = mutation({
   args: {
+    serviceKey: v.string(),
     message: v.object({
       id: v.string(),
       chat_id: v.string(),
@@ -193,13 +267,36 @@ export const insertMessages = mutation({
       attachments: v.array(v.any()),
     }),
   },
-  returns: v.string(),
-  handler: async (ctx, args): Promise<string> => {
-    await ctx.db.insert('messages', {
-      ...args.message,
-      updated_at: Date.now(),
-    });
-    return args.message.id;
+  returns: v.object({
+    success: v.boolean(),
+    messageId: v.optional(v.string()),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    // Verify service role key
+    if (args.serviceKey !== process.env.CONVEX_SERVICE_ROLE_KEY) {
+      return {
+        success: false,
+        error: 'Unauthorized: Invalid service key',
+      };
+    }
+
+    try {
+      await ctx.db.insert('messages', {
+        ...args.message,
+        updated_at: Date.now(),
+      });
+      return {
+        success: true,
+        messageId: args.message.id,
+      };
+    } catch (error) {
+      console.error('Error inserting message:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   },
 });
 

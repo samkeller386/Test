@@ -8,6 +8,12 @@ if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
   );
 }
 
+if (!process.env.CONVEX_SERVICE_ROLE_KEY) {
+  throw new Error(
+    'CONVEX_SERVICE_ROLE_KEY environment variable is not defined. Please check your environment configuration.',
+  );
+}
+
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 
 export async function createChat({
@@ -36,7 +42,8 @@ export async function createChat({
       updated_at: Date.now(),
     };
 
-    const { success, error } = await convex.mutation(api.chats.createChat, {
+    const { success, error } = await convex.action(api.chats.createChatAction, {
+      serviceKey: process.env.CONVEX_SERVICE_ROLE_KEY!,
       chat: chatData,
     });
 
@@ -70,7 +77,8 @@ export async function updateChat({
       model,
     };
 
-    const { success, error } = await convex.mutation(api.chats.updateChat, {
+    const { success, error } = await convex.action(api.chats.updateChatAction, {
+      serviceKey: process.env.CONVEX_SERVICE_ROLE_KEY!,
       chatId,
       updates: updateData,
     });

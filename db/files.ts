@@ -46,7 +46,9 @@ const createBaseFile = async (
   fileRecord: TablesInsert<'files'>,
   processFile: (fileId: Id<'files'>) => Promise<void>,
 ) => {
-  const filesCounts = await convex.query(api.files.getAllFilesCount, {});
+  const filesCounts = await convex.query(api.files.getAllFilesCount, {
+    userId: fileRecord.user_id,
+  });
   const maxFiles = Number.parseInt(
     process.env.NEXT_PUBLIC_RATELIMITER_LIMIT_FILES || '100',
   );

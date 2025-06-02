@@ -4,13 +4,18 @@ import type { Doc } from './_generated/dataModel';
 import { internal } from './_generated/api';
 
 /**
- * Get count of all files
+ * Get count of files for a specific user
  */
 export const getAllFilesCount = query({
-  args: {},
+  args: {
+    userId: v.string(),
+  },
   returns: v.number(),
-  handler: async (ctx) => {
-    const files = await ctx.db.query('files').collect();
+  handler: async (ctx, args) => {
+    const files = await ctx.db
+      .query('files')
+      .withIndex('by_user_id', (q) => q.eq('user_id', args.userId))
+      .collect();
     return files.length;
   },
 });
@@ -20,6 +25,7 @@ export const getAllFilesCount = query({
  */
 export const updateFilesMessage = mutation({
   args: {
+    serviceKey: v.string(),
     fileIds: v.array(v.id('files')),
     messageId: v.string(),
     chatId: v.string(),
@@ -32,6 +38,14 @@ export const updateFilesMessage = mutation({
     ctx,
     args,
   ): Promise<{ success: boolean; error: string | null }> => {
+    // Verify service role key
+    if (args.serviceKey !== process.env.CONVEX_SERVICE_ROLE_KEY) {
+      return {
+        success: false,
+        error: 'Unauthorized: Invalid service key',
+      };
+    }
+
     if (args.fileIds.length === 0) {
       return {
         success: false,
@@ -96,6 +110,7 @@ export const updateFilesMessage = mutation({
  */
 export const retrieveAndUpdateFilesForMessage = mutation({
   args: {
+    serviceKey: v.string(),
     chatId: v.string(),
     sequenceNumber: v.number(),
   },
@@ -119,6 +134,15 @@ export const retrieveAndUpdateFilesForMessage = mutation({
     error: v.union(v.string(), v.null()),
   }),
   handler: async (ctx, args) => {
+    // Verify service role key
+    if (args.serviceKey !== process.env.CONVEX_SERVICE_ROLE_KEY) {
+      return {
+        files: [],
+        success: false,
+        error: 'Unauthorized: Invalid service key',
+      };
+    }
+
     try {
       const messages = await ctx.runQuery(
         internal.messages.internalGetMessagesAtSequence,

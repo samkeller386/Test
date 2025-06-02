@@ -1,14 +1,104 @@
 import {
   internalMutation,
   internalQuery,
-  mutation,
   type MutationCtx,
   query,
+  action,
 } from './_generated/server';
 import { v } from 'convex/values';
 import { paginationOptsValidator } from 'convex/server';
+import { internal } from './_generated/api';
 
-export const createChat = mutation({
+export const createChatAction = action({
+  args: {
+    serviceKey: v.string(),
+    chat: v.object({
+      id: v.string(),
+      user_id: v.string(),
+      model: v.string(),
+      name: v.string(),
+      finish_reason: v.string(),
+      sharing: v.union(v.literal('private'), v.literal('public')),
+      updated_at: v.number(),
+    }),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    // Verify service role key
+    if (args.serviceKey !== process.env.CONVEX_SERVICE_ROLE_KEY) {
+      return {
+        success: false,
+        error: 'Unauthorized: Invalid service key',
+      };
+    }
+
+    try {
+      const result: { success: boolean; error?: string } =
+        await ctx.runMutation(internal.chats.createChatInternal, {
+          chat: args.chat,
+        });
+      return result;
+    } catch (error) {
+      console.error('Error in createChatAction:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  },
+});
+
+// Action for updating chat with service role authentication
+export const updateChatAction = action({
+  args: {
+    serviceKey: v.string(),
+    chatId: v.string(),
+    updates: v.object({
+      name: v.optional(v.string()),
+      updated_at: v.optional(v.number()),
+      finish_reason: v.optional(v.string()),
+      model: v.optional(v.string()),
+      sharing: v.optional(v.union(v.literal('private'), v.literal('public'))),
+      last_shared_message_id: v.optional(v.string()),
+      shared_by: v.optional(v.string()),
+      shared_at: v.optional(v.number()),
+    }),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    // Verify service role key
+    if (args.serviceKey !== process.env.CONVEX_SERVICE_ROLE_KEY) {
+      return {
+        success: false,
+        error: 'Unauthorized: Invalid service key',
+      };
+    }
+
+    try {
+      const result: { success: boolean; error?: string } =
+        await ctx.runMutation(internal.chats.InternalUpdateChat, {
+          chatId: args.chatId,
+          updates: args.updates,
+        });
+      return result;
+    } catch (error) {
+      console.error('Error in updateChatAction:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  },
+});
+
+// Internal mutation for creating chat
+export const createChatInternal = internalMutation({
   args: {
     chat: v.object({
       id: v.string(),
@@ -78,29 +168,6 @@ const updateChatHelper = async (
     };
   }
 };
-
-export const updateChat = mutation({
-  args: {
-    chatId: v.string(),
-    updates: v.object({
-      name: v.optional(v.string()),
-      updated_at: v.optional(v.number()),
-      finish_reason: v.optional(v.string()),
-      model: v.optional(v.string()),
-      sharing: v.optional(v.union(v.literal('private'), v.literal('public'))),
-      last_shared_message_id: v.optional(v.string()),
-      shared_by: v.optional(v.string()),
-      shared_at: v.optional(v.number()),
-    }),
-  },
-  returns: v.object({
-    success: v.boolean(),
-    error: v.optional(v.string()),
-  }),
-  handler: async (ctx, args) => {
-    return updateChatHelper(ctx, args.chatId, args.updates);
-  },
-});
 
 export const InternalUpdateChat = internalMutation({
   args: {
