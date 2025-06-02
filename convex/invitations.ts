@@ -1,5 +1,6 @@
 import { query, internalQuery, internalMutation } from './_generated/server';
 import { v } from 'convex/values';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Get team invitation by email and team ID
@@ -66,43 +67,6 @@ export const getTeamInvitation = query({
 });
 
 /**
- * Check if user has team, subscription, or invitation
- */
-export const checkUserHasTeamOrInvitation = internalQuery({
-  args: {
-    userEmail: v.string(),
-  },
-  returns: v.boolean(),
-  handler: async (ctx, args) => {
-    // Check if user has a team membership
-    const teamMember = await ctx.db
-      .query('team_members')
-      .withIndex('by_user_id', (q) => q.eq('user_id', args.userEmail)) // Note: This assumes user_id stores email
-      .first();
-
-    if (teamMember) {
-      return true;
-    }
-
-    // Check if user has a pending or accepted invitation
-    const invitation = await ctx.db
-      .query('team_invitations')
-      .withIndex('by_invitee_email', (q) =>
-        q.eq('invitee_email', args.userEmail),
-      )
-      .filter((q) =>
-        q.or(
-          q.eq(q.field('status'), 'pending'),
-          q.eq(q.field('status'), 'accepted'),
-        ),
-      )
-      .first();
-
-    return !!invitation;
-  },
-});
-
-/**
  * Invite user to team
  */
 export const inviteUserToTeam = internalMutation({
@@ -123,18 +87,6 @@ export const inviteUserToTeam = internalMutation({
 
     if (!inviterMember || !['owner'].includes(inviterMember.role)) {
       throw new Error('Only team owners can invite members to the team');
-    }
-
-    // Check if invitee already has a team or invitation - inline the logic to avoid circular reference
-    const teamMember = await ctx.db
-      .query('team_members')
-      .withIndex('by_user_id', (q) => q.eq('user_id', args.inviteeEmail))
-      .first();
-
-    if (teamMember) {
-      throw new Error(
-        'User already has a team, subscription, or pending invitation',
-      );
     }
 
     const existingInvitationCheck = await ctx.db
@@ -170,7 +122,7 @@ export const inviteUserToTeam = internalMutation({
 
     // Create the invitation
     await ctx.db.insert('team_invitations', {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       team_id: args.teamId,
       inviter_id: args.inviterId,
       invitee_email: args.inviteeEmail,
@@ -210,7 +162,7 @@ export const acceptTeamInvitation = internalMutation({
 
     // Add the user to the team
     await ctx.db.insert('team_members', {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       team_id: invitation.team_id,
       user_id: args.userId,
       invitation_id: invitation.id,

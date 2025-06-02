@@ -125,7 +125,6 @@ export default defineSchema({
   teams: defineTable({
     id: v.string(),
     name: v.string(),
-    updated_at: v.optional(v.number()),
   }),
 
   team_invitations: defineTable({

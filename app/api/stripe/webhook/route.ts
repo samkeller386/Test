@@ -103,68 +103,81 @@ export async function POST(request: Request) {
 const MAX_RETRY_ATTEMPTS = 5; // Maximum number of retry attempts
 const RETRY_DELAY_MS = 2000; // Delay between retries in milliseconds
 
-// Modified upsertSubscription function with retry mechanism
+// Helper function to create a delay promise
+const delay = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+// Modified upsertSubscription function with proper promise-based retry mechanism
 async function upsertSubscription(
   subscriptionId: string,
   customerId: string,
-  attempt = 0,
-) {
+): Promise<void> {
   const stripe = getStripe();
-  const customer = await stripe.customers.retrieve(customerId);
-  if (!customer || customer.deleted) {
-    throw new Error(`No customer found. customerId: ${customerId}`);
-  }
 
-  // Get user ID from customer metadata
-  const userId = customer.metadata.userId;
-  if (!userId) {
-    if (attempt < MAX_RETRY_ATTEMPTS) {
-      // If userId is not found and maximum retry attempts are not reached, retry after a delay
-      setTimeout(
-        () => upsertSubscription(subscriptionId, customerId, attempt + 1),
-        RETRY_DELAY_MS,
-      );
+  for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+    try {
+      const customer = await stripe.customers.retrieve(customerId);
+      if (!customer || customer.deleted) {
+        throw new Error(`No customer found. customerId: ${customerId}`);
+      }
+
+      // Get user ID from customer metadata
+      const userId = customer.metadata.userId;
+      if (!userId) {
+        if (attempt < MAX_RETRY_ATTEMPTS) {
+          await delay(RETRY_DELAY_MS);
+          continue; // Retry the loop
+        } else {
+          // If maximum retry attempts are reached and userId is still not found, throw an error
+          console.error(
+            'No userId found in customer metadata after maximum retry attempts.',
+            customer.metadata,
+          );
+          throw new Error(
+            `No userId found. Maximum retry attempts reached. customerId: ${customerId}`,
+          );
+        }
+      }
+
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+      // Determine the plan type and team name
+      const planType = subscription.metadata.teamName ? 'team' : 'pro';
+      const teamName = subscription.metadata.teamName || null;
+
+      // Get user email from customer object (required for team subscriptions)
+      const userEmail = customer.email;
+
+      await convex.mutation(api.subscriptions.upsertSubscription, {
+        serviceKey: convexKey,
+        subscriptionId,
+        userId,
+        customerId,
+        status: subscription.status,
+        startDate: unixToDateString(subscription.start_date),
+        cancelAt: unixToDateString(subscription.cancel_at),
+        canceledAt: unixToDateString(subscription.canceled_at),
+        endedAt: unixToDateString(subscription.ended_at),
+        planType,
+        teamName: teamName || undefined,
+        quantity: subscription.items.data[0].quantity || 1,
+        userEmail: userEmail || undefined, // Required for team subscriptions
+      });
       return;
-    } else {
-      // If maximum retry attempts are reached and userId is still not found, throw an error
+    } catch (error) {
       console.error(
-        'No userId found in customer metadata after maximum retry attempts.',
-        customer.metadata,
+        `Error upserting subscription (attempt ${attempt + 1}/${MAX_RETRY_ATTEMPTS + 1}):`,
+        error,
       );
-      throw new Error(
-        `No userId found. Maximum retry attempts reached. customerId: ${customerId}`,
-      );
+
+      // If this is the last attempt, throw the error
+      if (attempt === MAX_RETRY_ATTEMPTS) {
+        throw error;
+      }
+
+      // Otherwise, wait before retrying
+      await delay(RETRY_DELAY_MS);
     }
-  }
-
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-
-  // Determine the plan type and team name
-  const planType = subscription.metadata.teamName ? 'team' : 'pro';
-  const teamName = subscription.metadata.teamName || null;
-
-  // Get user email from customer object (required for team subscriptions)
-  const userEmail = customer.email;
-
-  try {
-    await convex.mutation(api.subscriptions.upsertSubscription, {
-      serviceKey: convexKey,
-      subscriptionId,
-      userId,
-      customerId,
-      status: subscription.status,
-      startDate: unixToDateString(subscription.start_date),
-      cancelAt: unixToDateString(subscription.cancel_at),
-      canceledAt: unixToDateString(subscription.canceled_at),
-      endedAt: unixToDateString(subscription.ended_at),
-      planType,
-      teamName: teamName || undefined,
-      quantity: subscription.items.data[0].quantity || 1,
-      userEmail: userEmail || undefined, // Required for team subscriptions
-    });
-  } catch (error) {
-    console.error('Error upserting subscription:', error);
-    throw error;
   }
 }
 

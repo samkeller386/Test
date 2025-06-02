@@ -210,7 +210,6 @@ export const manageTeamOnSubscriptionChange = internalMutation({
       await ctx.db.insert('teams', {
         id: teamId,
         name: newSubscription.team_name || 'New Team',
-        updated_at: Date.now(),
       });
 
       // Update the subscription with the new team_id

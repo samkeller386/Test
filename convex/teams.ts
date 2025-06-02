@@ -1,5 +1,6 @@
 import { query, internalQuery, internalMutation } from './_generated/server';
 import { v } from 'convex/values';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Get team information for a user (equivalent to the inviterTeam query)
@@ -239,7 +240,6 @@ export const createTeam = internalMutation({
     await ctx.db.insert('teams', {
       id: teamId,
       name: teamName,
-      updated_at: Date.now(),
     });
 
     // Create invitation for the owner
@@ -255,7 +255,7 @@ export const createTeam = internalMutation({
 
     // Add the owner to the team
     await ctx.db.insert('team_members', {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       team_id: teamId,
       user_id: ownerId,
       invitation_id: invitationId,
