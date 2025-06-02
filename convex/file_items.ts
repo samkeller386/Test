@@ -38,29 +38,45 @@ export const getFileItemsByFileId = query({
  * Get all file items for multiple file IDs in a single query
  */
 export const getAllFileItemsByFileIds = query({
-  args: { fileIds: v.array(v.id('files')) },
-  returns: v.array(
-    v.object({
-      _id: v.id('file_items'),
-      _creationTime: v.number(),
-      file_id: v.id('files'),
-      user_id: v.string(),
-      content: v.string(),
-      tokens: v.number(),
-      name: v.optional(v.string()),
-      sequence_number: v.number(),
-      updated_at: v.optional(v.number()),
-      message_id: v.optional(v.string()),
-      chat_id: v.optional(v.string()),
-    }),
+  args: {
+    serviceKey: v.string(),
+    fileIds: v.array(v.id('files')),
+  },
+  returns: v.union(
+    v.array(
+      v.object({
+        _id: v.id('file_items'),
+        _creationTime: v.number(),
+        file_id: v.id('files'),
+        user_id: v.string(),
+        content: v.string(),
+        tokens: v.number(),
+        name: v.optional(v.string()),
+        sequence_number: v.number(),
+        updated_at: v.optional(v.number()),
+        message_id: v.optional(v.string()),
+        chat_id: v.optional(v.string()),
+      }),
+    ),
+    v.null(),
   ),
   handler: async (ctx, args) => {
-    // Since Convex doesn't support 'in' queries directly, we'll use a more efficient approach
-    // by querying all file items and filtering in memory
-    const allFileItems = await ctx.db.query('file_items').collect();
+    if (args.serviceKey !== process.env.CONVEX_SERVICE_ROLE_KEY) {
+      console.error('Unauthorized access attempt to getAllFileItemsByFileIds');
+      return null;
+    }
 
-    // Filter items that match any of the provided file IDs
-    return allFileItems.filter((item) => args.fileIds.includes(item.file_id));
+    try {
+      // Since Convex doesn't support 'in' queries directly, we'll use a more efficient approach
+      // by querying all file items and filtering in memory
+      const allFileItems = await ctx.db.query('file_items').collect();
+
+      // Filter items that match any of the provided file IDs
+      return allFileItems.filter((item) => args.fileIds.includes(item.file_id));
+    } catch (error) {
+      console.error('Error in getAllFileItemsByFileIds:', error);
+      return null;
+    }
   },
 });
 
@@ -69,6 +85,7 @@ export const getAllFileItemsByFileIds = query({
  */
 export const upsertFileItems = mutation({
   args: {
+    serviceKey: v.string(),
     fileItems: v.array(
       v.object({
         file_id: v.id('files'),
@@ -80,42 +97,60 @@ export const upsertFileItems = mutation({
       }),
     ),
   },
-  returns: v.null(),
+  returns: v.object({
+    success: v.boolean(),
+    error: v.optional(v.string()),
+  }),
   handler: async (ctx, args) => {
-    for (const item of args.fileItems) {
-      // Check if an item with the same file_id and sequence_number exists
-      const existingItems = await ctx.db
-        .query('file_items')
-        .withIndex('by_file_and_sequence', (q) =>
-          q
-            .eq('file_id', item.file_id)
-            .eq('sequence_number', item.sequence_number),
-        )
-        .collect();
-
-      if (existingItems.length > 0) {
-        // Update existing item
-        const existingItem = existingItems[0];
-        await ctx.db.patch(existingItem._id, {
-          content: item.content,
-          tokens: item.tokens,
-          name: item.name,
-          updated_at: Date.now(),
-        });
-      } else {
-        // Insert new item
-        await ctx.db.insert('file_items', {
-          file_id: item.file_id,
-          user_id: item.user_id,
-          content: item.content,
-          tokens: item.tokens,
-          name: item.name,
-          sequence_number: item.sequence_number,
-          updated_at: Date.now(),
-        });
-      }
+    if (args.serviceKey !== process.env.CONVEX_SERVICE_ROLE_KEY) {
+      return {
+        success: false,
+        error: 'Unauthorized: Invalid service key',
+      };
     }
-    return null;
+
+    try {
+      for (const item of args.fileItems) {
+        // Check if an item with the same file_id and sequence_number exists
+        const existingItems = await ctx.db
+          .query('file_items')
+          .withIndex('by_file_and_sequence', (q) =>
+            q
+              .eq('file_id', item.file_id)
+              .eq('sequence_number', item.sequence_number),
+          )
+          .collect();
+
+        if (existingItems.length > 0) {
+          // Update existing item
+          const existingItem = existingItems[0];
+          await ctx.db.patch(existingItem._id, {
+            content: item.content,
+            tokens: item.tokens,
+            name: item.name,
+            updated_at: Date.now(),
+          });
+        } else {
+          // Insert new item
+          await ctx.db.insert('file_items', {
+            file_id: item.file_id,
+            user_id: item.user_id,
+            content: item.content,
+            tokens: item.tokens,
+            name: item.name,
+            sequence_number: item.sequence_number,
+            updated_at: Date.now(),
+          });
+        }
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Error in upsertFileItems:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   },
 });
 
@@ -124,6 +159,7 @@ export const upsertFileItems = mutation({
  */
 export const updateFileItemsWithMessage = mutation({
   args: {
+    serviceKey: v.string(),
     fileItems: v.array(
       v.object({
         _id: v.id('file_items'),
@@ -141,6 +177,10 @@ export const updateFileItemsWithMessage = mutation({
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
+    if (args.serviceKey !== process.env.CONVEX_SERVICE_ROLE_KEY) {
+      return false;
+    }
+
     try {
       // Keep track of unique file IDs we've processed
       const processedFileIds = new Set<Id<'files'>>();

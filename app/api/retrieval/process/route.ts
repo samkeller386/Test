@@ -15,8 +15,13 @@ import { ConvexClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 
-if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
-  throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not defined');
+if (
+  !process.env.NEXT_PUBLIC_CONVEX_URL ||
+  !process.env.CONVEX_SERVICE_ROLE_KEY
+) {
+  throw new Error(
+    'NEXT_PUBLIC_CONVEX_URL or CONVEX_SERVICE_ROLE_KEY environment variable is not defined',
+  );
 }
 
 const convex = new ConvexClient(process.env.NEXT_PUBLIC_CONVEX_URL);
@@ -99,9 +104,14 @@ export async function POST(req: Request) {
       name: fileMetadata.name,
     }));
 
-    await convex.mutation(api.file_items.upsertFileItems, {
+    const upsertResult = await convex.mutation(api.file_items.upsertFileItems, {
+      serviceKey: process.env.CONVEX_SERVICE_ROLE_KEY!,
       fileItems: file_items,
     });
+
+    if (!upsertResult.success) {
+      throw new Error(upsertResult.error || 'Failed to upsert file items');
+    }
 
     await convex.mutation(api.files.updateFile, {
       fileId: file_id,

@@ -5,15 +5,12 @@ import { ConvexHttpClient } from 'convex/browser';
 import { v4 as uuidv4 } from 'uuid';
 import type { Doc, Id } from '@/convex/_generated/dataModel';
 
-if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+if (
+  !process.env.NEXT_PUBLIC_CONVEX_URL ||
+  !process.env.CONVEX_SERVICE_ROLE_KEY
+) {
   throw new Error(
-    'NEXT_PUBLIC_CONVEX_URL environment variable is not defined. Please check your environment configuration.',
-  );
-}
-
-if (!process.env.CONVEX_SERVICE_ROLE_KEY) {
-  throw new Error(
-    'CONVEX_SERVICE_ROLE_KEY environment variable is not defined. Please check your environment configuration.',
+    'NEXT_PUBLIC_CONVEX_URL or CONVEX_SERVICE_ROLE_KEY environment variable is not defined',
   );
 }
 
@@ -185,6 +182,7 @@ export async function saveUserMessage({
       const fileItemsSuccess = await convex.mutation(
         api.file_items.updateFileItemsWithMessage,
         {
+          serviceKey: process.env.CONVEX_SERVICE_ROLE_KEY!,
           fileItems: retrievedFileItems.map((item) => ({
             _id: item._id,
             file_id: item.file_id,

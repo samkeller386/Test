@@ -2,15 +2,12 @@ import type { LLMID } from '@/types';
 import { api } from '@/convex/_generated/api';
 import { ConvexHttpClient } from 'convex/browser';
 
-if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+if (
+  !process.env.NEXT_PUBLIC_CONVEX_URL ||
+  !process.env.CONVEX_SERVICE_ROLE_KEY
+) {
   throw new Error(
-    'NEXT_PUBLIC_CONVEX_URL environment variable is not defined. Please check your environment configuration.',
-  );
-}
-
-if (!process.env.CONVEX_SERVICE_ROLE_KEY) {
-  throw new Error(
-    'CONVEX_SERVICE_ROLE_KEY environment variable is not defined. Please check your environment configuration.',
+    'NEXT_PUBLIC_CONVEX_URL or CONVEX_SERVICE_ROLE_KEY environment variable is not defined',
   );
 }
 

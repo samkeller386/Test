@@ -10,6 +10,12 @@ if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
   throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not defined');
 }
 
+if (!process.env.CONVEX_SERVICE_ROLE_KEY) {
+  throw new Error(
+    'CONVEX_SERVICE_ROLE_KEY environment variable is not defined. Please check your environment configuration.',
+  );
+}
+
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 
 export function buildDocumentsText(fileItems: Doc<'file_items'>[]) {
@@ -162,6 +168,7 @@ export async function processMessageContentWithAttachments(
     const allFileItems = await convex.query(
       api.file_items.getAllFileItemsByFileIds,
       {
+        serviceKey: process.env.CONVEX_SERVICE_ROLE_KEY!,
         fileIds: allFileIds,
       },
     );
