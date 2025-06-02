@@ -3,13 +3,24 @@
 // This enables autocomplete, go to definition, etc.
 
 import { unixToDateString } from '@/lib/utils';
-import { createClient } from '@supabase/supabase-js';
 import { getStripe } from '@/lib/server/stripe';
-
-// Import via bare specifier thanks to the import_map.json file.
+import { ConvexHttpClient } from 'convex/browser';
+import { api } from '@/convex/_generated/api';
 import Stripe from 'stripe';
 
 export const runtime = 'edge';
+
+if (
+  !process.env.NEXT_PUBLIC_CONVEX_URL ||
+  !process.env.CONVEX_SERVICE_ROLE_KEY
+) {
+  throw new Error(
+    'NEXT_PUBLIC_CONVEX_URL or CONVEX_SERVICE_ROLE_KEY environment variable is not defined',
+  );
+}
+
+const convexKey = process.env.CONVEX_SERVICE_ROLE_KEY;
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 
 export async function POST(request: Request) {
   const signature = request.headers.get('Stripe-Signature');
@@ -98,87 +109,73 @@ async function upsertSubscription(
   customerId: string,
   attempt = 0,
 ) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing Supabase credentials');
-  }
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
-
   const stripe = getStripe();
   const customer = await stripe.customers.retrieve(customerId);
   if (!customer || customer.deleted) {
     throw new Error(`No customer found. customerId: ${customerId}`);
   }
 
-  // Attempt to fetch the user profile
+  // Get user ID from customer metadata
   const userId = customer.metadata.userId;
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-
-  // If profile is found, proceed as normal
-  if (profile) {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-
-    // Determine the plan type and team name
-    const planType = subscription.metadata.teamName ? 'team' : 'pro';
-    const teamName = subscription.metadata.teamName || null;
-
-    const result = await supabaseAdmin.from('subscriptions').upsert(
-      {
-        subscription_id: subscriptionId,
-        user_id: profile.user_id,
-        customer_id: customerId,
-        status: subscription.status,
-        start_date: unixToDateString(subscription.start_date),
-        cancel_at: unixToDateString(subscription.cancel_at),
-        canceled_at: unixToDateString(subscription.canceled_at),
-        ended_at: unixToDateString(subscription.ended_at),
-        plan_type: planType,
-        team_name: teamName,
-        quantity: subscription.items.data[0].quantity || 1,
-      },
-      { onConflict: 'subscription_id' },
-    );
-    if (result.error) {
-      console.error(result.error);
-      throw new Error(result.error.message);
+  if (!userId) {
+    if (attempt < MAX_RETRY_ATTEMPTS) {
+      // If userId is not found and maximum retry attempts are not reached, retry after a delay
+      setTimeout(
+        () => upsertSubscription(subscriptionId, customerId, attempt + 1),
+        RETRY_DELAY_MS,
+      );
+      return;
+    } else {
+      // If maximum retry attempts are reached and userId is still not found, throw an error
+      console.error(
+        'No userId found in customer metadata after maximum retry attempts.',
+        customer.metadata,
+      );
+      throw new Error(
+        `No userId found. Maximum retry attempts reached. customerId: ${customerId}`,
+      );
     }
-  } else if (attempt < MAX_RETRY_ATTEMPTS) {
-    // If profile is not found and maximum retry attempts are not reached, retry after a delay
-    setTimeout(
-      () => upsertSubscription(subscriptionId, customerId, attempt + 1),
-      RETRY_DELAY_MS,
-    );
-  } else {
-    // If maximum retry attempts are reached and profile is still not found, throw an error
-    console.error(
-      'No profile found after maximum retry attempts.',
-      customer.metadata,
+  }
+
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+  // Determine the plan type and team name
+  const planType = subscription.metadata.teamName ? 'team' : 'pro';
+  const teamName = subscription.metadata.teamName || null;
+
+  // Get user email from customer object (required for team subscriptions)
+  const userEmail = customer.email;
+
+  try {
+    await convex.mutation(api.subscriptions.upsertSubscription, {
+      serviceKey: convexKey,
+      subscriptionId,
       userId,
-    );
-    throw new Error(
-      `No profile found. Maximum retry attempts reached. customerId: ${customerId}`,
-    );
+      customerId,
+      status: subscription.status,
+      startDate: unixToDateString(subscription.start_date),
+      cancelAt: unixToDateString(subscription.cancel_at),
+      canceledAt: unixToDateString(subscription.canceled_at),
+      endedAt: unixToDateString(subscription.ended_at),
+      planType,
+      teamName: teamName || undefined,
+      quantity: subscription.items.data[0].quantity || 1,
+      userEmail: userEmail || undefined, // Required for team subscriptions
+    });
+  } catch (error) {
+    console.error('Error upserting subscription:', error);
+    throw error;
   }
 }
 
 async function deleteSubscription(subscription: Stripe.Subscription) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing Supabase credentials');
+  try {
+    await convex.mutation(api.subscriptions.deleteSubscription, {
+      serviceKey: convexKey,
+      subscriptionId: subscription.id,
+    });
+  } catch (error) {
+    console.error('Error deleting subscription:', error);
+    throw error;
   }
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
-  return supabaseAdmin
-    .from('subscriptions')
-    .delete()
-    .eq('subscription_id', subscription.id);
 }

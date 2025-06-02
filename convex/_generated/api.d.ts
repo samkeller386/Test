@@ -20,9 +20,14 @@ import type * as feedback from "../feedback.js";
 import type * as file_items from "../file_items.js";
 import type * as files from "../files.js";
 import type * as http from "../http.js";
+import type * as invitations from "../invitations.js";
 import type * as messages from "../messages.js";
 import type * as messagesHttp from "../messagesHttp.js";
 import type * as sandboxes from "../sandboxes.js";
+import type * as subscriptions from "../subscriptions.js";
+import type * as subscriptionsHttp from "../subscriptionsHttp.js";
+import type * as teams from "../teams.js";
+import type * as teamsHttp from "../teamsHttp.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -40,9 +45,14 @@ declare const fullApi: ApiFromModules<{
   file_items: typeof file_items;
   files: typeof files;
   http: typeof http;
+  invitations: typeof invitations;
   messages: typeof messages;
   messagesHttp: typeof messagesHttp;
   sandboxes: typeof sandboxes;
+  subscriptions: typeof subscriptions;
+  subscriptionsHttp: typeof subscriptionsHttp;
+  teams: typeof teams;
+  teamsHttp: typeof teamsHttp;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

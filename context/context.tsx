@@ -29,11 +29,11 @@ interface PentestGPTContextType {
   setContentType: React.Dispatch<React.SetStateAction<ContentType>>;
 
   // SUBSCRIPTION STORE
-  subscription: Tables<'subscriptions'> | null;
-  setSubscription: Dispatch<SetStateAction<Tables<'subscriptions'> | null>>;
+  subscription: Doc<'subscriptions'> | null;
+  setSubscription: Dispatch<SetStateAction<Doc<'subscriptions'> | null>>;
   subscriptionStatus: SubscriptionStatus;
   setSubscriptionStatus: Dispatch<SetStateAction<SubscriptionStatus>>;
-  updateSubscription: (newSubscription: Tables<'subscriptions'> | null) => void;
+  updateSubscription: (newSubscription: Doc<'subscriptions'> | null) => void;
   isPremiumSubscription: boolean;
   teamMembers: ProcessedTeamMember[] | null;
   refreshTeamMembers: () => Promise<void>;

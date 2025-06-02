@@ -47,8 +47,9 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
   const [contentType, setContentType] = useState<ContentType>('chats');
 
   // SUBSCRIPTION STORE
-  const [subscription, setSubscription] =
-    useState<Tables<'subscriptions'> | null>(null);
+  const [subscription, setSubscription] = useState<Doc<'subscriptions'> | null>(
+    null,
+  );
   const [subscriptionStatus, setSubscriptionStatus] =
     useState<SubscriptionStatus>('free');
   const [teamMembers, setTeamMembers] = useState<ProcessedTeamMember[] | null>(
@@ -106,7 +107,7 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
   }, []);
 
   const updateSubscription = useCallback(
-    (newSubscription: Tables<'subscriptions'> | null) => {
+    (newSubscription: Doc<'subscriptions'> | null) => {
       setSubscription(newSubscription);
       if (newSubscription) {
         setSubscriptionStatus(newSubscription.plan_type as SubscriptionStatus);
@@ -138,11 +139,7 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
       const subscription = await getSubscriptionByUserId(user.id);
       updateSubscription(subscription);
 
-      const members = await getTeamMembersByTeamId(
-        user.id,
-        user.email,
-        subscription?.team_id,
-      );
+      const members = await getTeamMembersByTeamId();
 
       const membershipData = members?.find(
         (member) =>
@@ -150,21 +147,32 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
           member.invitee_email === user.email,
       );
 
-      if (membershipData?.invitation_status !== 'rejected') {
+      // Only consider the user as having team access if their invitation is accepted
+      // Still show all team data for UI purposes (including pending invitations)
+      if (membershipData?.invitation_status === 'accepted') {
         setTeamMembers(members);
-        setMembershipData(membershipData ?? null);
+        setMembershipData(membershipData);
+
+        // Only get team subscription if user has accepted invitation
+        if (
+          (!subscription || subscription.status !== 'active') &&
+          members &&
+          members.length > 0
+        ) {
+          const teamSubscription = await getSubscriptionByTeamId(
+            members[0].team_id,
+          );
+          updateSubscription(teamSubscription);
+        }
+      } else if (membershipData?.invitation_status === 'pending') {
+        // Show team data for pending invitations but don't grant team subscription access
+        setTeamMembers(members);
+        setMembershipData(membershipData);
+        // Don't update subscription - keep user's individual subscription status
       } else {
+        // No valid team membership (rejected or no invitation)
         setTeamMembers(null);
         setMembershipData(null);
-      }
-
-      if (
-        (!subscription || subscription.status !== 'active') &&
-        members &&
-        members.length > 0
-      ) {
-        const subscription = await getSubscriptionByTeamId(members[0].team_id);
-        updateSubscription(subscription);
       }
     }
   };

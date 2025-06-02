@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/browser-client';
+import { makeAuthenticatedRequest } from '@/lib/api/convex';
 
 export async function getSubscriptionByUserId(userId: string) {
   // Development override: Set NEXT_PUBLIC_OVERRIDE_SUBSCRIPTION_TYPE=pro|free in .env
@@ -25,29 +25,28 @@ export async function getSubscriptionByUserId(userId: string) {
     };
   }
 
-  const { data: subscriptions } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'active');
+  try {
+    const data = await makeAuthenticatedRequest('/api/subscriptions', 'POST', {
+      type: 'getSubscriptionByUserId',
+    });
 
-  // If user has multiple active subscriptions, pick the first one
-  const subscription =
-    subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
-
-  return subscription;
+    return data?.data || null;
+  } catch (error) {
+    console.error('Error fetching subscription by user ID:', error);
+    return null;
+  }
 }
 
 export async function getSubscriptionByTeamId(teamId: string) {
-  const { data: subscriptions } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('team_id', teamId)
-    .eq('status', 'active');
+  try {
+    const data = await makeAuthenticatedRequest('/api/subscriptions', 'POST', {
+      type: 'getSubscriptionByTeamId',
+      teamId,
+    });
 
-  // If team has multiple active subscriptions, pick the first one
-  const subscription =
-    subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
-
-  return subscription;
+    return data?.data || null;
+  } catch (error) {
+    console.error('Error fetching subscription by team ID:', error);
+    return null;
+  }
 }

@@ -100,4 +100,58 @@ export default defineSchema({
     .index('by_file_id', ['file_id'])
     .index('by_file_and_sequence', ['file_id', 'sequence_number'])
     .index('by_message_id', ['message_id']),
+
+  subscriptions: defineTable({
+    id: v.string(),
+    subscription_id: v.string(),
+    user_id: v.string(),
+    customer_id: v.string(),
+    status: v.string(),
+    start_date: v.union(v.string(), v.null()),
+    cancel_at: v.union(v.string(), v.null()),
+    canceled_at: v.union(v.string(), v.null()),
+    ended_at: v.union(v.string(), v.null()),
+    plan_type: v.string(),
+    team_name: v.optional(v.string()),
+    team_id: v.optional(v.string()),
+    quantity: v.number(),
+    updated_at: v.optional(v.number()),
+  })
+    .index('by_subscription_id', ['subscription_id'])
+    .index('by_user_id', ['user_id'])
+    .index('by_user_and_status', ['user_id', 'status'])
+    .index('by_team_id', ['team_id']),
+
+  teams: defineTable({
+    id: v.string(),
+    name: v.string(),
+    updated_at: v.optional(v.number()),
+  }),
+
+  team_invitations: defineTable({
+    id: v.string(),
+    team_id: v.string(),
+    inviter_id: v.string(),
+    invitee_email: v.string(),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('accepted'),
+      v.literal('rejected'),
+    ),
+    updated_at: v.optional(v.number()),
+  })
+    .index('by_team_id', ['team_id'])
+    .index('by_invitee_email', ['invitee_email'])
+    .index('by_team_and_email', ['team_id', 'invitee_email']),
+
+  team_members: defineTable({
+    id: v.string(),
+    team_id: v.string(),
+    user_id: v.string(),
+    invitation_id: v.optional(v.string()),
+    role: v.union(v.literal('member'), v.literal('owner')),
+  })
+    .index('by_user_id', ['user_id'])
+    .index('by_team_and_user', ['team_id', 'user_id'])
+    .index('by_invitation_id', ['invitation_id']),
 });

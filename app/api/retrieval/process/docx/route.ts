@@ -2,7 +2,7 @@ import { processDocX } from '@/lib/retrieval/processing';
 import { getServerProfile } from '@/lib/server/server-chat-helpers';
 import type { FileItemChunk } from '@/types';
 import { NextResponse } from 'next/server';
-import { ConvexClient } from 'convex/browser';
+import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 
@@ -15,7 +15,7 @@ if (
   );
 }
 
-const convex = new ConvexClient(process.env.NEXT_PUBLIC_CONVEX_URL);
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 
 export async function POST(req: Request) {
   const json = await req.json();

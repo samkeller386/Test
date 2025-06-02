@@ -53,7 +53,6 @@ export async function saveUserMessage({
 
     if (!deleteSuccess) {
       console.error('Error deleting last message:', deleteError);
-      throw new Error(deleteError || 'Failed to delete last message');
     }
   }
 

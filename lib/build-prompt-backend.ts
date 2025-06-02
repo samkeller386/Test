@@ -6,13 +6,12 @@ import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 import type { Doc } from '@/convex/_generated/dataModel';
 
-if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
-  throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not defined');
-}
-
-if (!process.env.CONVEX_SERVICE_ROLE_KEY) {
+if (
+  !process.env.NEXT_PUBLIC_CONVEX_URL ||
+  !process.env.CONVEX_SERVICE_ROLE_KEY
+) {
   throw new Error(
-    'CONVEX_SERVICE_ROLE_KEY environment variable is not defined. Please check your environment configuration.',
+    'NEXT_PUBLIC_CONVEX_URL or CONVEX_SERVICE_ROLE_KEY environment variable is not defined',
   );
 }
 

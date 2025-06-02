@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const profile = await getAIProfile();
     const subscriptionInfo = await getSubscriptionInfo(profile.user_id);
 
-    if (!subscriptionInfo.isPremium) {
+    if (subscriptionInfo.planType === 'free') {
       return new NextResponse(
         'Access Denied: This feature requires a premium subscription',
         { status: 403 },
