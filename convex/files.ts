@@ -144,23 +144,24 @@ export const retrieveAndUpdateFilesForMessage = mutation({
     }
 
     try {
-      const messages = await ctx.runQuery(
-        internal.messages.internalGetMessagesAtSequence,
+      const message = await ctx.runQuery(
+        internal.messages.internalGetMessageAtSequence,
         {
           chatId: args.chatId,
           sequenceNumber: args.sequenceNumber,
         },
       );
 
-      if (!messages || messages.length === 0) {
+      // If no message is found, this is not necessarily an error during edit operations
+      // The message might have been deleted already or might not exist yet
+      // Return success with empty files array
+      if (!message) {
         return {
           files: [],
-          success: false,
-          error: 'No message found at the specified sequence number',
+          success: true,
+          error: null,
         };
       }
-
-      const message = messages[0];
 
       // Get files associated with this message
       const files = (await ctx.db
@@ -299,9 +300,6 @@ export const createFile = mutation({
       size: v.number(),
       tokens: v.number(),
       type: v.string(),
-      message_id: v.optional(v.string()),
-      chat_id: v.optional(v.string()),
-      updated_at: v.optional(v.number()),
     }),
   },
   returns: v.object({

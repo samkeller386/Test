@@ -60,8 +60,7 @@ export const Settings: FC<{ showEmail?: boolean }> = ({
 
   const handleSignOut = async () => {
     await supabase.auth.signOut({ scope: 'local' });
-    router.push('/login');
-    router.refresh();
+    // Navigation will be handled by the auth state listener in layout
   };
 
   const handleSave = async () => {

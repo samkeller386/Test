@@ -33,6 +33,7 @@ interface PentestGPTContextType {
   setSubscription: Dispatch<SetStateAction<Doc<'subscriptions'> | null>>;
   subscriptionStatus: SubscriptionStatus;
   setSubscriptionStatus: Dispatch<SetStateAction<SubscriptionStatus>>;
+  subscriptionLoaded: boolean;
   updateSubscription: (newSubscription: Doc<'subscriptions'> | null) => void;
   isPremiumSubscription: boolean;
   teamMembers: ProcessedTeamMember[] | null;
@@ -115,6 +116,7 @@ export const PentestGPTContext = createContext<PentestGPTContextType>({
   setSubscription: () => {},
   subscriptionStatus: 'free',
   setSubscriptionStatus: () => {},
+  subscriptionLoaded: false,
   updateSubscription: () => {},
   isPremiumSubscription: false,
   teamMembers: null,

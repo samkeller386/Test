@@ -28,6 +28,7 @@ import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { AgentSidebarProvider } from '@/components/chat/chat-hooks/use-agent-sidebar';
 import type { Doc } from '@/convex/_generated/dataModel';
+import { supabase } from '@/lib/supabase/browser-client';
 
 const MESSAGES_PER_FETCH = 20;
 
@@ -52,6 +53,7 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
   );
   const [subscriptionStatus, setSubscriptionStatus] =
     useState<SubscriptionStatus>('free');
+  const [subscriptionLoaded, setSubscriptionLoaded] = useState(false);
   const [teamMembers, setTeamMembers] = useState<ProcessedTeamMember[] | null>(
     null,
   );
@@ -105,6 +107,26 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
   useEffect(() => {
     fetchStartingData();
   }, []);
+
+  // Auth state listener
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        // Clear session storage only
+        Object.entries(window.sessionStorage).forEach(([key]) => {
+          window.sessionStorage.removeItem(key);
+        });
+        router.push('/login');
+      } else if (!session) {
+        router.push('/login');
+      }
+    });
+
+    // Clean up subscription on component unmount
+    return () => subscription.unsubscribe();
+  }, [router]);
 
   const updateSubscription = useCallback(
     (newSubscription: Doc<'subscriptions'> | null) => {
@@ -174,6 +196,9 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
         setTeamMembers(null);
         setMembershipData(null);
       }
+
+      // Mark subscription as loaded after all subscription logic is complete
+      setSubscriptionLoaded(true);
     }
   };
 
@@ -382,6 +407,7 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
         setSubscription,
         subscriptionStatus,
         setSubscriptionStatus,
+        subscriptionLoaded,
         updateSubscription,
         isPremiumSubscription,
         teamMembers,

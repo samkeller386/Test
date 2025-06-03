@@ -4,12 +4,10 @@ import { Dashboard } from '@/components/ui/dashboard';
 import { PentestGPTContext } from '@/context/context';
 import { useUIContext } from '@/context/ui-context';
 import { getChatsByUserId } from '@/db/chats';
-import { getSubscriptionByUserId } from '@/db/subscriptions';
 import { LargeModel, SmallModel } from '@/lib/models/hackerai-llm-list';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useContext, useEffect, useState } from 'react';
 import Loading from '../loading';
-import { supabase } from '@/lib/supabase/browser-client';
 
 interface WorkspaceLayoutProps {
   children: ReactNode;
@@ -53,6 +51,8 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
     setNewMessageFiles,
     setNewMessageImages,
     user,
+    subscriptionStatus,
+    subscriptionLoaded,
   } = useContext(PentestGPTContext);
 
   const { setIsGenerating, setFirstTokenReceived } = useUIContext();
@@ -65,10 +65,9 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
           return;
         }
 
-        // Get subscription and set model
-        const subscription = await getSubscriptionByUserId(user.id);
+        // Use subscription status from context instead of fetching again
         const modelId =
-          subscription?.status === 'active'
+          subscriptionStatus !== 'free'
             ? LargeModel.modelId
             : SmallModel.modelId;
 
@@ -106,36 +105,12 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
       }
     };
 
-    initializeWorkspace();
-  }, [router]);
-
-  // Check authentication status and refresh token if needed
-  async function checkAuthStatus() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/login');
+    // Initialize immediately if no user (will redirect to login)
+    // Or wait for subscription data to be loaded if user exists
+    if (!user || (user && subscriptionLoaded)) {
+      initializeWorkspace();
     }
-    return !!user;
-  }
-
-  useEffect(() => {
-    // Set up periodic checks
-    function setupPeriodicChecks(intervalMinutes: number) {
-      const intervalId = setInterval(
-        async () => {
-          await checkAuthStatus();
-        },
-        intervalMinutes * 60 * 1000,
-      );
-
-      // Clean up interval on component unmount
-      return () => clearInterval(intervalId);
-    }
-
-    return setupPeriodicChecks(60); // Check every 60 minutes
-  }, [router]);
+  }, [user, subscriptionStatus, subscriptionLoaded, router]);
 
   if (loading) {
     return <Loading />;

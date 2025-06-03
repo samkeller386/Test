@@ -70,9 +70,6 @@ const createBaseFile = async (
     size: fileRecord.size,
     tokens: fileRecord.tokens,
     type: fileRecord.type,
-    message_id: fileRecord.message_id || undefined,
-    chat_id: fileRecord.chat_id || undefined,
-    updated_at: Date.now(),
   };
 
   const createdFile = await convex.mutation(api.files.createFile, {

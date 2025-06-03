@@ -248,7 +248,7 @@ export const deleteMessagesIncludingAndAfter = mutation({
 /**
  * Insert a single message
  */
-export const insertMessages = mutation({
+export const insertMessage = mutation({
   args: {
     serviceKey: v.string(),
     message: v.object({
@@ -301,14 +301,14 @@ export const insertMessages = mutation({
 });
 
 /**
- * Internal query to get messages at a specific sequence number
+ * Internal query to get message at a specific sequence number
  */
-export const internalGetMessagesAtSequence = internalQuery({
+export const internalGetMessageAtSequence = internalQuery({
   args: {
     chatId: v.string(),
     sequenceNumber: v.number(),
   },
-  returns: v.array(
+  returns: v.union(
     v.object({
       id: v.string(),
       chat_id: v.string(),
@@ -326,31 +326,37 @@ export const internalGetMessagesAtSequence = internalQuery({
       updated_at: v.optional(v.number()),
       created_at: v.number(),
     }),
+    v.null(),
   ),
   handler: async (ctx, args: { chatId: string; sequenceNumber: number }) => {
-    const messages = await ctx.db
+    const message = await ctx.db
       .query('messages')
-      .withIndex('by_chat_and_sequence', (q) => q.eq('chat_id', args.chatId))
-      .filter((q) => q.eq(q.field('sequence_number'), args.sequenceNumber))
-      .collect();
+      .withIndex('by_chat_and_sequence', (q) =>
+        q.eq('chat_id', args.chatId).eq('sequence_number', args.sequenceNumber),
+      )
+      .first();
 
-    return messages.map((msg: Doc<'messages'>) => ({
-      id: msg.id,
-      chat_id: msg.chat_id,
-      user_id: msg.user_id,
-      content: msg.content,
-      model: msg.model,
-      plugin: msg.plugin,
-      role: msg.role,
-      sequence_number: msg.sequence_number,
-      thinking_content: msg.thinking_content,
-      thinking_elapsed_secs: msg.thinking_elapsed_secs,
-      image_paths: msg.image_paths,
-      citations: msg.citations,
-      attachments: msg.attachments || [],
-      updated_at: msg.updated_at,
-      created_at: msg._creationTime,
-    }));
+    if (!message) {
+      return null;
+    }
+
+    return {
+      id: message.id,
+      chat_id: message.chat_id,
+      user_id: message.user_id,
+      content: message.content,
+      model: message.model,
+      plugin: message.plugin,
+      role: message.role,
+      sequence_number: message.sequence_number,
+      thinking_content: message.thinking_content,
+      thinking_elapsed_secs: message.thinking_elapsed_secs,
+      image_paths: message.image_paths,
+      citations: message.citations,
+      attachments: message.attachments || [],
+      updated_at: message.updated_at,
+      created_at: message._creationTime,
+    };
   },
 });
 
@@ -417,7 +423,9 @@ export const internalGetMessagesWithFiles = internalQuery({
     }),
   ),
   handler: async (ctx, args) => {
-    // Get messages with pagination
+    const limit = args.limit ?? 20;
+
+    // Get messages with a single query using proper indexing
     let messagesQuery = ctx.db
       .query('messages')
       .withIndex('by_chat_and_sequence', (q) => q.eq('chat_id', args.chatId))
@@ -429,61 +437,103 @@ export const internalGetMessagesWithFiles = internalQuery({
       );
     }
 
-    const messages = await messagesQuery.take(args.limit ?? 20);
+    const messages = await messagesQuery.take(limit);
 
-    // Get feedback using the internal function
-    const feedback = await ctx.runQuery(
-      internal.feedback.internalGetFeedbackByChatId,
-      {
-        chat_id: args.chatId,
-        limit: args.limit,
-        last_sequence_number: args.lastSequenceNumber,
-      },
-    );
-
-    // Create a map of feedback by message ID
-    const feedbackMap = new Map();
-    for (const fb of feedback) {
-      if (!feedbackMap.has(fb.message_id)) {
-        feedbackMap.set(fb.message_id, []);
-      }
-      feedbackMap.get(fb.message_id).push(fb);
+    if (messages.length === 0) {
+      return [];
     }
 
-    // Get file items for these messages using the new index
-    const fileItemsMap = new Map<string, any[]>();
-    for (const message of messages) {
-      const fileItems = await ctx.db
+    // Extract message IDs for batch operations
+    const messageIds = messages.map((msg) => msg.id);
+
+    // Batch fetch feedback and file items in parallel
+    const [feedbackResults, fileItemsResults] = await Promise.all([
+      // Get all feedback for this chat in one query, then filter in memory
+      ctx.db
+        .query('feedback')
+        .withIndex('by_chat_and_sequence', (q) => q.eq('chat_id', args.chatId))
+        .collect(),
+
+      // Get all file items for this chat in one query using chat_id
+      ctx.db
         .query('file_items')
-        .withIndex('by_message_id', (q) => q.eq('message_id', message.id))
-        .collect();
+        .withIndex('by_chat_id', (q) => q.eq('chat_id', args.chatId))
+        .collect(),
+    ]);
 
-      fileItemsMap.set(message.id, fileItems);
+    // Create lookup maps for O(1) access instead of multiple queries
+    const feedbackMap = new Map<string, any[]>();
+    const fileItemsMap = new Map<string, any[]>();
+
+    // Build feedback map - group by message_id
+    for (const fb of feedbackResults) {
+      if (messageIds.includes(fb.message_id)) {
+        if (!feedbackMap.has(fb.message_id)) {
+          feedbackMap.set(fb.message_id, []);
+        }
+        feedbackMap.get(fb.message_id)!.push({
+          message_id: fb.message_id,
+          user_id: fb.user_id,
+          chat_id: fb.chat_id,
+          feedback: fb.feedback,
+          reason: fb.reason,
+          detailed_feedback: fb.detailed_feedback,
+          model: fb.model,
+          updated_at: fb.updated_at,
+          sequence_number: fb.sequence_number,
+          allow_email: fb.allow_email,
+          allow_sharing: fb.allow_sharing,
+          has_files: fb.has_files,
+          plugin: fb.plugin,
+        });
+      }
     }
 
-    // Combine messages with their feedback and file items
-    return messages
-      .map((msg) => ({
-        _id: msg._id,
-        _creationTime: msg._creationTime,
-        id: msg.id,
-        chat_id: msg.chat_id,
-        user_id: msg.user_id,
-        content: msg.content,
-        model: msg.model,
-        plugin: msg.plugin,
-        role: msg.role,
-        sequence_number: msg.sequence_number,
-        thinking_content: msg.thinking_content,
-        thinking_elapsed_secs: msg.thinking_elapsed_secs,
-        image_paths: msg.image_paths,
-        citations: msg.citations,
-        attachments: msg.attachments || [],
-        updated_at: msg.updated_at,
-        created_at: msg._creationTime,
-        feedback: feedbackMap.get(msg.id) || [],
-        file_items: fileItemsMap.get(msg.id) || [],
-      }))
-      .reverse();
+    // Build file items map - group by message_id
+    for (const fileItem of fileItemsResults) {
+      if (fileItem.message_id && messageIds.includes(fileItem.message_id)) {
+        if (!fileItemsMap.has(fileItem.message_id)) {
+          fileItemsMap.set(fileItem.message_id, []);
+        }
+        fileItemsMap.get(fileItem.message_id)!.push({
+          _id: fileItem._id,
+          _creationTime: fileItem._creationTime,
+          file_id: fileItem.file_id,
+          user_id: fileItem.user_id,
+          content: fileItem.content,
+          tokens: fileItem.tokens,
+          name: fileItem.name,
+          sequence_number: fileItem.sequence_number,
+          updated_at: fileItem.updated_at,
+          message_id: fileItem.message_id,
+          chat_id: fileItem.chat_id,
+        });
+      }
+    }
+
+    // Single pass to combine all data
+    const result = messages.map((msg) => ({
+      _id: msg._id,
+      _creationTime: msg._creationTime,
+      id: msg.id,
+      chat_id: msg.chat_id,
+      user_id: msg.user_id,
+      content: msg.content,
+      model: msg.model,
+      plugin: msg.plugin,
+      role: msg.role,
+      sequence_number: msg.sequence_number,
+      thinking_content: msg.thinking_content,
+      thinking_elapsed_secs: msg.thinking_elapsed_secs,
+      image_paths: msg.image_paths,
+      citations: msg.citations,
+      attachments: msg.attachments || [],
+      updated_at: msg.updated_at,
+      created_at: msg._creationTime,
+      feedback: feedbackMap.get(msg.id) || [],
+      file_items: fileItemsMap.get(msg.id) || [],
+    }));
+
+    return result.reverse();
   },
 });

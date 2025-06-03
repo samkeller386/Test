@@ -98,8 +98,8 @@ export default defineSchema({
     chat_id: v.optional(v.string()),
   })
     .index('by_file_id', ['file_id'])
-    .index('by_file_and_sequence', ['file_id', 'sequence_number'])
-    .index('by_message_id', ['message_id']),
+    .index('by_message_id', ['message_id'])
+    .index('by_chat_id', ['chat_id']),
 
   subscriptions: defineTable({
     id: v.string(),

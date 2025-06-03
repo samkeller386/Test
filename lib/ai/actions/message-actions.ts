@@ -134,7 +134,7 @@ export async function saveUserMessage({
     attachments: [],
   };
 
-  const insertResult = await convex.mutation(api.messages.insertMessages, {
+  const insertResult = await convex.mutation(api.messages.insertMessage, {
     serviceKey: process.env.CONVEX_SERVICE_ROLE_KEY!,
     message: userMessageData,
   });

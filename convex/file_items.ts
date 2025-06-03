@@ -111,18 +111,14 @@ export const upsertFileItems = mutation({
 
     try {
       for (const item of args.fileItems) {
-        // Check if an item with the same file_id and sequence_number exists
+        // Check if an item with the same file_id exists
         const existingItems = await ctx.db
           .query('file_items')
-          .withIndex('by_file_and_sequence', (q) =>
-            q
-              .eq('file_id', item.file_id)
-              .eq('sequence_number', item.sequence_number),
-          )
+          .withIndex('by_file_id', (q) => q.eq('file_id', item.file_id))
           .collect();
 
         if (existingItems.length > 0) {
-          // Update existing item
+          // Update the first existing item (since they all have sequence_number 0)
           const existingItem = existingItems[0];
           await ctx.db.patch(existingItem._id, {
             content: item.content,
