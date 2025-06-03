@@ -1,4 +1,4 @@
-import { getServerUserAndProfile } from '@/lib/server/server-chat-helpers';
+import { getServerUser } from '@/lib/server/server-chat-helpers';
 import {
   getActiveSubscriptions,
   getCustomersByEmail,
@@ -25,7 +25,7 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 
 export async function POST() {
   try {
-    const { user } = await getServerUserAndProfile();
+    const user = await getServerUser();
 
     const stripe = getStripe();
     const email = user.email;

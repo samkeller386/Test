@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { getAIProfile } from '@/lib/server/server-chat-helpers';
+import { getServerUser } from '@/lib/server/server-chat-helpers';
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
 import llmConfig from '@/lib/models/llm-config';
 import { getSubscriptionInfo } from '@/lib/server/subscription-utils';
@@ -24,8 +24,8 @@ const WHISPER_MODEL = 'whisper-1';
 export async function POST(req: NextRequest) {
   try {
     // Check authentication and subscription
-    const profile = await getAIProfile();
-    const subscriptionInfo = await getSubscriptionInfo(profile.user_id);
+    const user = await getServerUser();
+    const subscriptionInfo = await getSubscriptionInfo(user.id);
 
     if (subscriptionInfo.planType === 'free') {
       return new NextResponse(
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     // Check rate limit
     const rateLimitStatus = await checkRatelimitOnApi(
-      profile.user_id,
+      user.id,
       'stt-1',
       subscriptionInfo,
     );

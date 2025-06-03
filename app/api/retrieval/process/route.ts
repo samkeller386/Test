@@ -7,7 +7,7 @@ import {
   convert,
   FILE_CONTENT_TOKEN_LIMIT,
 } from '@/lib/retrieval/processing';
-import { getAIProfile } from '@/lib/server/server-chat-helpers';
+import { getServerUser } from '@/lib/server/server-chat-helpers';
 import { createSupabaseAdminClient } from '@/lib/server/server-utils';
 import type { FileItemChunk } from '@/types';
 import { NextResponse } from 'next/server';
@@ -29,7 +29,7 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 export async function POST(req: Request) {
   try {
     const supabaseAdmin = createSupabaseAdminClient();
-    const profile = await getAIProfile();
+    const user = await getServerUser();
     const formData = await req.formData();
     const file_id = formData.get('file_id') as Id<'files'>;
 
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       throw new Error('File not found');
     }
 
-    if (fileMetadata.user_id !== profile.user_id) {
+    if (fileMetadata.user_id !== user.id) {
       throw new Error('Unauthorized');
     }
 
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
 
     const file_items = chunks.map((chunk) => ({
       file_id,
-      user_id: profile.user_id,
+      user_id: user.id,
       sequence_number: 0,
       content: chunk.content,
       tokens: chunk.tokens,

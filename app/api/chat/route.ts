@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const { messages, model, modelParams, chatMetadata } = requestBody;
     const userCountryCode = request.headers.get('x-vercel-ip-country');
 
-    const profile = await getAIProfile();
+    const { profile } = await getAIProfile();
     const config = await getProviderConfig(
       model,
       profile,

@@ -1,5 +1,5 @@
 import { processDocX } from '@/lib/retrieval/processing';
-import { getAIProfile } from '@/lib/server/server-chat-helpers';
+import { getServerUser } from '@/lib/server/server-chat-helpers';
 import type { FileItemChunk } from '@/types';
 import { NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   };
 
   try {
-    const profile = await getAIProfile();
+    const user = await getServerUser();
 
     let chunks: FileItemChunk[] = [];
 
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
 
     const file_items = chunks.map((chunk) => ({
       file_id: fileId,
-      user_id: profile.user_id,
+      user_id: user.id,
       sequence_number: 0,
       content: chunk.content,
       tokens: chunk.tokens,

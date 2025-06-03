@@ -65,20 +65,13 @@ export const handleProfilesHttp = httpAction(async (ctx, request) => {
     // Route based on operation type
     switch (type) {
       case 'getProfileByUserId': {
-        const result = await ctx.runQuery(
-          internal.profiles.getProfileByUserId,
+        const result = await ctx.runMutation(
+          internal.profiles.getOrCreateProfile,
           {
             userId,
           },
         );
-        return createResponse({ data: result }, 200, origin);
-      }
 
-      case 'createProfile': {
-        const result = await ctx.runMutation(internal.profiles.createProfile, {
-          userId,
-          image_url,
-        });
         return createResponse({ data: result }, 200, origin);
       }
 
@@ -91,9 +84,13 @@ export const handleProfilesHttp = httpAction(async (ctx, request) => {
       }
 
       case 'deleteProfile': {
-        const result = await ctx.runMutation(internal.profiles.deleteProfile, {
-          userId,
-        });
+        const result = await ctx.runMutation(
+          internal.profileDeletion.deleteProfile,
+          {
+            userId,
+            userEmail: user.email,
+          },
+        );
         return createResponse({ data: result }, 200, origin);
       }
 

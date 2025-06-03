@@ -1,4 +1,4 @@
-import { getServerUserAndProfile } from '@/lib/server/server-chat-helpers';
+import { getServerUser } from '@/lib/server/server-chat-helpers';
 import { NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
@@ -18,13 +18,9 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 export async function POST(req: Request) {
   try {
     const { email } = await req.json();
-    const { user, profile } = await getServerUserAndProfile();
+    const user = await getServerUser();
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
     const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
-
-    if (!user || !profile) {
-      throw new Error('Unauthorized');
-    }
 
     // Use Convex to get inviter team information
     const inviterTeam = await convex.query(api.teams.getUserTeam, {

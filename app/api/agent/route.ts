@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const userCountryCode = request.headers.get('x-vercel-ip-country');
     const { messages, model, modelParams, chatMetadata } = requestBody;
 
-    const profile = await getAIProfile();
+    const { profile } = await getAIProfile();
     const config = await getProviderConfig(profile);
 
     if (!config.isRateLimitAllowed) {

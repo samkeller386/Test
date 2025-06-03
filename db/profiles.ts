@@ -1,5 +1,8 @@
 import { makeAuthenticatedRequest } from '@/lib/api/convex';
 
+/**
+ * Get profile by user ID - automatically creates profile if it doesn't exist
+ */
 export const getProfileByUserId = async () => {
   try {
     const data = await makeAuthenticatedRequest('/api/profiles', 'POST', {
@@ -9,20 +12,6 @@ export const getProfileByUserId = async () => {
     return data?.data || null;
   } catch (error) {
     console.error('Error getting profile:', error);
-    throw error;
-  }
-};
-
-export const createProfile = async (image_url?: string) => {
-  try {
-    const data = await makeAuthenticatedRequest('/api/profiles', 'POST', {
-      type: 'createProfile',
-      image_url,
-    });
-
-    return data?.data || null;
-  } catch (error) {
-    console.error('Error creating profile:', error);
     throw error;
   }
 };
