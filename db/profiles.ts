@@ -13,15 +13,11 @@ export const getProfileByUserId = async () => {
   }
 };
 
-export const createProfile = async (
-  image_url?: string,
-  profile_context?: string,
-) => {
+export const createProfile = async (image_url?: string) => {
   try {
     const data = await makeAuthenticatedRequest('/api/profiles', 'POST', {
       type: 'createProfile',
       image_url,
-      profile_context,
     });
 
     return data?.data || null;
