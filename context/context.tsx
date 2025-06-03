@@ -1,6 +1,5 @@
 import type { Doc } from '@/convex/_generated/dataModel';
 import type { ProcessedTeamMember } from '@/lib/team-utils';
-import type { Tables } from '@/supabase/types';
 import type {
   ChatMessage,
   ChatSettings,
@@ -21,8 +20,8 @@ interface PentestGPTContextType {
   user: User | null;
 
   // PROFILE STORE
-  profile: Tables<'profiles'> | null;
-  setProfile: Dispatch<SetStateAction<Tables<'profiles'> | null>>;
+  profile: Doc<'profiles'> | null;
+  setProfile: Dispatch<SetStateAction<Doc<'profiles'> | null>>;
   fetchStartingData: () => Promise<void>;
   // CONTENT TYPE STORE
   contentType: ContentType;

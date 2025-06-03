@@ -1,7 +1,7 @@
 import { mutation, query, internalQuery } from './_generated/server';
 import { v } from 'convex/values';
-import type { Id, Doc } from './_generated/dataModel';
-import { api, internal } from './_generated/api';
+import type { Id } from './_generated/dataModel';
+import { api } from './_generated/api';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -471,7 +471,7 @@ export const internalGetMessagesWithFiles = internalQuery({
         if (!feedbackMap.has(fb.message_id)) {
           feedbackMap.set(fb.message_id, []);
         }
-        feedbackMap.get(fb.message_id)!.push({
+        feedbackMap.get(fb.message_id)?.push({
           message_id: fb.message_id,
           user_id: fb.user_id,
           chat_id: fb.chat_id,
@@ -495,7 +495,7 @@ export const internalGetMessagesWithFiles = internalQuery({
         if (!fileItemsMap.has(fileItem.message_id)) {
           fileItemsMap.set(fileItem.message_id, []);
         }
-        fileItemsMap.get(fileItem.message_id)!.push({
+        fileItemsMap.get(fileItem.message_id)?.push({
           _id: fileItem._id,
           _creationTime: fileItem._creationTime,
           file_id: fileItem.file_id,

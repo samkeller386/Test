@@ -2,7 +2,6 @@
 
 import type { AlertAction } from '@/context/alert-context';
 import { buildFinalMessages } from '@/lib/build-prompt';
-import type { Tables } from '@/supabase/types';
 import type {
   ChatMessage,
   ChatPayload,
@@ -158,7 +157,7 @@ export const fetchChatResponse = async (
 
 export const handleCreateChat = async (
   model: LLMID,
-  profile: Tables<'profiles'>,
+  profile: Doc<'profiles'>,
   messageContent: string,
   finishReason: string,
   setSelectedChat: Dispatch<SetStateAction<Doc<'chats'> | null>>,

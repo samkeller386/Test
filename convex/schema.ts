@@ -2,6 +2,12 @@ import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
 export default defineSchema({
+  profiles: defineTable({
+    user_id: v.string(),
+    image_url: v.optional(v.string()),
+    profile_context: v.optional(v.string()),
+  }).index('by_user_id', ['user_id']),
+
   sandboxes: defineTable({
     user_id: v.string(),
     sandbox_id: v.string(),

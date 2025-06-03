@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const { messages, model, modelParams, chatMetadata } = requestBody;
 
     const profile = await getAIProfile();
-    const config = await getProviderConfig(profile);
+    const config = await getProviderConfig(profile.user_id);
 
     if (!config.isRateLimitAllowed) {
       return new Response(
@@ -100,11 +100,8 @@ export async function POST(request: Request) {
   }
 }
 
-async function getProviderConfig(profile: any) {
-  const rateLimitStatus = await checkRatelimitOnApi(
-    profile.user_id,
-    'deep-research',
-  );
+async function getProviderConfig(user_id: string) {
+  const rateLimitStatus = await checkRatelimitOnApi(user_id, 'deep-research');
 
   return {
     isRateLimitAllowed: rateLimitStatus.allowed,

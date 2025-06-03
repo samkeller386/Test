@@ -7,7 +7,7 @@ import {
   convert,
   FILE_CONTENT_TOKEN_LIMIT,
 } from '@/lib/retrieval/processing';
-import { getServerProfile } from '@/lib/server/server-chat-helpers';
+import { getAIProfile } from '@/lib/server/server-chat-helpers';
 import { createSupabaseAdminClient } from '@/lib/server/server-utils';
 import type { FileItemChunk } from '@/types';
 import { NextResponse } from 'next/server';
@@ -29,7 +29,7 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 export async function POST(req: Request) {
   try {
     const supabaseAdmin = createSupabaseAdminClient();
-    const profile = await getServerProfile();
+    const profile = await getAIProfile();
     const formData = await req.formData();
     const file_id = formData.get('file_id') as Id<'files'>;
 

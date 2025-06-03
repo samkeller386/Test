@@ -1,5 +1,4 @@
 import { lastSequenceNumber } from '@/lib/utils';
-import type { Tables } from '@/supabase/types';
 import type {
   ChatMessage,
   LLM,
@@ -15,7 +14,7 @@ import type { Doc, Id } from '@/convex/_generated/dataModel';
 export const handleCreateMessages = async (
   chatMessages: ChatMessage[],
   currentChat: Doc<'chats'> | null,
-  profile: Tables<'profiles'>,
+  profile: Doc<'profiles'>,
   modelData: LLM,
   messageContent: string | null,
   generatedText: string,

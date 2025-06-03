@@ -4,7 +4,7 @@ import { PentestGPTContext } from '@/context/context';
 import { getChatFilesByChatId } from '@/db/chat-files';
 import { getChatById } from '@/db/chats';
 import { getMessagesByChatId } from '@/db/messages';
-import { getProfileByUserId } from '@/db/profile';
+import { getProfileByUserId } from '@/db/profiles';
 import { getMessageImageFromStorage } from '@/db/storage/message-images';
 import {
   getSubscriptionByTeamId,
@@ -13,7 +13,6 @@ import {
 import { getTeamMembersByTeamId } from '@/db/teams';
 import { convertBlobToBase64 } from '@/lib/blob-to-b64';
 import type { ProcessedTeamMember } from '@/lib/team-utils';
-import type { Tables } from '@/supabase/types';
 import type {
   ChatMessage,
   ChatSettings,
@@ -42,7 +41,7 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
   const searchParams = useSearchParams();
 
   // PROFILE STORE
-  const [profile, setProfile] = useState<Tables<'profiles'> | null>(null);
+  const [profile, setProfile] = useState<Doc<'profiles'> | null>(null);
 
   // CONTENT TYPE STORE
   const [contentType, setContentType] = useState<ContentType>('chats');
@@ -149,19 +148,24 @@ export const GlobalState: FC<GlobalStateProps> = ({ children, user }) => {
     if (user) {
       setUserEmail(user.email || 'Not available');
 
-      const profile = await getProfileByUserId(user.id);
-      if (!profile) return;
+      const profile = await getProfileByUserId();
 
+      // Set profile even if null to stop loading state
       setProfile(profile);
 
-      // if (!profile.has_onboarded) {
-      //   return router.push("/setup")
-      // }
+      if (!profile) {
+        // User doesn't have a profile yet, show error and set subscription as loaded
+        toast.error('Profile not found. Please contact support.');
+        setSubscriptionLoaded(true);
+        return;
+      }
 
-      const subscription = await getSubscriptionByUserId(user.id);
+      const [subscription, members] = await Promise.all([
+        getSubscriptionByUserId(user.id),
+        getTeamMembersByTeamId(),
+      ]);
+
       updateSubscription(subscription);
-
-      const members = await getTeamMembersByTeamId();
 
       const membershipData = members?.find(
         (member) =>

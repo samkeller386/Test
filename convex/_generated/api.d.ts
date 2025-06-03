@@ -23,6 +23,8 @@ import type * as http from "../http.js";
 import type * as invitations from "../invitations.js";
 import type * as messages from "../messages.js";
 import type * as messagesHttp from "../messagesHttp.js";
+import type * as profiles from "../profiles.js";
+import type * as profilesHttp from "../profilesHttp.js";
 import type * as sandboxes from "../sandboxes.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as subscriptionsHttp from "../subscriptionsHttp.js";
@@ -48,6 +50,8 @@ declare const fullApi: ApiFromModules<{
   invitations: typeof invitations;
   messages: typeof messages;
   messagesHttp: typeof messagesHttp;
+  profiles: typeof profiles;
+  profilesHttp: typeof profilesHttp;
   sandboxes: typeof sandboxes;
   subscriptions: typeof subscriptions;
   subscriptionsHttp: typeof subscriptionsHttp;
