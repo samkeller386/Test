@@ -316,10 +316,15 @@ export const updateProfileAvatar = mutation({
       throw new Error('Profile not found');
     }
 
-    await ctx.db.patch(existingProfile._id, {
-      image_url: args.avatarUrl,
-    });
+    // Only update avatar if user doesn't already have one
+    if (!existingProfile.image_url) {
+      await ctx.db.patch(existingProfile._id, {
+        image_url: args.avatarUrl,
+      });
+      return true;
+    }
 
-    return true;
+    // Return false if avatar already exists (no update needed)
+    return false;
   },
 });
