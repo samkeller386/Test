@@ -15,7 +15,10 @@ export const uploadImageHttp = httpAction(async (ctx, request) => {
   // Validate authentication with user verification
   const authResult = await validateAuthWithUser(request);
   if (!authResult.success) {
-    return createErrorResponse(authResult.error!, 401);
+    return createErrorResponse(
+      authResult.error || 'Authentication failed',
+      401,
+    );
   }
 
   try {
@@ -55,7 +58,10 @@ export const getImageUrlHttp = httpAction(async (ctx, request) => {
   // Validate authentication with user verification
   const authResult = await validateAuthWithUser(request);
   if (!authResult.success) {
-    return createErrorResponse(authResult.error!, 401);
+    return createErrorResponse(
+      authResult.error || 'Authentication failed',
+      401,
+    );
   }
 
   try {

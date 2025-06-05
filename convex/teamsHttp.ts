@@ -17,11 +17,14 @@ export const handleTeamsHttp = httpAction(async (ctx, request) => {
     // Validate authentication with user verification
     const authResult = await validateAuthWithUser(request);
     if (!authResult.success || !authResult.user) {
-      return createErrorResponse(authResult.error!, 401);
+      return createErrorResponse(
+        authResult.error || 'Authentication failed',
+        401,
+      );
     }
 
     const { user } = authResult;
-    const userEmail = user.email!;
+    const userEmail = user.email;
     const userId = user.id;
 
     // Parse request body

@@ -47,8 +47,8 @@ export const makeAuthenticatedRequest = async (
   // Handle different types of data
   if (data) {
     if (data instanceof File || data instanceof Blob) {
-      // For file uploads, don't set Content-Type (let browser set it with boundary for multipart)
-      // But if custom Content-Type is provided, use it
+      // For file uploads, only delete Content-Type if no custom one is provided
+      // This allows for direct file uploads with specific content types
       if (!customHeaders?.['Content-Type']) {
         delete headers['Content-Type'];
       }
