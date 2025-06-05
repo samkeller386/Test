@@ -3,8 +3,13 @@ import type { TablesInsert } from '@/supabase/types';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 
-if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
-  throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not defined');
+if (
+  !process.env.NEXT_PUBLIC_CONVEX_URL ||
+  !process.env.CONVEX_SERVICE_ROLE_KEY
+) {
+  throw new Error(
+    'NEXT_PUBLIC_CONVEX_URL or CONVEX_SERVICE_ROLE_KEY environment variable is not defined',
+  );
 }
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
@@ -19,7 +24,7 @@ const uploadAdminFile = async (
   },
 ) => {
   const sizeLimitMB = Number.parseInt(
-    process.env.NEXT_PUBLIC_USER_FILE_SIZE_LIMIT_MB || String(30),
+    process.env.NEXT_PUBLIC_USER_FILE_SIZE_LIMIT_MB || String(20),
   );
   const MB_TO_BYTES = (mb: number) => mb * 1024 * 1024;
   const SIZE_LIMIT = MB_TO_BYTES(sizeLimitMB);
@@ -85,6 +90,7 @@ export const createAdminFile = async (
     if (existingFile) {
       // Update the existing file
       createdFile = await convex.mutation(api.files.updateFile, {
+        serviceKey: process.env.CONVEX_SERVICE_ROLE_KEY!,
         fileId: existingFile._id,
         fileData: {
           size: file.size,
@@ -96,6 +102,7 @@ export const createAdminFile = async (
   // If no existing file was found or append is false, create a new file
   if (!createdFile) {
     createdFile = await convex.mutation(api.files.createFile, {
+      serviceKey: process.env.CONVEX_SERVICE_ROLE_KEY!,
       fileData: {
         ...convertToConvexFile(fileRecord),
         size: file.size,
@@ -112,6 +119,7 @@ export const createAdminFile = async (
   });
 
   const finalFile = await convex.mutation(api.files.updateFile, {
+    serviceKey: process.env.CONVEX_SERVICE_ROLE_KEY!,
     fileId: createdFile._id,
     fileData: {
       file_path: filePath,

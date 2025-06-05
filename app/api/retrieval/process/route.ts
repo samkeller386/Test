@@ -8,7 +8,6 @@ import {
   FILE_CONTENT_TOKEN_LIMIT,
 } from '@/lib/retrieval/processing';
 import { getServerUser } from '@/lib/server/server-chat-helpers';
-import { createSupabaseAdminClient } from '@/lib/server/server-utils';
 import type { FileItemChunk } from '@/types';
 import { NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
@@ -28,7 +27,6 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 
 export async function POST(req: Request) {
   try {
-    const supabaseAdmin = createSupabaseAdminClient();
     const user = await getServerUser();
     const formData = await req.formData();
     const file_id = formData.get('file_id') as Id<'files'>;
@@ -45,14 +43,32 @@ export async function POST(req: Request) {
       throw new Error('Unauthorized');
     }
 
-    const { data: file, error: fileError } = await supabaseAdmin.storage
-      .from('files')
-      .download(fileMetadata.file_path);
+    // Skip legacy Supabase files (identified by "/" in file_path)
+    if (fileMetadata.file_path.includes('/')) {
+      throw new Error('Legacy file format not supported');
+    }
 
-    if (fileError)
-      throw new Error(`Failed to retrieve file: ${fileError.message}`);
+    // Handle Convex storage files only
+    const fileUrl = await convex.query(
+      api.fileStorage.getFileStorageUrlPublic,
+      {
+        serviceKey: process.env.CONVEX_SERVICE_ROLE_KEY!,
+        storageId: fileMetadata.file_path as Id<'_storage'>,
+      },
+    );
 
-    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    if (!fileUrl) {
+      throw new Error('Failed to get file URL from Convex storage');
+    }
+
+    // Fetch the file content from Convex storage URL
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file content: ${response.statusText}`);
+    }
+
+    const fileBuffer = Buffer.from(await response.arrayBuffer());
+
     const blob = new Blob([fileBuffer]);
     const fileExtension = fileMetadata.name.split('.').pop()?.toLowerCase();
 
@@ -114,6 +130,7 @@ export async function POST(req: Request) {
     }
 
     await convex.mutation(api.files.updateFile, {
+      serviceKey: process.env.CONVEX_SERVICE_ROLE_KEY!,
       fileId: file_id,
       fileData: {
         tokens: totalTokens,
