@@ -6,6 +6,7 @@ import mammoth from 'mammoth';
 import { useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import type { Id } from '@/convex/_generated/dataModel';
+import { SUPPORTED_IMAGE_EXTENSIONS } from '../chat-helpers/file-constants';
 
 interface FileProcessor {
   type: string;
@@ -112,7 +113,15 @@ export const useSelectFileHandler = () => {
   };
 
   const getFileProcessor = (file: File): FileProcessor => {
-    if (file.type.includes('image')) return fileProcessors.image;
+    const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+
+    // Only treat as image if it has both image MIME type AND supported extension
+    if (
+      file.type.includes('image') &&
+      SUPPORTED_IMAGE_EXTENSIONS.includes(fileExtension)
+    ) {
+      return fileProcessors.image;
+    }
     if (file.type.includes('docx') || file.type.includes('wordprocessingml'))
       return fileProcessors.docx;
     if (file.type.includes('pdf')) return fileProcessors.pdf;
@@ -152,9 +161,12 @@ export const useSelectFileHandler = () => {
     if (!profile || !chatSettings) return;
     if (!validateFile(file)) return;
 
-    // Prevent image uploads for reasoning model
+    const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+
+    // Prevent image uploads for reasoning model - but only for supported image extensions
     if (
       file.type.startsWith('image/') &&
+      SUPPORTED_IMAGE_EXTENSIONS.includes(fileExtension) &&
       chatSettings.model === 'reasoning-model'
     ) {
       toast.error('Image uploads are not supported with the Reasoning Model');
@@ -168,7 +180,12 @@ export const useSelectFileHandler = () => {
       const { content, type } = await processor.process(file);
       const simplifiedType = processor.simplifyType(file.type);
 
-      if (type === 'image') {
+      // Only treat as image if it has both image MIME type AND supported extension
+      if (
+        type === 'image' &&
+        file.type.startsWith('image/') &&
+        SUPPORTED_IMAGE_EXTENSIONS.includes(fileExtension)
+      ) {
         const imageUrl = URL.createObjectURL(file);
 
         // Add loading state for image
@@ -223,7 +240,7 @@ export const useSelectFileHandler = () => {
         return;
       }
 
-      // Handle non-image files
+      // Handle non-image files (including images with unsupported extensions)
       setNewMessageFiles((prev) => [
         ...prev,
         {
