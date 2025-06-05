@@ -33,6 +33,13 @@ async function getImageUrls(
   // Process all storage IDs in parallel
   const urlPromises = storageIds.map(async (storageId) => {
     try {
+      // Check if storageId contains "/" which indicates it's a Supabase path with UUIDs
+      // Skip calling getImageUrlPublic for these cases
+      if (storageId.includes('/')) {
+        // Don't add to urlMap, effectively filtering out these storage IDs
+        return;
+      }
+
       const url = await convex.query(api.fileStorage.getImageUrlPublic, {
         serviceKey: process.env.CONVEX_SERVICE_ROLE_KEY!,
         storageId: storageId as Id<'_storage'>,
