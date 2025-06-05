@@ -50,7 +50,7 @@ const createBaseFile = async (
     // Use the new uploadFileWithRecord function that handles both file upload and database record creation
     const result = await uploadFile(file, {
       name: fileRecord.name,
-      size: fileRecord.size,
+      size: file.size,
       tokens: fileRecord.tokens,
       type: fileRecord.type,
     });

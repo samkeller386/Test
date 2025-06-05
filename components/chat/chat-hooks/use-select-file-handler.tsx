@@ -131,9 +131,8 @@ export const useSelectFileHandler = () => {
   const FILE_CONTENT_TOKEN_LIMIT = 24000;
 
   const validateFile = (file: File): boolean => {
-    const sizeLimitMB = Number.parseInt(
-      process.env.NEXT_PUBLIC_USER_FILE_SIZE_LIMIT_MB || String(20),
-    );
+    // 20MB limit for files
+    const sizeLimitMB = 20;
     const MB_TO_BYTES = (mb: number) => mb * 1024 * 1024;
     const SIZE_LIMIT = MB_TO_BYTES(sizeLimitMB);
 

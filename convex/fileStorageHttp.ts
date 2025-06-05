@@ -9,6 +9,15 @@ import {
 import type { Id } from './_generated/dataModel';
 
 /**
+ * Interface for file metadata structure
+ */
+interface FileMetadata {
+  name?: string;
+  tokens?: number;
+  type?: string;
+}
+
+/**
  * HTTP action to upload images to Convex storage
  */
 export const uploadImageHttp = httpAction(async (ctx, request) => {
@@ -116,9 +125,9 @@ export const uploadFileHttp = httpAction(async (ctx, request) => {
       return createErrorResponse('No file metadata provided', 400);
     }
 
-    let parsedMetadata;
+    let parsedMetadata: FileMetadata;
     try {
-      parsedMetadata = JSON.parse(fileMetadata);
+      parsedMetadata = JSON.parse(fileMetadata) as FileMetadata;
     } catch (error) {
       return createErrorResponse('Invalid metadata format', 400);
     }
@@ -140,9 +149,7 @@ export const uploadFileHttp = httpAction(async (ctx, request) => {
         userId: authResult.user.id,
       },
     );
-    const maxFiles = Number.parseInt(
-      process.env.NEXT_PUBLIC_RATELIMITER_LIMIT_FILES || '100',
-    );
+    const maxFiles = 500;
     if (filesCounts >= maxFiles) {
       return createErrorResponse(
         `File limit reached. Maximum ${maxFiles} files allowed.`,
