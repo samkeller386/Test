@@ -13,6 +13,7 @@ import { NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
+import { isBinaryFile } from 'isbinaryfile';
 
 if (
   !process.env.NEXT_PUBLIC_CONVEX_URL ||
@@ -91,22 +92,38 @@ export async function POST(req: Request) {
         chunks = await processTxt(blob);
         break;
       default: {
-        const cleanText = await convert(blob);
-        chunks = await processTxt(new Blob([cleanText]));
+        const cleanText: string = await convert(blob);
+
+        // Check if the content is actually binary data using isbinaryfile
+        const fileBuffer = Buffer.from(cleanText, 'utf8');
+        const isBinary = await isBinaryFile(fileBuffer);
+
+        if (isBinary) {
+          // For binary files, create a single chunk with empty content and 0 tokens
+          chunks = [
+            {
+              content: '',
+              tokens: 0,
+            },
+          ];
+        } else {
+          chunks = await processTxt(new Blob([cleanText]));
+        }
         break;
       }
     }
 
     if (fileExtension !== 'pdf') {
-      chunks = chunks.filter((chunk) => chunk.content.trim() !== '');
-    }
-
-    if (chunks.length === 0 && fileExtension !== 'pdf') {
-      throw new Error('Empty file. Please check the file format and content.');
+      // Filter out empty chunks, but preserve binary file chunks (which have empty content by design)
+      chunks = chunks.filter((chunk) => {
+        // Keep chunks that have content or are intentionally empty (0 tokens indicates binary file)
+        return chunk.content.trim() !== '' || chunk.tokens === 0;
+      });
     }
 
     const totalTokens = chunks.reduce((acc, chunk) => acc + chunk.tokens, 0);
     const limit = FILE_CONTENT_TOKEN_LIMIT;
+
     if (totalTokens > limit) {
       throw new Error(`File content exceeds token limit of ${limit}`);
     }
@@ -142,7 +159,7 @@ export async function POST(req: Request) {
     });
   } catch (error: any) {
     // Only log stack trace for unexpected errors
-    const knownErrors = ['Empty file', 'exceeds token limit'];
+    const knownErrors = ['exceeds token limit'];
 
     if (
       !knownErrors.some((knownError) => error.message?.includes(knownError))

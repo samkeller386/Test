@@ -9,15 +9,17 @@ export const handleFileUpload = (
   newMessageImages: MessageImage[] = [],
   newMessageFiles: Doc<'files'>[] = [],
 ) => {
-  const totalFiles = newMessageImages.length + newMessageFiles.length;
-  if (totalFiles >= MAX_TOTAL_FILES) {
-    toast.error(
-      `Maximum of ${MAX_TOTAL_FILES} files (including images) allowed.`,
-    );
-    return;
-  }
+  let totalFiles = newMessageImages.length + newMessageFiles.length;
 
-  files.forEach((file) => {
+  for (const file of files) {
+    if (totalFiles >= MAX_TOTAL_FILES) {
+      toast.error(
+        `Maximum of ${MAX_TOTAL_FILES} files (including images) allowed.`,
+      );
+      break;
+    }
+
     handleSelectDeviceFile(file);
-  });
+    totalFiles++;
+  }
 };

@@ -1,9 +1,8 @@
 import { PentestGPTContext } from '@/context/context';
 import { createFileBasedOnExtension } from '@/db/files';
-import { LLM_LIST } from '@/lib/models/llm-list';
 import { uploadImage } from '@/db/storage/message-images';
 import mammoth from 'mammoth';
-import { useContext, useEffect, useState } from 'react';
+import { useContext } from 'react';
 import { toast } from 'sonner';
 import type { Id } from '@/convex/_generated/dataModel';
 import { SUPPORTED_IMAGE_EXTENSIONS } from '../chat-helpers/file-constants';
@@ -18,17 +17,6 @@ interface ProcessedFile {
   content: string | ArrayBuffer | null;
   type: string;
 }
-
-// Constants
-export const ACCEPTED_FILE_TYPES = [
-  'text/csv',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/json',
-  'text/markdown',
-  'application/pdf',
-  'text/plain',
-  'text/html',
-].join(',');
 
 const fileProcessors: Record<string, FileProcessor> = {
   image: {
@@ -92,25 +80,6 @@ export const useSelectFileHandler = () => {
     setNewMessageFiles,
     newMessageFiles,
   } = useContext(PentestGPTContext);
-
-  const [filesToAccept, setFilesToAccept] = useState(ACCEPTED_FILE_TYPES);
-
-  useEffect(() => {
-    handleFilesToAccept();
-  }, [chatSettings?.model]);
-
-  const handleFilesToAccept = () => {
-    const model = chatSettings?.model;
-    const FULL_MODEL = LLM_LIST.find((llm) => llm.modelId === model);
-
-    if (!FULL_MODEL) return;
-
-    setFilesToAccept(
-      FULL_MODEL.imageInput
-        ? `${ACCEPTED_FILE_TYPES},image/*`
-        : ACCEPTED_FILE_TYPES,
-    );
-  };
 
   const getFileProcessor = (file: File): FileProcessor => {
     const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
@@ -329,6 +298,5 @@ export const useSelectFileHandler = () => {
 
   return {
     handleSelectDeviceFile,
-    filesToAccept,
   };
 };
