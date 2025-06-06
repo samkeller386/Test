@@ -83,9 +83,6 @@ export const updateFilesMessage = mutation({
           });
 
           updatedCount++;
-          console.log(
-            `Successfully updated file ${fileId} with message ${args.messageId}`,
-          );
         } catch (error) {
           console.error(`Failed to update file ${fileId}:`, error);
           errors.push(
@@ -100,10 +97,6 @@ export const updateFilesMessage = mutation({
         failedCount > 0
           ? `Failed to update ${failedCount} files. Details: ${errors.join('; ')}`
           : null;
-
-      console.log(
-        `[updateFilesMessage] Updated ${updatedCount}/${args.fileIds.length} files for message ${args.messageId}`,
-      );
 
       return {
         success,
