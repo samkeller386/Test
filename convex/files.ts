@@ -59,45 +59,55 @@ export const updateFilesMessage = mutation({
     }
 
     try {
-      // Get all files that match the ids and have no message_id
-      const existingFiles = await ctx.db
-        .query('files')
-        .filter((q) => q.eq('message_id', null))
-        .collect();
-
-      // Create a set of file IDs for O(1) lookup
-      const fileIdSet = new Set(args.fileIds);
       let updatedCount = 0;
       let failedCount = 0;
+      const errors: string[] = [];
 
-      // Update each file that exists and is unassigned
-      for (const file of existingFiles) {
-        if (fileIdSet.has(file._id)) {
-          try {
-            await ctx.db.patch(file._id, {
-              message_id: args.messageId,
-              chat_id: args.chatId,
-              updated_at: Date.now(),
-            });
-            updatedCount++;
-          } catch (error) {
-            console.error(`Failed to update file ${file._id}:`, error);
+      // Process each file ID individually
+      for (const fileId of args.fileIds) {
+        try {
+          const file = await ctx.db.get(fileId);
+
+          if (!file) {
+            console.error(`File not found: ${fileId}`);
+            errors.push(`File not found: ${fileId}`);
             failedCount++;
+            continue;
           }
+
+          // Update the file with new message_id and chat_id
+          await ctx.db.patch(fileId, {
+            message_id: args.messageId,
+            chat_id: args.chatId,
+            updated_at: Date.now(),
+          });
+
+          updatedCount++;
+          console.log(
+            `Successfully updated file ${fileId} with message ${args.messageId}`,
+          );
+        } catch (error) {
+          console.error(`Failed to update file ${fileId}:`, error);
+          errors.push(
+            `Failed to update file ${fileId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+          failedCount++;
         }
       }
 
-      // Check if any files were not found
-      const notFoundCount = args.fileIds.filter(
-        (id) => !existingFiles.some((f) => f._id === id),
-      ).length;
-      if (notFoundCount > 0) {
-        failedCount += notFoundCount;
-      }
+      const success = updatedCount > 0;
+      const errorMessage =
+        failedCount > 0
+          ? `Failed to update ${failedCount} files. Details: ${errors.join('; ')}`
+          : null;
+
+      console.log(
+        `[updateFilesMessage] Updated ${updatedCount}/${args.fileIds.length} files for message ${args.messageId}`,
+      );
 
       return {
-        success: updatedCount > 0,
-        error: failedCount > 0 ? `Failed to update ${failedCount} files` : null,
+        success,
+        error: errorMessage,
       };
     } catch (error) {
       console.error('[updateFilesMessage] Error:', error);
