@@ -92,10 +92,7 @@ export async function POST(req: Request) {
         chunks = await processTxt(blob);
         break;
       default: {
-        const cleanText: string = await convert(blob);
-
-        // Check if the content is actually binary data using isbinaryfile
-        const fileBuffer = Buffer.from(cleanText, 'utf8');
+        // Check if the original file is binary before text conversion
         const isBinary = await isBinaryFile(fileBuffer);
 
         if (isBinary) {
@@ -107,6 +104,7 @@ export async function POST(req: Request) {
             },
           ];
         } else {
+          const cleanText: string = await convert(blob);
           chunks = await processTxt(new Blob([cleanText]));
         }
         break;
