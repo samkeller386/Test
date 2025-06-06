@@ -5,7 +5,7 @@ import {
   internalQuery,
 } from './_generated/server';
 import { v } from 'convex/values';
-import type { Doc } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { internal } from './_generated/api';
 
 /**
@@ -487,7 +487,7 @@ export const internalUpdateFile = internalMutation({
 /**
  * Delete a file and its associated file items
  */
-export const deleteFile = mutation({
+export const deleteFile = internalMutation({
   args: {
     fileId: v.id('files'),
   },
@@ -510,6 +510,20 @@ export const deleteFile = mutation({
       // Delete all associated file items
       for (const item of fileItems) {
         await ctx.db.delete(item._id);
+      }
+
+      // Delete file from Convex storage
+      if (file.file_path) {
+        try {
+          const storageId = file.file_path as Id<'_storage'>;
+          await ctx.storage.delete(storageId);
+        } catch (storageError) {
+          console.error(
+            `Failed to delete file from storage: ${file.file_path}`,
+            storageError,
+          );
+          // Continue with database deletion even if storage deletion fails
+        }
       }
 
       // Finally delete the file itself

@@ -71,7 +71,7 @@ export const getFileFromStorage = async (
   try {
     // Handle Convex storage files
     const result = await makeAuthenticatedRequest(
-      `/api/get-file-url?storage_id=${encodeURIComponent(storageId)}`,
+      `/api/get-storage-url?storage_id=${encodeURIComponent(storageId)}`,
       'GET',
     );
 
