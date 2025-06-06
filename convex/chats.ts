@@ -362,7 +362,7 @@ export const deleteAllChats = internalMutation({
       // First delete all file items for this user
       const fileItems = await ctx.db
         .query('file_items')
-        .filter((q) => q.eq('user_id', args.userId))
+        .withIndex('by_user_id', (q) => q.eq('user_id', args.userId))
         .collect();
 
       // Delete all file items
