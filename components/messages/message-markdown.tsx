@@ -58,34 +58,30 @@ const NonMemoizedMarkdown: FC<{
     th: ({ children, ...props }) => <Th {...props}>{children}</Th>,
     td: ({ children, ...props }) => <Td {...props}>{children}</Td>,
     code({ className, children, ...props }) {
+      // Extract content as string early for consistent handling
+      const content = String(children);
       const match = /language-(\w+)/.exec(className || '');
+      const language = match?.[1] || '';
 
-      if (match) {
-        const lang = match[1];
+      // Check if it's inline code (single line, no newlines)
+      const isInlineCode = !content.includes('\n');
 
-        if (lang === 'stdout') {
-          return (
-            <MessageTerminalBlock
-              key={Math.random()}
-              value={String(children)}
-            />
-          );
-        }
-
+      if (isInlineCode) {
         return (
-          <MessageCodeBlock
-            key={Math.random()}
-            language={match?.[1] || ''}
-            value={String(children)}
-            {...props}
-          />
+          <code className={className} {...props}>
+            {children}
+          </code>
         );
       }
 
+      // Handle terminal/stdout output
+      if (language === 'stdout') {
+        return <MessageTerminalBlock value={content} />;
+      }
+
+      // Handle code blocks with syntax highlighting
       return (
-        <code className={className} {...props}>
-          {children}
-        </code>
+        <MessageCodeBlock language={language} value={content} {...props} />
       );
     },
   };
