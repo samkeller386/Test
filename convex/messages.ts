@@ -189,6 +189,42 @@ export const deleteLastMessage = mutation({
         };
       }
 
+      // Delete files from storage using attachments
+      if (lastMessage.attachments && lastMessage.attachments.length > 0) {
+        for (const attachment of lastMessage.attachments) {
+          try {
+            // Delete file from storage using URL (which contains storage ID)
+            if (attachment.url) {
+              await ctx.storage.delete(attachment.url as Id<'_storage'>);
+            }
+
+            // Delete file record from database if attachment.id refers to a file document
+            if (attachment.id) {
+              // Find and delete all file_items that reference this file
+              const fileItems = await ctx.db
+                .query('file_items')
+                .withIndex('by_file_id', (q) =>
+                  q.eq('file_id', attachment.id as Id<'files'>),
+                )
+                .collect();
+
+              for (const fileItem of fileItems) {
+                await ctx.db.delete(fileItem._id);
+              }
+
+              // Delete the file record itself
+              await ctx.db.delete(attachment.id as Id<'files'>);
+            }
+          } catch (fileError) {
+            console.warn(
+              `Failed to delete file ${attachment.url || attachment.id}:`,
+              fileError,
+            );
+          }
+        }
+      }
+
+      // Delete the message from database
       await ctx.db.delete(lastMessage._id);
       return { success: true };
     } catch (error) {
@@ -230,7 +266,92 @@ export const deleteMessagesIncludingAndAfter = mutation({
         .filter((q) => q.gte(q.field('sequence_number'), args.sequenceNumber))
         .collect();
 
+      // Delete associated images and files before deleting messages
       for (const message of messagesToDelete) {
+        // Delete images from storage using image_paths
+        if (message.image_paths && message.image_paths.length > 0) {
+          for (const imagePath of message.image_paths) {
+            try {
+              // Extract storage ID from the path if it's a Convex storage URL
+              // Assuming image_paths contain storage IDs or URLs
+              if (imagePath) {
+                await ctx.storage.delete(imagePath as Id<'_storage'>);
+              }
+            } catch (imageError) {
+              console.warn(`Failed to delete image ${imagePath}:`, imageError);
+              // Continue with other deletions even if one image fails
+            }
+          }
+        }
+
+        // Delete files that have message_id matching this message
+        const filesWithMessageId = await ctx.db
+          .query('files')
+          .withIndex('by_message_id', (q) => q.eq('message_id', message.id))
+          .collect();
+
+        for (const file of filesWithMessageId) {
+          try {
+            // Delete file from storage
+            if (file.file_path) {
+              await ctx.storage.delete(file.file_path as Id<'_storage'>);
+            }
+
+            // Find and delete all file_items that reference this file
+            const fileItems = await ctx.db
+              .query('file_items')
+              .withIndex('by_file_id', (q) => q.eq('file_id', file._id))
+              .collect();
+
+            for (const fileItem of fileItems) {
+              await ctx.db.delete(fileItem._id);
+            }
+
+            // Delete the file record itself
+            await ctx.db.delete(file._id);
+          } catch (fileError) {
+            console.warn(`Failed to delete file ${file._id}:`, fileError);
+            // Continue with other deletions even if one file fails
+          }
+        }
+
+        // Delete files from storage using attachments
+        if (message.attachments && message.attachments.length > 0) {
+          for (const attachment of message.attachments) {
+            try {
+              // Delete file from storage using URL (which contains storage ID)
+              if (attachment.url) {
+                await ctx.storage.delete(attachment.url as Id<'_storage'>);
+              }
+
+              // Delete file record from database if attachment.id refers to a file document
+              if (attachment.id) {
+                // Find and delete all file_items that reference this file
+                const fileItems = await ctx.db
+                  .query('file_items')
+                  .withIndex('by_file_id', (q) =>
+                    q.eq('file_id', attachment.id as Id<'files'>),
+                  )
+                  .collect();
+
+                for (const fileItem of fileItems) {
+                  await ctx.db.delete(fileItem._id);
+                }
+
+                // Delete the file record itself
+                await ctx.db.delete(attachment.id as Id<'files'>);
+              }
+            } catch (fileError) {
+              console.warn(
+                `Failed to delete file ${attachment.url || attachment.id}:`,
+                fileError,
+              );
+              // Continue with other deletions even if one file fails
+            }
+          }
+        }
+
+        // Delete the message from database
         await ctx.db.delete(message._id);
       }
 
