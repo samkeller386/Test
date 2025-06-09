@@ -109,7 +109,9 @@ async function restoreToDatabase(
       userId: user.id,
       customerId: subscription.customer,
       status: subscription.status,
-      startDate: unixToDateString(subscription.current_period_start),
+      startDate: unixToDateString(
+        subscription.items.data[0].current_period_start,
+      ),
       cancelAt: subscription.cancel_at
         ? unixToDateString(subscription.cancel_at)
         : null,
