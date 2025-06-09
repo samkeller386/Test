@@ -83,7 +83,7 @@ export async function POST(request: Request) {
           receivedEvent.data.object as Stripe.Subscription,
         );
         break;
-      case 'invoice.payment_failed':
+      case 'invoice.payment_failed': {
         // The payment failed or the customer does not have a valid payment method.
         // The subscription becomes past_due. Notify your customer and send them to the
         // customer portal to update their payment information.
@@ -102,6 +102,7 @@ export async function POST(request: Request) {
           );
         }
         break;
+      }
       default:
       // Unhandled event type
     }
