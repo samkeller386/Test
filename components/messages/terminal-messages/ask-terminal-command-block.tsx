@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -33,14 +33,8 @@ export const AskTerminalCommandBlock: React.FC<
     ];
     return matches.length ? matches[matches.length - 1][1].trim() : content;
   };
-  const [editedCommand, setEditedCommand] = useState(extractCommand(command));
 
-  useEffect(() => {
-    setEditedCommand(extractCommand(command));
-  }, [command]);
-
-  const handleConfirm = () =>
-    editedCommand.trim() && handleSendConfirmTerminalCommand();
+  const handleConfirm = () => handleSendConfirmTerminalCommand();
   const handleKeyDown = (e: React.KeyboardEvent) =>
     e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleConfirm());
 
@@ -53,7 +47,7 @@ export const AskTerminalCommandBlock: React.FC<
         </div>
         <div className="text-sm">
           <TextareaAutosize
-            value={editedCommand}
+            value={extractCommand(command)}
             onValueChange={() => {}}
             onKeyDown={handleKeyDown}
             className="font-mono text-foreground/80 break-all whitespace-pre-wrap bg-transparent border-0 p-0 ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none"
