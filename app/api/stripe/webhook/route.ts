@@ -195,7 +195,7 @@ async function upsertSubscription(
         endedAt: unixToDateString(subscription.ended_at),
         planType,
         teamName: teamName || undefined,
-        quantity: subscription.items.data[0].quantity || 1,
+        quantity: subscription.items?.data?.[0]?.quantity || 1,
         userEmail: userEmail || undefined, // Required for team subscriptions
       });
       return;
