@@ -21,11 +21,7 @@ export const myProvider = customProvider({
     }),
     'browser-model': openai('gpt-4.1-mini-2025-04-14'),
     'chat-model-reasoning': wrapLanguageModel({
-      model: openrouter('x-ai/grok-3-mini-beta', {
-        extraBody: {
-          reasoning: { effort: 'high' },
-        },
-      }),
+      model: deepseek('deepseek-reasoner'),
       middleware: extractReasoningMiddleware({ tagName: 'think' }),
     }),
     'deep-research-model': wrapLanguageModel({
