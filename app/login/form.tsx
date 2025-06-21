@@ -91,7 +91,7 @@ export function LoginForm({
           </Button>
 
           <div className="text-muted-foreground mt-2 text-center text-sm">
-            <span>Don't have an account? </span>
+            <span>Don&apos;t have an account? </span>
             <Link
               href="/signup"
               className="hover:text-primary underline font-medium"
@@ -181,7 +181,7 @@ export function LoginForm({
           </Button>
 
           <div className="text-muted-foreground mt-2 text-center text-sm">
-            <span>Don't have an account? </span>
+            <span>Don&apos;t have an account? </span>
             <Link
               href="/signup"
               className="hover:text-primary underline font-medium"
