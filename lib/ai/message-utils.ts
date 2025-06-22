@@ -323,8 +323,7 @@ export async function processChatMessages(
   if (
     apiKey &&
     !modelParams.isContinuation &&
-    !modelParams.isTerminalContinuation &&
-    !isReasoningModel
+    !modelParams.isTerminalContinuation
   ) {
     const { shouldUncensorResponse: moderationResult } =
       await getModerationResult(processedMessages, apiKey, 10);
