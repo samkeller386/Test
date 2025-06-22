@@ -137,27 +137,56 @@ export const toVercelChatMessages = (
 };
 
 /**
- * Handles empty or missing assistant messages by adding "Sure, " as content
+ * Handles empty or missing assistant messages by adding "Sure, " as content.
+ * Ensures there's always an assistant message ready for response generation.
  * @param messages - Array of messages to process
  * @param onlyLast - Whether to only process the last assistant message
+ *
+ * Adds an assistant message with "Sure, " content in two cases:
+ * 1. No assistant message found in the conversation at all
+ * 2. Conversation ends with a user message (needs assistant response priming)
  */
 export function handleAssistantMessages(
   messages: any[],
   onlyLast: boolean = false,
 ) {
+  // Check if the last message is a user message
+  const lastMessage = messages[messages.length - 1];
+  const endsWithUserMessage = lastMessage && lastMessage.role === 'user';
+
   let foundAssistant = false;
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i].role === 'assistant') {
       foundAssistant = true;
-      if (messages[i].content.trim() === '') {
-        messages[i].content = 'Sure';
+
+      // Handle both string and array content types
+      let isEmpty = false;
+      if (typeof messages[i].content === 'string') {
+        isEmpty = messages[i].content.trim() === '';
+      } else if (Array.isArray(messages[i].content)) {
+        const textItems = messages[i].content.filter(
+          (item: any) => item.type === 'text',
+        );
+        isEmpty =
+          textItems.length === 0 ||
+          textItems.every((item: any) => !item.text || item.text.trim() === '');
       }
-      if (onlyLast) break;
+
+      if (isEmpty) {
+        messages[i].content = 'Sure, ';
+      }
+
+      if (onlyLast) {
+        break;
+      }
     }
   }
 
-  if (!foundAssistant) {
-    messages.push({ role: 'assistant', content: 'Sure' });
+  // Add assistant message if:
+  // 1. No assistant message found at all, OR
+  // 2. Conversation ends with a user message (needs assistant response)
+  if (!foundAssistant || endsWithUserMessage) {
+    messages.push({ role: 'assistant', content: 'Sure, ' });
   }
 }
 
