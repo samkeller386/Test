@@ -197,11 +197,7 @@ export async function POST(request: Request) {
               userCountryCode,
               initialChatPromise,
               assistantMessageId,
-            }).getSelectedSchemas(
-              config.isPremiumUser && !modelParams.isTemporaryChat
-                ? ['browser', 'webSearch', 'terminal']
-                : ['browser', 'webSearch'],
-            ),
+            }).getSelectedSchemas(['browser', 'webSearch']),
             onFinish: async ({ finishReason, text }) => {
               if (!toolUsed) {
                 // Wait for title generation if it's in progress
