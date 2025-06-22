@@ -137,6 +137,31 @@ export const toVercelChatMessages = (
 };
 
 /**
+ * Handles empty or missing assistant messages by adding "Sure, " as content
+ * @param messages - Array of messages to process
+ * @param onlyLast - Whether to only process the last assistant message
+ */
+export function handleAssistantMessages(
+  messages: any[],
+  onlyLast: boolean = false,
+) {
+  let foundAssistant = false;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'assistant') {
+      foundAssistant = true;
+      if (messages[i].content.trim() === '') {
+        messages[i].content = 'Sure';
+      }
+      if (onlyLast) break;
+    }
+  }
+
+  if (!foundAssistant) {
+    messages.push({ role: 'assistant', content: 'Sure' });
+  }
+}
+
+/**
  * Adds authorization message to the last user message
  * @param messages - Array of messages to process
  */
@@ -308,6 +333,7 @@ export async function processChatMessages(
 
   if (shouldUncensor) {
     addAuthMessage(processedMessages);
+    handleAssistantMessages(processedMessages);
   }
 
   // Validate total token count
