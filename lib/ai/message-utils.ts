@@ -361,7 +361,9 @@ export async function processChatMessages(
 
   if (shouldUncensor) {
     addAuthMessage(processedMessages);
-    handleAssistantMessages(processedMessages);
+    if (selectedModel !== 'deep-research-model') {
+      handleAssistantMessages(processedMessages);
+    }
   }
 
   // Validate total token count
