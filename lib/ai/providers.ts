@@ -14,6 +14,7 @@ export const myProvider = customProvider({
     'chat-model-large': openai('gpt-4.1-2025-04-14'),
     'chat-model-small-with-tools': deepseek('deepseek-chat'),
     'chat-model-large-with-tools': xai('grok-3-latest'),
+    'chat-model-vision': xai('grok-2-vision-latest'),
     'chat-model-agent': openai('gpt-4.1-2025-04-14', {
       parallelToolCalls: false,
     }),
