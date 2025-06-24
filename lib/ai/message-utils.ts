@@ -266,7 +266,7 @@ function validateMessageTokens(
   isPremiumSubscription: boolean,
 ): void {
   // Extra 999 tokens for continue prompt and other small things
-  const MAX_CONTEXT_WINDOW = isPremiumSubscription ? 30999 : 8999;
+  const MAX_CONTEXT_WINDOW = isPremiumSubscription ? 32999 : 8999;
   let totalTokens = 0;
 
   for (const message of messages) {
