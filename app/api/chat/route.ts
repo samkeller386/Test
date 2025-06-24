@@ -130,7 +130,7 @@ export async function POST(request: Request) {
             model: myProvider.languageModel(finalSelectedModel),
             system: systemPrompt,
             messages: toVercelChatMessages(processedMessages, true),
-            maxTokens: 2048,
+            maxTokens: 4096,
             abortSignal: abortController.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),
             experimental_generateMessageId: () => assistantMessageId,
