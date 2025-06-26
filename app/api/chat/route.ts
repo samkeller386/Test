@@ -47,7 +47,6 @@ export async function POST(request: Request) {
       selectedPlugin: modelParams.selectedPlugin,
     });
 
-    const supabase = await createClient();
     const isReasoningModel = model === 'reasoning-model';
     let generatedTitle: string | undefined;
     let toolUsed = '';
@@ -65,7 +64,6 @@ export async function POST(request: Request) {
       modelParams,
       profile,
       isReasoningModel,
-      supabase,
       config.isPremiumUser,
     );
 
