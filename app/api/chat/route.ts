@@ -116,7 +116,7 @@ export async function POST(request: Request) {
     }
 
     const assistantMessageId = uuidv4();
-    console.log('config.selectedModel', config.selectedModel);
+
     try {
       return createDataStreamResponse({
         execute: async (dataStream) => {
@@ -128,6 +128,12 @@ export async function POST(request: Request) {
           const result = streamText({
             model: myProvider.languageModel(config.selectedModel),
             system: systemPrompt,
+            providerOptions: {
+              openai: {
+                parallelToolCalls: false,
+                store: false,
+              },
+            },
             messages: toVercelChatMessages(processedMessages, true),
             maxTokens: 4096,
             abortSignal: abortController.signal,
@@ -145,7 +151,8 @@ export async function POST(request: Request) {
               // initialChatPromise,
               // assistantMessageId,
             }).getSelectedSchemas(
-              config.isPremiumUser && !modelParams.isTemporaryChat
+              config.selectedModel === 'chat-model-large' &&
+                !modelParams.isTemporaryChat
                 ? ['web_search_preview', 'hackerAIMCP']
                 : ['web_search_preview'],
             ),
