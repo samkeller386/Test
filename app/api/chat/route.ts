@@ -15,10 +15,11 @@ import {
   handleFinalChatAndAssistantMessage,
 } from '@/lib/ai/actions';
 import { validateChatAccessWithLimits } from '@/lib/ai/actions/chat-validation';
-import { createClient } from '@/lib/supabase/server';
+// import { createClient } from '@/lib/supabase/server';
 import { postRequestBodySchema, type PostRequestBody } from './schema';
 import { ChatSDKError } from '@/lib/errors';
 import { v4 as uuidv4 } from 'uuid';
+import { geolocation } from '@vercel/functions';
 
 export const maxDuration = 180;
 
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
 
   try {
     const { messages, model, modelParams, chatMetadata } = requestBody;
-    const userCountryCode = request.headers.get('x-vercel-ip-country');
+    const { city, country } = geolocation(request);
 
     const { profile } = await getAIProfile();
 
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
     }
 
     const assistantMessageId = uuidv4();
-
+    console.log('config.selectedModel', config.selectedModel);
     try {
       return createDataStreamResponse({
         execute: async (dataStream) => {
@@ -130,6 +131,24 @@ export async function POST(request: Request) {
             messages: toVercelChatMessages(processedMessages, true),
             maxTokens: 4096,
             abortSignal: abortController.signal,
+            tools: createToolSchemas({
+              // chat,
+              // messages: processedMessages,
+              // modelParams,
+              // profile,
+              // dataStream,
+              // abortSignal: abortController.signal,
+              // chatMetadata,
+              // model,
+              userCity: city,
+              userCountry: country,
+              // initialChatPromise,
+              // assistantMessageId,
+            }).getSelectedSchemas(
+              config.isPremiumUser && !modelParams.isTemporaryChat
+                ? ['web_search_preview', 'hackerAIMCP']
+                : ['web_search_preview'],
+            ),
             experimental_transform: smoothStream({ chunking: 'word' }),
             experimental_generateMessageId: () => assistantMessageId,
             onChunk: async (chunk: any) => {
@@ -167,23 +186,6 @@ export async function POST(request: Request) {
                 console.error('[Chat] Stream Error:', error);
               }
             },
-            tools: createToolSchemas({
-              chat,
-              messages: processedMessages,
-              modelParams,
-              profile,
-              dataStream,
-              abortSignal: abortController.signal,
-              chatMetadata,
-              model,
-              userCountryCode,
-              initialChatPromise,
-              assistantMessageId,
-            }).getSelectedSchemas(
-              config.isPremiumUser && !modelParams.isTemporaryChat
-                ? ['browser', 'webSearch', 'hackerAIMCP']
-                : ['browser', 'webSearch'],
-            ),
             onFinish: async ({ finishReason, text }) => {
               if (!toolUsed) {
                 // Wait for title generation if it's in progress
