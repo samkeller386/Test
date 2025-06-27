@@ -53,6 +53,7 @@ export async function POST(request: Request) {
     let toolUsed = '';
     let hasGeneratedTitle = false;
     let titleGenerationPromise: Promise<void> | null = null;
+    const citations: string[] = [];
 
     const {
       processedMessages,
@@ -158,15 +159,25 @@ export async function POST(request: Request) {
             ),
             experimental_transform: smoothStream({ chunking: 'word' }),
             experimental_generateMessageId: () => assistantMessageId,
-            onChunk: async (chunk: any) => {
-              if (chunk.chunk.type === 'tool-call') {
-                toolUsed = chunk.chunk.toolName;
+            onChunk: async (event: any) => {
+              if (event.chunk.type === 'tool-call') {
+                toolUsed = event.chunk.toolName;
+              } else if (event.chunk.type === 'source') {
+                // Handle source chunks and send as citations
+                const source = event.chunk.source;
+                if (source && source.url) {
+                  // Add URL to citations array for final handling
+                  citations.push(source.url);
+
+                  // Send individual citation immediately during streaming
+                  dataStream.writeData({ citations: [source.url] });
+                }
               } else if (
                 !hasGeneratedTitle &&
                 chatMetadata.id &&
                 !chat &&
                 !toolUsed &&
-                chunk.chunk.type === 'text-delta'
+                event.chunk.type === 'text-delta'
               ) {
                 hasGeneratedTitle = true;
                 titleGenerationPromise = (async () => {
@@ -210,6 +221,7 @@ export async function POST(request: Request) {
                   finishReason,
                   title: generatedTitle,
                   assistantMessage: text,
+                  citations: citations.length > 0 ? citations : undefined,
                   assistantMessageId,
                 });
               }
