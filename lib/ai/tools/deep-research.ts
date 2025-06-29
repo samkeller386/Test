@@ -1,21 +1,14 @@
-import {
-  toVercelChatMessages,
-  validatePerplexityMessages,
-} from '@/lib/ai/message-utils';
+import { toVercelChatMessages } from '@/lib/ai/message-utils';
 import PostHogClient from '@/app/posthog';
 import type { ChatMetadata, LLMID, ModelParams } from '@/types';
-import {
-  generateTitleFromUserMessage,
-  handleFinalChatAndAssistantMessage,
-} from '@/lib/ai/actions';
-import { removePdfContentFromMessages } from '@/lib/build-prompt-backend';
+import { handleFinalChatAndAssistantMessage } from '@/lib/ai/actions';
 import { streamText } from 'ai';
 import { myProvider } from '@/lib/ai/providers';
 import { v4 as uuidv4 } from 'uuid';
 import type { Doc } from '@/convex/_generated/dataModel';
 import { openai } from '@ai-sdk/openai';
 
-interface DeepResearchConfig {
+export interface DeepResearchConfig {
   chat: Doc<'chats'> | null;
   messages: any[];
   profile: any;
@@ -27,8 +20,11 @@ interface DeepResearchConfig {
   originalMessages: any[];
   systemPrompt: string;
   initialChatPromise: Promise<void>;
-  userCity: string | undefined;
-  userCountry: string | undefined;
+  // userCity: string | undefined;
+  // userCountry: string | undefined;
+  generatedTitle?: string;
+  titleGenerationPromise?: Promise<void> | null;
+  assistantMessageId?: string;
 }
 
 // Keepalive interval in milliseconds
@@ -50,20 +46,17 @@ export async function executeDeepResearchTool({
     dataStream,
     modelParams,
     chatMetadata,
-    userCity,
-    userCountry,
+    // userCity,
+    // userCountry,
     abortSignal,
     model,
-    originalMessages,
+    // originalMessages,
     systemPrompt,
     initialChatPromise,
+    generatedTitle,
+    titleGenerationPromise,
+    assistantMessageId: passedAssistantMessageId,
   } = config;
-
-  // Filter out PDF content from messages
-  const filteredMessages = removePdfContentFromMessages(messages);
-
-  // Validate messages for proper alternating roles
-  const validatedMessages = validatePerplexityMessages(filteredMessages);
 
   const posthog = PostHogClient();
   if (posthog) {
@@ -78,12 +71,10 @@ export async function executeDeepResearchTool({
     content: 'deep-research',
   });
 
-  let generatedTitle: string | undefined;
   const citations: string[] = [];
   let isThinking = false;
   let thinkingStartTime: number | null = null;
-  const assistantMessageId = uuidv4();
-  let titleGenerationPromise: Promise<void> | null = null;
+  const assistantMessageId = passedAssistantMessageId || uuidv4();
 
   // Set up keepalive interval
   const keepaliveInterval = setInterval(() => {
@@ -96,30 +87,15 @@ export async function executeDeepResearchTool({
   }, KEEPALIVE_INTERVAL);
 
   try {
-    // Start title generation if needed
-    if (chatMetadata.id && !chat) {
-      titleGenerationPromise = (async () => {
-        generatedTitle = await generateTitleFromUserMessage({
-          messages: originalMessages,
-          abortSignal,
-        });
-        dataStream.writeData({ chatTitle: generatedTitle });
-      })();
-    }
-
     const result = streamText({
       model: myProvider.languageModel('deep-research-model'),
-      providerOptions: {
-        openai: {
-          reasoningSummary: 'detailed',
-        },
-      },
       system: systemPrompt,
-      messages: toVercelChatMessages(validatedMessages),
+      messages: toVercelChatMessages(messages),
       maxTokens: 8192,
+      abortSignal,
       tools: {
         web_search_preview: openai.tools.webSearchPreview({
-          searchContextSize: 'medium',
+          // searchContextSize: 'medium',
           // Deep research does not support user location for now
           // userLocation: {
           //   type: 'approximate',
