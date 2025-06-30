@@ -4,7 +4,7 @@ import { z } from 'zod';
 // import type { LLMID, ModelParams } from '@/types/llms';
 // import type { ChatMetadata } from '@/types';
 // import type { Doc } from '@/convex/_generated/dataModel';
-import { openai } from '@ai-sdk/openai';
+import { createExaWebSearchTool } from './web-search-v2';
 
 export const createToolSchemas = ({
   // chat,
@@ -12,11 +12,11 @@ export const createToolSchemas = ({
   // modelParams,
   // chatMetadata,
   // profile,
-  // dataStream,
+  dataStream,
   // abortSignal,
   // model,
-  userCity,
-  userCountry,
+  // userCity,
+  // userCountry,
   // initialChatPromise,
   // assistantMessageId,
 }: {
@@ -25,23 +25,16 @@ export const createToolSchemas = ({
   // modelParams: ModelParams;
   // chatMetadata: ChatMetadata;
   // profile: any;
-  // dataStream: any;
+  dataStream: any;
   // abortSignal: AbortSignal;
   // model: LLMID;
-  userCity: string | undefined;
-  userCountry: string | undefined;
+  // userCity: string | undefined;
+  // userCountry: string | undefined;
   // initialChatPromise: Promise<void>;
   // assistantMessageId: string;
 }) => {
   const allSchemas = {
-    web_search_preview: openai.tools.webSearchPreview({
-      searchContextSize: 'medium',
-      userLocation: {
-        type: 'approximate',
-        city: userCity,
-        country: userCountry,
-      },
-    }),
+    webSearch: createExaWebSearchTool(dataStream),
     hackerAIMCP: {
       description: `Activate the HackerAI MCP agent for comprehensive penetration testing and cybersecurity operations. \
 Select this tool IMMEDIATELY when any security testing, terminal operations, or technical tasks are needed.

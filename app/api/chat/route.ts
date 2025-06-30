@@ -19,7 +19,7 @@ import { validateChatAccessWithLimits } from '@/lib/ai/actions/chat-validation';
 import { postRequestBodySchema, type PostRequestBody } from './schema';
 import { ChatSDKError } from '@/lib/errors';
 import { v4 as uuidv4 } from 'uuid';
-import { geolocation } from '@vercel/functions';
+// import { geolocation } from '@vercel/functions';
 
 export const maxDuration = 180;
 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
   try {
     const { messages, model, modelParams, chatMetadata } = requestBody;
-    const { city, country } = geolocation(request);
+    // const { city, country } = geolocation(request);
 
     const { profile } = await getAIProfile();
 
@@ -137,26 +137,27 @@ export async function POST(request: Request) {
             },
             messages: toVercelChatMessages(processedMessages, true),
             maxTokens: 4096,
-            abortSignal: abortController.signal,
+            maxSteps: 2,
             tools: createToolSchemas({
               // chat,
               // messages: processedMessages,
               // modelParams,
               // profile,
-              // dataStream,
+              dataStream,
               // abortSignal: abortController.signal,
               // chatMetadata,
               // model,
-              userCity: city,
-              userCountry: country,
+              // userCity: city,
+              // userCountry: country,
               // initialChatPromise,
               // assistantMessageId,
             }).getSelectedSchemas(
               config.selectedModel === 'chat-model-large' &&
                 !modelParams.isTemporaryChat
-                ? ['web_search_preview', 'hackerAIMCP']
-                : ['web_search_preview'],
+                ? ['webSearch', 'hackerAIMCP']
+                : ['webSearch'],
             ),
+            abortSignal: abortController.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),
             experimental_generateMessageId: () => assistantMessageId,
             onChunk: async (event: any) => {
@@ -176,7 +177,7 @@ export async function POST(request: Request) {
                 !hasGeneratedTitle &&
                 chatMetadata.id &&
                 !chat &&
-                !toolUsed &&
+                toolUsed !== 'hackerAIMCP' &&
                 event.chunk.type === 'text-delta'
               ) {
                 hasGeneratedTitle = true;
@@ -205,7 +206,8 @@ export async function POST(request: Request) {
               }
             },
             onFinish: async ({ finishReason, text }) => {
-              if (!toolUsed) {
+              // Save results and generate title for all tools except hackerAIMCP
+              if (toolUsed !== 'hackerAIMCP') {
                 // Wait for title generation if it's in progress
                 if (titleGenerationPromise) {
                   await titleGenerationPromise;
