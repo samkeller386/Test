@@ -238,7 +238,10 @@ export async function executeBrowserTool({
       onFinish: async ({
         finishReason,
         text,
-      }: { finishReason: string; text: string }) => {
+      }: {
+        finishReason: string;
+        text: string;
+      }) => {
         // Wait for both title generation and initial chat handling to complete
         await Promise.all([titleGenerationPromise, initialChatPromise]);
 
