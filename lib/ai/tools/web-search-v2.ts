@@ -2,12 +2,13 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import Exa from 'exa-js';
 import { truncateContentByTokens } from '../terminal-utils';
+import PostHogClient from '@/app/posthog';
 
 /**
  * Web search tool using Exa API
  * Searches the web and returns results with content
  */
-export const createExaWebSearchTool = (dataStream: any) => {
+export const createExaWebSearchTool = (profile: any) => {
   return tool({
     description: `Use the webSearch tool to access up-to-date information from the web \
 or when responding to the user requires information about their location. \
@@ -57,6 +58,15 @@ version of a software library or not knowing the date of the next game for a spo
       try {
         if (!process.env.EXA_API_KEY) {
           throw new Error('EXA_API_KEY environment variable is not set');
+        }
+
+        // Track web search usage with PostHog
+        const posthog = PostHogClient();
+        if (posthog) {
+          posthog.capture({
+            distinctId: profile.user_id,
+            event: 'web_search_executed',
+          });
         }
 
         // Prepare search options

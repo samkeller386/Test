@@ -318,7 +318,7 @@ export async function getPageContent(
  * Browser tool using Jina AI Reader API
  * Opens a URL and extracts its content
  */
-export const createBrowserTool = (dataStream: any) => {
+export const createBrowserTool = (profile: any) => {
   return tool({
     description: `Use the browser tool to open a specific URL and extract its content. \
 Some examples of when to use the browser tool include:
@@ -336,6 +336,15 @@ The browser tool cannot access IP addresses (like http://192.168.1.1), or non-st
       try {
         if (!process.env.JINA_API_KEY) {
           throw new Error('JINA_API_KEY environment variable is not set');
+        }
+
+        // Track browser usage with PostHog
+        const posthog = PostHogClient();
+        if (posthog) {
+          posthog.capture({
+            distinctId: profile.user_id,
+            event: 'browser_executed',
+          });
         }
 
         // Construct the Jina AI reader URL

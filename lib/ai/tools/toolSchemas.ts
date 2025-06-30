@@ -12,7 +12,7 @@ export const createToolSchemas = ({
   // messages,
   // modelParams,
   // chatMetadata,
-  // profile,
+  profile,
   dataStream,
   // abortSignal,
   // model,
@@ -25,7 +25,7 @@ export const createToolSchemas = ({
   // messages: any;
   // modelParams: ModelParams;
   // chatMetadata: ChatMetadata;
-  // profile: any;
+  profile: any;
   dataStream: any;
   // abortSignal: AbortSignal;
   // model: LLMID;
@@ -35,8 +35,8 @@ export const createToolSchemas = ({
   // assistantMessageId: string;
 }) => {
   const allSchemas = {
-    webSearch: createExaWebSearchTool(dataStream),
-    browser: createBrowserTool(dataStream),
+    webSearch: createExaWebSearchTool(profile),
+    browser: createBrowserTool(profile),
     hackerAIMCP: {
       description: `Activate the HackerAI MCP agent for comprehensive penetration testing and cybersecurity operations. \
 Select this tool IMMEDIATELY when any security testing, terminal operations, or technical tasks are needed.
