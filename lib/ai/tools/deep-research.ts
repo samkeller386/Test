@@ -88,7 +88,6 @@ export async function executeDeepResearchTool({
     let reasoning = '';
 
     for await (const event of stream) {
-      console.log('event', event);
       if (event.type === 'response.reasoning_summary_text.delta') {
         if (!isThinking) {
           isThinking = true;
