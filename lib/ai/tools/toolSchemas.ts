@@ -5,6 +5,7 @@ import { z } from 'zod';
 // import type { ChatMetadata } from '@/types';
 // import type { Doc } from '@/convex/_generated/dataModel';
 import { createExaWebSearchTool } from './web-search-v2';
+import { createBrowserTool } from './browser';
 
 export const createToolSchemas = ({
   // chat,
@@ -35,6 +36,7 @@ export const createToolSchemas = ({
 }) => {
   const allSchemas = {
     webSearch: createExaWebSearchTool(dataStream),
+    browser: createBrowserTool(dataStream),
     hackerAIMCP: {
       description: `Activate the HackerAI MCP agent for comprehensive penetration testing and cybersecurity operations. \
 Select this tool IMMEDIATELY when any security testing, terminal operations, or technical tasks are needed.

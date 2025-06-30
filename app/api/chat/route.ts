@@ -154,8 +154,8 @@ export async function POST(request: Request) {
             }).getSelectedSchemas(
               config.selectedModel === 'chat-model-large' &&
                 !modelParams.isTemporaryChat
-                ? ['webSearch', 'hackerAIMCP']
-                : ['webSearch'],
+                ? ['webSearch', 'browser', 'hackerAIMCP']
+                : ['webSearch', 'browser'],
             ),
             abortSignal: abortController.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),
@@ -163,6 +163,25 @@ export async function POST(request: Request) {
             onChunk: async (event: any) => {
               if (event.chunk.type === 'tool-call') {
                 toolUsed = event.chunk.toolName;
+              } else if (event.chunk.type === 'tool-result') {
+                // Handle tool results and extract citations
+                const { toolName, result } = event.chunk;
+
+                if (toolName === 'browser' && result?.url) {
+                  // For browser tool, add the URL as citation
+                  citations.push(result.url);
+                  dataStream.writeData({ citations: [result.url] });
+                } else if (toolName === 'webSearch' && Array.isArray(result)) {
+                  // For web search tool, extract URLs from results
+                  const searchCitations = result
+                    .map((item: any) => item.url)
+                    .filter((url: string) => url);
+
+                  citations.push(...searchCitations);
+                  if (searchCitations.length > 0) {
+                    dataStream.writeData({ citations: searchCitations });
+                  }
+                }
               } else if (event.chunk.type === 'source') {
                 // Handle source chunks and send as citations
                 const source = event.chunk.source;
@@ -214,6 +233,11 @@ export async function POST(request: Request) {
                 }
                 // Wait for initial chat handling to complete before final handling
                 await initialChatPromise;
+
+                // Deduplicate citations
+                const uniqueCitations =
+                  citations.length > 0 ? [...new Set(citations)] : undefined;
+
                 await handleFinalChatAndAssistantMessage({
                   modelParams,
                   chatMetadata,
@@ -223,7 +247,7 @@ export async function POST(request: Request) {
                   finishReason,
                   title: generatedTitle,
                   assistantMessage: text,
-                  citations: citations.length > 0 ? citations : undefined,
+                  citations: uniqueCitations,
                   assistantMessageId,
                 });
               }

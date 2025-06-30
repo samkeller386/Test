@@ -79,16 +79,6 @@ version of a software library or not knowing the date of the next game for a spo
         const exa = new Exa(process.env.EXA_API_KEY);
         const result = await exa.searchAndContents(query, searchOptions);
 
-        // Extract URLs from results for citations
-        const citations = result.results
-          .map((item: any) => item.url)
-          .filter((url: string) => url); // Filter out any undefined/null URLs
-
-        // Send citations through dataStream if available
-        if (dataStream && citations.length > 0) {
-          dataStream.writeData({ citations });
-        }
-
         // Truncate text content to max 2048 tokens for each result
         const truncatedResults = result.results.map((item: any) => ({
           ...item,
