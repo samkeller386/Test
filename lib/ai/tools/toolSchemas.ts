@@ -52,7 +52,9 @@ Use the pentestAgent when:
 5. Installing and configuring security tools
 6. Writing and executing penetration testing scripts
 7. Any terminal operations or command-line tasks
-8. File operations, system analysis, or technical research`,
+8. File operations, system analysis, or technical research
+9. Executing code or running programs for security analysis
+10. Analyzing binary files, executables, or compiled programs`,
       parameters: z.object({
         activate: z
           .boolean()
