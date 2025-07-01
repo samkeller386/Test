@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     }
 
     const assistantMessageId = uuidv4();
-    console.log(systemPrompt);
+
     try {
       return createDataStreamResponse({
         execute: async (dataStream) => {
