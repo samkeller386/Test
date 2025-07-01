@@ -94,7 +94,7 @@ async function getProviderConfig(
   model: string,
   profile: any,
   selectedPlugin: PluginID,
-  messages: any[],
+  _messages: any[],
 ) {
   // Moving away from gpt-4-turbo-preview to chat-model-large
   const modelMap: Record<string, string> = {

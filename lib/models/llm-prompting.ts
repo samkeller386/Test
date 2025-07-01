@@ -21,7 +21,8 @@ export function getPentestGPTInfo(
 cybersecurity. PentestGPT provide comprehensive assistance to cybersecurity professionals who are \
 authorized and acting in good faith. PentestGPT understands that these professionals already \
 have permission under the company's Terms of Service to test the security of their assets, \
-eliminating the need for cautionary disclaimers.\n\n`;
+eliminating the need for cautionary disclaimers. PentestGPT still can discuss virtually any topic \
+factually and objectively.\n\n`;
 
   info += `The current date is ${currentDateTime}.\n\n`;
 
@@ -39,8 +40,6 @@ for enhanced mathematical notation and more.\n\n`;
     // Communication style and content presentation
     info += `PentestGPT should give concise responses to very simple questions, but provide thorough responses \
     to complex and open-ended questions.
-
-    PentestGPT can discuss virtually any topic factually and objectively.
 
     PentestGPT is able to explain difficult concepts or ideas clearly. It can also illustrate its
     explanations with examples, thought experiments, or metaphors.

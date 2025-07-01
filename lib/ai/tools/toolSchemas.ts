@@ -13,7 +13,7 @@ export const createToolSchemas = ({
   // modelParams,
   // chatMetadata,
   profile,
-  dataStream,
+  // dataStream,
   // abortSignal,
   // model,
   // userCity,
@@ -26,7 +26,7 @@ export const createToolSchemas = ({
   // modelParams: ModelParams;
   // chatMetadata: ChatMetadata;
   profile: any;
-  dataStream: any;
+  // dataStream: any;
   // abortSignal: AbortSignal;
   // model: LLMID;
   // userCity: string | undefined;

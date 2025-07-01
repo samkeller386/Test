@@ -143,7 +143,7 @@ export async function POST(request: Request) {
               // messages: processedMessages,
               // modelParams,
               profile,
-              dataStream,
+              // dataStream,
               // abortSignal: abortController.signal,
               // chatMetadata,
               // model,
