@@ -141,7 +141,7 @@ async function getProviderConfig(
   const isLargeModel = selectedModel.includes('large');
 
   const rateLimitModel =
-    selectedPlugin !== PluginID.NONE
+    selectedPlugin !== PluginID.NONE && selectedPlugin !== PluginID.WEB_SEARCH
       ? selectedPlugin
       : rateLimitModelMap[model] || model;
 
