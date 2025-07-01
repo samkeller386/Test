@@ -41,13 +41,19 @@ export async function POST(request: Request) {
 
     const { profile } = await getAIProfile();
 
-    const { chat, config } = await validateChatAccessWithLimits({
+    const validationResult = await validateChatAccessWithLimits({
       chatMetadata,
       userId: profile.user_id,
       messages,
       model,
       selectedPlugin: modelParams.selectedPlugin,
     });
+
+    if (!validationResult.success) {
+      return validationResult.response;
+    }
+
+    const { chat, config } = validationResult;
 
     const isReasoningModel = model === 'reasoning-model';
     let generatedTitle: string | undefined;
