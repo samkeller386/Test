@@ -152,8 +152,7 @@ export async function POST(request: Request) {
               // initialChatPromise,
               // assistantMessageId,
             }).getSelectedSchemas(
-              config.selectedModel === 'chat-model-large' &&
-                !modelParams.isTemporaryChat
+              config.isPremiumUser && !modelParams.isTemporaryChat
                 ? ['webSearch', 'browser', 'hackerAIMCP']
                 : ['webSearch', 'browser'],
             ),
