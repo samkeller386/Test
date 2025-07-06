@@ -46,14 +46,13 @@ export default function FilePreview({
   return (
     <TooltipProvider>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogTitle className="sr-only">File Preview</DialogTitle>
-
         <DialogContent
           className={cn(
             'max-w-full max-h-full w-full h-full p-0 border-none',
             'bg-black flex items-center justify-center',
           )}
         >
+          <DialogTitle className="sr-only">File Preview</DialogTitle>
           {/* Close button on the top left */}
           <Tooltip>
             <TooltipTrigger asChild>

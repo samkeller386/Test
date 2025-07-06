@@ -261,7 +261,7 @@ export async function processChatMessages(
   // Create a deep copy of messages using structuredClone
   const messagesCopy = structuredClone(messages);
 
-  // Process images if supabase client is provided
+  // Process images - this includes processing assistant images by moving them to next user messages
   let processedMessages: BuiltChatMessage[];
   let hasImageAttachments = false;
 
