@@ -68,6 +68,7 @@ export const processResponse = async (
     let chatTitle: string | null = null;
     let fileAttachments: FileAttachment[] = [];
     let assistantMessageId: string | null = null;
+    let assistantImageUrls: string[] = [];
 
     try {
       await processDataStream({
@@ -299,6 +300,7 @@ export const processResponse = async (
             browser: PluginID.BROWSER,
             hackerAIMCP: PluginID.PENTEST_AGENT,
             webSearch: PluginID.WEB_SEARCH,
+            image_gen: PluginID.IMAGE_GEN,
           } as const;
 
           const plugin = toolMap[toolName as keyof typeof toolMap];
@@ -343,10 +345,22 @@ export const processResponse = async (
               citations = result.citations;
               chatTitle = result.chatTitle;
               fileAttachments = result.fileAttachments;
+              assistantImageUrls = [
+                ...assistantImageUrls,
+                ...(result.assistantImageUrls || []),
+              ];
             }
           }
 
           toolExecuted = true;
+        },
+        onToolResultPart: (value) => {
+          if (value.result && value.result.success && value.result.imageUrls) {
+            const imageUrls = Array.isArray(value.result.imageUrls)
+              ? value.result.imageUrls
+              : [value.result.imageUrls];
+            assistantImageUrls = [...assistantImageUrls, ...imageUrls];
+          }
         },
         onStartStepPart: (value) => {
           if (value.messageId) {
@@ -412,6 +426,7 @@ export const processResponse = async (
       chatTitle,
       fileAttachments,
       assistantMessageId,
+      assistantImageUrls,
     };
   } else {
     throw new Error('Response body is null');

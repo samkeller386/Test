@@ -34,6 +34,7 @@ export const handleCreateMessages = async (
   setChatFiles?: React.Dispatch<React.SetStateAction<Doc<'files'>[]>>,
   fileAttachments?: FileAttachment[],
   assistantMessageId?: string | null,
+  assistantImageUrls?: string[],
 ) => {
   try {
     const isEdit = editSequenceNumber !== undefined;
@@ -83,7 +84,7 @@ export const handleCreateMessages = async (
         updated_at: Date.now(),
         sequence_number: lastSequenceNumber(chatMessages) + 2,
         user_id: profile.user_id,
-        image_paths: [],
+        image_paths: assistantImageUrls || [],
         citations: citations || [],
         attachments: fileAttachments
           ? convertToJsonAttachments(fileAttachments)
@@ -110,6 +111,10 @@ export const handleCreateMessages = async (
         message: {
           ...lastMessage.message,
           content: lastMessage.message.content + generatedText,
+          image_paths: [
+            ...(lastMessage.message.image_paths || []),
+            ...(assistantImageUrls || []),
+          ],
           attachments: [
             ...(lastMessage.message.attachments || []),
             ...(fileAttachments

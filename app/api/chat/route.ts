@@ -60,6 +60,7 @@ export async function POST(request: Request) {
     let hasGeneratedTitle = false;
     let titleGenerationPromise: Promise<void> | null = null;
     const citations: string[] = [];
+    const imagePaths: string[] = [];
 
     const { processedMessages, systemPrompt } = await processChatMessages(
       messages,
@@ -131,27 +132,48 @@ export async function POST(request: Request) {
             maxSteps: 3,
             tools: createToolSchemas({
               profile,
+              dataStream,
+              abortSignal: abortController.signal,
             }).getSelectedSchemas(
-              config.isPremiumUser &&
-                !modelParams.isTemporaryChat &&
-                modelParams.selectedPlugin !== PluginID.WEB_SEARCH
-                ? ['webSearch', 'browser', 'hackerAIMCP']
-                : ['webSearch', 'browser'],
+              modelParams.selectedPlugin === PluginID.IMAGE_GEN
+                ? ['image_gen']
+                : config.isPremiumUser &&
+                    !modelParams.isTemporaryChat &&
+                    modelParams.selectedPlugin !== PluginID.WEB_SEARCH
+                  ? ['webSearch', 'browser', 'hackerAIMCP']
+                  : ['webSearch', 'browser'],
             ),
             abortSignal: abortController.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),
             experimental_generateMessageId: () => assistantMessageId,
             onChunk: async (event: any) => {
+              console.log('event', event);
               if (event.chunk.type === 'tool-call') {
                 toolUsed = event.chunk.toolName;
               } else if (event.chunk.type === 'tool-result') {
                 // Handle tool results and extract citations
                 const { toolName, result } = event.chunk;
 
-                if (toolName === 'browser' && result?.url) {
+                if (toolName === 'image_gen') {
+                  if (result?.success && result?.imagePaths) {
+                    imagePaths.push(...result.imagePaths);
+                  } else if (
+                    result?.success === false &&
+                    result?.rateLimitInfo
+                  ) {
+                    // Handle rate limit error from image generation tool
+                    dataStream.writeData({
+                      type: 'error',
+                      content: {
+                        type: 'ratelimit_hit',
+                        message: result.error,
+                        rateLimitInfo: result.rateLimitInfo,
+                      },
+                    });
+                  }
+                } else if (toolName === 'browser' && result?.url) {
                   // For browser tool, add the URL as citation
                   citations.push(result.url);
-                  dataStream.writeData({ citations: [result.url] });
                 } else if (toolName === 'webSearch' && Array.isArray(result)) {
                   // For web search tool, extract URLs from results
                   const searchCitations = result
@@ -159,19 +181,6 @@ export async function POST(request: Request) {
                     .filter((url: string) => url);
 
                   citations.push(...searchCitations);
-                  if (searchCitations.length > 0) {
-                    dataStream.writeData({ citations: searchCitations });
-                  }
-                }
-              } else if (event.chunk.type === 'source') {
-                // Handle source chunks and send as citations
-                const source = event.chunk.source;
-                if (source?.url) {
-                  // Add URL to citations array for final handling
-                  citations.push(source.url);
-
-                  // Send individual citation immediately during streaming
-                  dataStream.writeData({ citations: [source.url] });
                 }
               } else if (
                 !hasGeneratedTitle &&
@@ -229,6 +238,7 @@ export async function POST(request: Request) {
                   title: generatedTitle,
                   assistantMessage: text,
                   citations: uniqueCitations,
+                  imagePaths: imagePaths.length > 0 ? imagePaths : undefined,
                   assistantMessageId,
                 });
               }

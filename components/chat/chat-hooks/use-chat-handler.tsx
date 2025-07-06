@@ -487,6 +487,7 @@ export const useChatHandler = () => {
         chatTitle,
         fileAttachments,
         assistantMessageId,
+        assistantImageUrls,
       } = await handleHostedChat(
         payload,
         tempAssistantChatMessage,
@@ -521,6 +522,7 @@ export const useChatHandler = () => {
                   thinking_content: thinkingText,
                   thinking_elapsed_secs: thinkingElapsedSecs || undefined,
                   citations: citations || [],
+                  image_paths: assistantImageUrls || [],
                 },
               }
             : msg,
@@ -570,6 +572,7 @@ export const useChatHandler = () => {
           setChatFiles,
           fileAttachments,
           assistantMessageId,
+          assistantImageUrls,
         );
       }
 
