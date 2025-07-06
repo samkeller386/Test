@@ -34,7 +34,7 @@ export const createToolSchemas = ({
   // assistantMessageId: string;
 }) => {
   const allSchemas = {
-    image_gen: createImageGenTool(profile, abortSignal),
+    image_gen: createImageGenTool(profile, abortSignal, dataStream),
     webSearch: createWebSearchTool(profile, dataStream),
     browser: createBrowserTool(profile, abortSignal, dataStream),
     hackerAIMCP: {

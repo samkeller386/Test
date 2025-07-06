@@ -147,7 +147,6 @@ export async function POST(request: Request) {
             experimental_transform: smoothStream({ chunking: 'word' }),
             experimental_generateMessageId: () => assistantMessageId,
             onChunk: async (event: any) => {
-              console.log('event', event);
               if (event.chunk.type === 'tool-call') {
                 toolUsed = event.chunk.toolName;
               } else if (event.chunk.type === 'tool-result') {

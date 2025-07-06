@@ -169,6 +169,13 @@ export const processResponse = async (
                 fileAttachments = [...fileAttachments, ...attachments];
               }
 
+              if (firstValue.type === 'assistant-images') {
+                const imageUrls = Array.isArray(firstValue.content)
+                  ? (firstValue.content as string[])
+                  : [];
+                assistantImageUrls = [...assistantImageUrls, ...imageUrls];
+              }
+
               if (firstValue.type === 'agent-status') {
                 setAgentStatus(firstValue.content as AgentStatusState);
               }
@@ -353,14 +360,6 @@ export const processResponse = async (
           }
 
           toolExecuted = true;
-        },
-        onToolResultPart: (value) => {
-          if (value.result && value.result.success && value.result.imageUrls) {
-            const imageUrls = Array.isArray(value.result.imageUrls)
-              ? value.result.imageUrls
-              : [value.result.imageUrls];
-            assistantImageUrls = [...assistantImageUrls, ...imageUrls];
-          }
         },
         onStartStepPart: (value) => {
           if (value.messageId) {
