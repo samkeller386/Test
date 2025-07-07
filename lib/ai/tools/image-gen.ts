@@ -9,6 +9,16 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
 
 /**
+ * Interface for image generation parameters
+ */
+interface ImageGenerationParameters {
+  prompt: string;
+  size: '1024x1024' | '1536x1024' | '1024x1536';
+  n?: number;
+  transparent_background?: boolean;
+}
+
+/**
  * Image generation tool using Vercel's AI SDK with OpenAI's image model
  * Generates images from descriptions
  */
@@ -83,8 +93,11 @@ Guidelines:
         };
       }
 
-      const parametersJson: any = { prompt, size };
-      if (n !== 1) parametersJson.n = n;
+      const parametersJson: ImageGenerationParameters = {
+        prompt,
+        size: size ?? '1024x1024',
+      };
+      if (n !== null && n !== 1) parametersJson.n = n;
       if (transparent_background === true)
         parametersJson.transparent_background = transparent_background;
 

@@ -29,10 +29,12 @@ export const createTempMessages = ({
   const tempUserMessageId = uuidv4();
 
   // Add images to chat state immediately with the temp message ID
+  // Remove base64 data since we no longer need it (use URLs for display)
   if (newMessageImages.length > 0) {
     const imagesWithMessageId = newMessageImages.map((image) => ({
       ...image,
       messageId: tempUserMessageId,
+      base64: undefined, // Clear base64 to free memory
     }));
 
     setChatImages((prevImages) => [...prevImages, ...imagesWithMessageId]);
