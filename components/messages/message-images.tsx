@@ -42,11 +42,10 @@ export const MessageImages: React.FC<MessageImagesProps> = ({
     >
       {imagePaths.map((path, index) => {
         const item = chatImages.find((image) => image.path === path);
-        const src = path.startsWith('data')
-          ? path
-          : path.startsWith('http')
-            ? path
-            : item?.base64;
+
+        // Use URL as primary source, fallback to base64 for loading states (data URLs)
+        const src = item?.url || (path.startsWith('data:') ? path : '');
+
         if (!src) return null;
 
         return (
@@ -70,8 +69,7 @@ export const MessageImages: React.FC<MessageImagesProps> = ({
                 onImageClick({
                   messageId,
                   path,
-                  base64: src,
-                  url: path.startsWith('data') ? '' : item?.url || '',
+                  url: item?.url || '',
                   file: null,
                 });
               }}

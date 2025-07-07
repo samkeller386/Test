@@ -26,16 +26,53 @@ export default function FilePreview({
   isOpen,
   onOpenChange,
 }: FilePreviewProps) {
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (type === 'image') {
       const imageItem = item as MessageImage;
-      const src = imageItem.base64 || imageItem.url;
-      const link = document.createElement('a');
-      link.href = src;
-      link.download = `image-${imageItem.messageId || 'preview'}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const src = imageItem.url || imageItem.base64 || '';
+      if (!src) return;
+
+      try {
+        // If it's a data URL (base64), download directly
+        if (src.startsWith('data:')) {
+          const link = document.createElement('a');
+          link.href = src;
+          link.download = `image-${imageItem.messageId || 'preview'}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          return;
+        }
+
+        // For URLs, fetch the image and create a blob for download
+        const response = await fetch(src);
+        if (!response.ok) {
+          throw new Error('Failed to fetch image');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `image-${imageItem.messageId || 'preview'}.png`;
+        document.body.appendChild(link);
+        link.click();
+
+        // Cleanup
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Error downloading image:', error);
+        // Fallback to direct link if fetch fails
+        const link = document.createElement('a');
+        link.href = src;
+        link.download = `image-${imageItem.messageId || 'preview'}.png`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     }
   };
 
@@ -92,11 +129,12 @@ export default function FilePreview({
           {(() => {
             if (type === 'image') {
               const imageItem = item as MessageImage;
+              const src = imageItem.url || imageItem.base64 || '';
 
               return (
                 <Image
                   className="object-contain"
-                  src={imageItem.base64 || imageItem.url}
+                  src={src}
                   alt="File image"
                   width={1200}
                   height={800}

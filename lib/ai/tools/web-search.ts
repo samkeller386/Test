@@ -4,6 +4,15 @@ import Exa from 'exa-js';
 import { truncateContentByTokens } from '../terminal-utils';
 import PostHogClient from '@/app/posthog';
 
+interface ExaSearchOptions {
+  numResults?: number;
+  contents: {
+    text: boolean;
+  };
+  startPublishedDate?: string;
+  endPublishedDate?: string;
+}
+
 /**
  * Web search tool using Exa API
  * Searches the web and returns results with content
@@ -70,12 +79,16 @@ version of a software library or not knowing the date of the next game for a spo
         }
 
         // Prepare search options
-        const searchOptions: any = {
-          numResults,
+        const searchOptions: ExaSearchOptions = {
           contents: {
             text: true,
           },
         };
+
+        // Add numResults if specified
+        if (numResults !== null) {
+          searchOptions.numResults = numResults;
+        }
 
         // Add date filters if specified
         if (startPublishedDate) {

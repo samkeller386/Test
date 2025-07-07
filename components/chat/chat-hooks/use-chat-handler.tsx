@@ -301,13 +301,12 @@ export const useChatHandler = () => {
 
       let currentChat = selectedChat ? { ...selectedChat } : null;
 
-      const b64Images = newMessageImages.map((image) => image.base64);
-
       const { tempUserChatMessage, tempAssistantChatMessage } =
         createTempMessages({
           messageContent,
           chatMessages,
-          b64Images,
+          newMessageImages,
+          setChatImages,
           isContinuation,
           selectedPlugin,
           model: baseModel,

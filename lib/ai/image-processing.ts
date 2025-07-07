@@ -132,6 +132,13 @@ export function processAssistantImages(
     }
   }
 
+  // Handle any remaining assistant images that weren't attached to a user message
+  if (pendingAssistantImages.length > 0) {
+    console.error(
+      `Found ${pendingAssistantImages.length} assistant images that couldn't be moved to a user message. These images will be dropped.`,
+    );
+  }
+
   return processedMessages;
 }
 

@@ -141,13 +141,17 @@ export const handleCreateMessages = async (
         }
       }
 
-      const newImages = newMessageImages.map((obj) => ({
-        ...obj,
-        messageId: userMessage.message.id,
-        path: obj.path,
-      }));
-
-      setChatImages((prevImages) => [...prevImages, ...newImages]);
+      // Update existing images with the correct message ID instead of adding duplicates
+      // (images were already added in createTempMessages with temp ID)
+      if (newMessageImages.length > 0) {
+        setChatImages((prevImages) =>
+          prevImages.map((image) =>
+            newMessageImages.some((newImg) => newImg.path === image.path)
+              ? { ...image, messageId: userMessage.message.id }
+              : image,
+          ),
+        );
+      }
 
       finalChatMessages = [
         ...(isEdit

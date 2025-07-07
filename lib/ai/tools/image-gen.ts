@@ -61,6 +61,15 @@ Guidelines:
         );
 
         if (!rateLimitStatus.allowed) {
+          dataStream.writeData({
+            type: 'error',
+            content: {
+              type: 'ratelimit_hit',
+              message: `Rate limit exceeded for image generation. ${rateLimitStatus.info.message}`,
+              rateLimitInfo: rateLimitStatus.info,
+            },
+          });
+
           return {
             success: false,
             error: `Rate limit exceeded for image generation. ${rateLimitStatus.info.message}`,

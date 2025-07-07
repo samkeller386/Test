@@ -156,19 +156,6 @@ export async function POST(request: Request) {
                 if (toolName === 'image_gen') {
                   if (result?.success && result?.imagePaths) {
                     imagePaths.push(...result.imagePaths);
-                  } else if (
-                    result?.success === false &&
-                    result?.rateLimitInfo
-                  ) {
-                    // Handle rate limit error from image generation tool
-                    dataStream.writeData({
-                      type: 'error',
-                      content: {
-                        type: 'ratelimit_hit',
-                        message: result.error,
-                        rateLimitInfo: result.rateLimitInfo,
-                      },
-                    });
                   }
                 } else if (toolName === 'browser' && result?.url) {
                   // For browser tool, add the URL as citation
