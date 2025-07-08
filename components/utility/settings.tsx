@@ -64,12 +64,27 @@ export const Settings: FC<{ showEmail?: boolean }> = ({
   const handleSave = async () => {
     if (!profile) return;
 
-    const isOverLimit = profileInstructions.length > PROFILE_CONTEXT_MAX;
-    if (isOverLimit) {
-      toast.error(
-        `Profile instructions exceed the limit of ${PROFILE_CONTEXT_MAX} characters.`,
-      );
-      return;
+    // Parse the structured data to validate individual fields
+    try {
+      const data = JSON.parse(profileInstructions);
+      const isNicknameOverLimit = (data.nickname || '').length > 50;
+      const isOccupationOverLimit = (data.occupation || '').length > 100;
+      const isTraitsOverLimit = (data.traits || '').length > 100;
+      const isAdditionalInfoOverLimit = (data.additionalInfo || '').length > 3000;
+      
+      if (isNicknameOverLimit || isOccupationOverLimit || isTraitsOverLimit || isAdditionalInfoOverLimit) {
+        toast.error('Please fix the character limit errors before saving.');
+        return;
+      }
+    } catch {
+      // If it's not JSON, treat as legacy format and check total length
+      const isOverLimit = profileInstructions.length > PROFILE_CONTEXT_MAX;
+      if (isOverLimit) {
+        toast.error(
+          `Profile instructions exceed the limit of ${PROFILE_CONTEXT_MAX} characters.`,
+        );
+        return;
+      }
     }
 
     const updatedProfile = await updateProfile(profileInstructions);
