@@ -109,12 +109,11 @@ export const PersonalizationTab: FC<PersonalizationTabProps> = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="traits" className="text-sm font-medium">
+          <Label className="text-sm font-medium">
             What traits should PentestGPT have?
           </Label>
           <div className="space-y-1">
             <TextareaAutosize
-              id="traits"
               value={traits}
               onValueChange={setTraits}
               placeholder="Describe or select traits"
@@ -131,12 +130,11 @@ export const PersonalizationTab: FC<PersonalizationTabProps> = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="additionalInfo" className="text-sm font-medium">
+          <Label className="text-sm font-medium">
             Anything else PentestGPT should know about you?
           </Label>
           <div className="space-y-1">
             <TextareaAutosize
-              id="additionalInfo"
               value={additionalInfo}
               onValueChange={setAdditionalInfo}
               placeholder="Interests, values, or preferences to keep in mind"
