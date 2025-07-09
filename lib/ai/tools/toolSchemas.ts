@@ -6,6 +6,7 @@ import { createGetTerminalFilesTool } from './get_terminal_files-tool';
 import { DefaultSandboxManager } from './agent/utils/sandbox-manager';
 import { Sandbox } from '@e2b/code-interpreter';
 import { ToolContext } from './agent/types';
+import type { AgentMode } from '@/types/llms';
 
 export const createToolSchemas = ({
   profile,
@@ -19,7 +20,7 @@ export const createToolSchemas = ({
   profile: any;
   dataStream: any;
   abortSignal: AbortSignal;
-  agentMode?: 'auto-run' | 'ask-every-time';
+  agentMode?: AgentMode;
   pentestFiles?: Array<{ path: string; data: Buffer }>;
   messages?: any[];
   isTerminalContinuation?: boolean;

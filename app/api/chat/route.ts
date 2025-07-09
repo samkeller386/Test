@@ -18,9 +18,10 @@ import { validateChatAccessWithLimits } from '@/lib/ai/actions/chat-validation';
 import { postRequestBodySchema, type PostRequestBody } from './schema';
 import { ChatSDKError } from '@/lib/errors';
 import { v4 as uuidv4 } from 'uuid';
-import { PluginID, FileAttachment } from '@/types';
+import { PluginID, type FileAttachment } from '@/types';
 import { geolocation } from '@vercel/functions';
 import { pauseSandbox } from '@/lib/ai/tools/agent/utils/sandbox';
+import { getToolsForPlugin } from '@/lib/ai/tool-selection';
 
 export const maxDuration = 240;
 
@@ -162,20 +163,11 @@ export async function POST(request: Request) {
             maxTokens: 4096,
             maxSteps: 3,
             tools: toolSchemas.getSelectedSchemas(
-              modelParams.selectedPlugin === PluginID.IMAGE_GEN
-                ? ['image_gen']
-                : modelParams.selectedPlugin === PluginID.TERMINAL
-                  ? ['run_terminal_cmd', 'get_terminal_files']
-                  : config.isPremiumUser &&
-                      !modelParams.isTemporaryChat &&
-                      modelParams.selectedPlugin !== PluginID.WEB_SEARCH
-                    ? [
-                        'webSearch',
-                        'browser',
-                        'run_terminal_cmd',
-                        'get_terminal_files',
-                      ]
-                    : ['webSearch', 'browser'],
+              getToolsForPlugin(
+                modelParams.selectedPlugin,
+                config,
+                modelParams,
+              ),
             ),
             abortSignal: abortController.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),
@@ -220,6 +212,7 @@ export async function POST(request: Request) {
                   dataStream.writeData({ chatTitle: generatedTitle });
                 })();
               } else if (event.chunk.type === 'text-delta') {
+                // Note: writeData wrapper only captures dataStream, not AI text chunks from onChunk
                 assistantMessage += event.chunk.textDelta;
               }
             },
