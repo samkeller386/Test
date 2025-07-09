@@ -36,6 +36,7 @@ appropriate output flags (e.g., -oN for nmap) if the tool supports it, otherwise
 - Chain multiple commands with \`&&\` to reduce interruptions and handle errors cleanly
 - Use pipes (\`|\`) to simplify workflows by passing outputs between commands
 - Use non-interactive \`bc\` for simple calculations, Python for complex math; never calculate mentally
+- If user provided binary file or file content is empty, use terminal commands to access it
 </shell_guidelines>
 
 <sandbox_environment>

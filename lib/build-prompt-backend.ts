@@ -94,6 +94,18 @@ export function buildDocumentsText(fileItems: Doc<'file_items'>[]) {
 
   const documents = Object.values(fileGroups)
     .map((file: any) => {
+      // Check if content is empty or contains only whitespace
+      const hasContent = file.content.some(
+        (content: string) => content.trim().length > 0,
+      );
+
+      if (!hasContent) {
+        return `<document id="${file.id}">
+<source>${file.name}</source>
+<document_content>File content is empty because it's a binary file or could not be processed into readable format. Use terminal commands to access the file content.</document_content>
+</document>`;
+      }
+
       return `<document id="${file.id}">
 <source>${file.name}</source>
 <document_content>${file.content.join('\n\n')}</document_content>
