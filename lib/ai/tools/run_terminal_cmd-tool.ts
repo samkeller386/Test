@@ -143,7 +143,7 @@ Pre-installed Tools:
 
       dataStream.writeData({
         type: 'text-delta',
-        content: `<pgptml:terminal_command exec-dir="${exec_dir}">${command}</pgptml:terminal_command>`,
+        content: `\n\n<pgptml:terminal_command exec-dir="${exec_dir}">${command}</pgptml:terminal_command>`,
       });
 
       // Execute command
