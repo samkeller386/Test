@@ -22,7 +22,7 @@ import { PluginID, FileAttachment } from '@/types';
 import { geolocation } from '@vercel/functions';
 import { pauseSandbox } from '@/lib/ai/tools/agent/utils/sandbox';
 
-export const maxDuration = 180;
+export const maxDuration = 240;
 
 export async function POST(request: Request) {
   const abortController = new AbortController();
