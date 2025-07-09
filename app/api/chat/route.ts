@@ -50,7 +50,6 @@ export async function POST(request: Request) {
       userId: profile.user_id,
       messages,
       model,
-      selectedPlugin: modelParams.selectedPlugin,
     });
 
     if (!validationResult.success) {

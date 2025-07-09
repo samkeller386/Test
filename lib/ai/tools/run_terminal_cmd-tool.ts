@@ -4,6 +4,7 @@ import type { ToolContext } from './agent/types';
 import { executeTerminalCommand } from '@/lib/ai/tools/agent/terminal-executor';
 import { streamTerminalOutput } from '@/lib/ai/terminal-utils';
 import { writePentestFilesToSandbox } from './agent/utils/sandbox-utils';
+import PostHogClient from '@/app/posthog';
 
 /**
  * Creates a terminal tool for executing commands in the sandbox environment
@@ -71,6 +72,12 @@ Pre-installed Tools:
       command: z.string().describe('Shell command to execute'),
     }),
     execute: async (args) => {
+      const posthog = PostHogClient();
+      posthog?.capture({
+        distinctId: userID,
+        event: 'terminal',
+      });
+
       const { exec_dir, command } = args as {
         exec_dir: string;
         command: string;
