@@ -141,11 +141,6 @@ Pre-installed Tools:
         pentestFilesWritten = true;
       }
 
-      dataStream.writeData({
-        type: 'text-delta',
-        content: `\n\n<pgptml:terminal_command exec-dir="${exec_dir}">${command}</pgptml:terminal_command>`,
-      });
-
       // Execute command
       const terminalStream = await executeTerminalCommand({
         userID,

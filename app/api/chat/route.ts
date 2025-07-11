@@ -67,22 +67,17 @@ export async function POST(request: Request) {
     const citations: string[] = [];
     const imagePaths: string[] = [];
 
-    const {
-      processedMessages,
-      systemPrompt,
-      // hasPdfAttachments,
-      // hasImageAttachments,
-      pentestFiles,
-    } = await processChatMessages(
-      messages,
-      config.selectedModel,
-      modelParams,
-      profile,
-      isReasoningModel,
-      config.isPremiumUser,
-      modelParams.selectedPlugin === PluginID.TERMINAL, // Generate pentestFiles when terminal plugin is selected
-      userLocation,
-    );
+    const { processedMessages, systemPrompt, pentestFiles } =
+      await processChatMessages(
+        messages,
+        config.selectedModel,
+        modelParams,
+        profile,
+        isReasoningModel,
+        config.isPremiumUser,
+        modelParams.selectedPlugin === PluginID.TERMINAL, // Generate pentestFiles when terminal plugin is selected
+        userLocation,
+      );
 
     // Handle initial chat creation and user message in parallel with other operations
     const initialChatPromise = handleInitialChatAndUserMessage({
@@ -118,14 +113,6 @@ export async function POST(request: Request) {
         event: config.selectedModel,
       });
     }
-
-    // if (
-    //   !hasImageAttachments &&
-    //   !hasPdfAttachments &&
-    //   config.selectedModel === 'chat-model-small'
-    // ) {
-    //   config.selectedModel = 'chat-model-small-text';
-    // }
 
     let assistantMessage = '';
     let terminalUsed = false;
@@ -189,6 +176,12 @@ export async function POST(request: Request) {
               if (event.chunk.type === 'tool-call') {
                 toolUsed = event.chunk.toolName;
                 if (toolUsed === 'run_terminal_cmd') {
+                  const { exec_dir, command } = event.chunk.args;
+                  dataStream.writeData({
+                    type: 'text-delta',
+                    content: `<pgptml:terminal_command exec-dir="${exec_dir}">${command}</pgptml:terminal_command>`,
+                  });
+
                   terminalUsed = true;
                 }
               } else if (event.chunk.type === 'tool-result') {
