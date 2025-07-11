@@ -29,7 +29,7 @@ export function checkForImagesInMessages(
 }
 
 /**
- * Gets URLs for multiple images from Convex storage
+ * Gets URLs for multiple images from Convex storage using batch request
  */
 async function getImageUrls(
   storageIds: string[],
@@ -38,22 +38,31 @@ async function getImageUrls(
 
   const urlMap = new Map<string, string>();
 
-  const urlPromises = storageIds.map(async (storageId) => {
-    try {
-      if (!storageId?.trim() || storageId.includes('/')) return;
+  // Filter out invalid storage IDs
+  const validStorageIds = storageIds.filter(
+    (storageId) => storageId?.trim() && !storageId.includes('/'),
+  );
 
-      const url = await convex.query(api.fileStorage.getFileStorageUrlPublic, {
+  if (validStorageIds.length === 0) return urlMap;
+
+  try {
+    const results = await convex.query(
+      api.fileStorage.getBatchFileStorageUrlsPublic,
+      {
         serviceKey: process.env.CONVEX_SERVICE_ROLE_KEY!,
-        storageId: storageId as Id<'_storage'>,
-      });
+        storageIds: validStorageIds as Id<'_storage'>[],
+      },
+    );
 
-      if (url) urlMap.set(storageId, url);
-    } catch (error) {
-      console.error(`Error getting URL for storage ID ${storageId}:`, error);
+    for (const result of results) {
+      if (result.url) {
+        urlMap.set(result.storageId, result.url);
+      }
     }
-  });
+  } catch (error) {
+    console.error('Error getting batch image URLs:', error);
+  }
 
-  await Promise.all(urlPromises);
   return urlMap;
 }
 
