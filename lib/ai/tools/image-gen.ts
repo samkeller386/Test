@@ -110,9 +110,7 @@ Guidelines:
           event: 'image_generation_executed',
         });
 
-        const providerOptions: any = {
-          openai: { quality: 'high' },
-        };
+        const providerOptions: any = {};
         if (transparent_background) {
           providerOptions.openai.background = 'transparent';
         }
