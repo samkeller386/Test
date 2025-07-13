@@ -103,19 +103,6 @@ export const MessageContentRenderer: FC<MessageContentRendererProps> = ({
 
   // Handle thinking content
   if (thinking_content) {
-    // If no thinking content but has citations, show citations
-    if (!thinking_content && citations.length > 0) {
-      return (
-        <MessageCitations
-          content={content}
-          isAssistant={isAssistant}
-          citations={citations}
-        />
-      );
-    } else if (!thinking_content) {
-      return <MessageMarkdown content={content} isAssistant={isAssistant} />;
-    }
-
     const isThinking = isGenerating && !content;
     const thinkingTitle = isThinking
       ? 'Thinking...'

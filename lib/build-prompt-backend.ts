@@ -71,10 +71,14 @@ async function getFileContentFromStorage(
 /**
  * Checks if a file is a PDF
  */
-function isPdfFile(fileItem: Doc<'file_items'>, fileMetadata?: any): boolean {
-  const nameCheck = fileItem.name?.toLowerCase().endsWith('.pdf');
+function isPdfFile(
+  fileItem: Doc<'file_items'>,
+  fileMetadata?: Doc<'files'>,
+): boolean {
+  const nameCheck = fileItem.name?.toLowerCase().endsWith('.pdf') ?? false;
   const typeCheck = fileMetadata?.type === 'application/pdf';
-  const metadataNameCheck = fileMetadata?.name?.toLowerCase().endsWith('.pdf');
+  const metadataNameCheck =
+    fileMetadata?.name?.toLowerCase().endsWith('.pdf') ?? false;
 
   return nameCheck || typeCheck || metadataNameCheck;
 }
