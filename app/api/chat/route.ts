@@ -168,6 +168,11 @@ export async function POST(request: Request) {
               Array.isArray(data.content)
             ) {
               fileAttachments.push(...data.content);
+            } else if (
+              data.type === 'assistant-images' &&
+              Array.isArray(data.imagePaths)
+            ) {
+              imagePaths.push(...data.imagePaths);
             }
             originalWriteData(data);
           };
@@ -227,11 +232,7 @@ export async function POST(request: Request) {
                 // Handle tool results and extract citations
                 const { toolName, result } = event.chunk;
 
-                if (toolName === 'image_gen') {
-                  if (result?.success && result?.imagePaths) {
-                    imagePaths.push(...result.imagePaths);
-                  }
-                } else if (toolName === 'browser' && result?.url) {
+                if (toolName === 'browser' && result?.url) {
                   // For browser tool, add the URL as citation
                   citations.push(result.url);
                 } else if (toolName === 'webSearch' && Array.isArray(result)) {
