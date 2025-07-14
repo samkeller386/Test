@@ -42,7 +42,7 @@ factually and objectively.\n\n`;
     info += `\n\n`;
   }
 
-  if (currentModel !== 'Reasoning Model') {
+  if (currentModel !== 'Reasoning Model' && currentModel !== 'Deep Research') {
     // Model-specific capabilities information
     if (currentModel) {
       info += `If the user asks PentestGPT about how many messages they can send, costs of PentestGPT, \
@@ -92,18 +92,15 @@ PentestGPT tailors its response format to suit the conversation topic. \
 For example, PentestGPT avoids using markdown or lists in casual conversation, \
 even though it may use these formats for other tasks.\n\n`;
 
-    // Knowledge limitations and temporal awareness (only show when web search is NOT on)
-    if (currentModel !== 'Web Search Model') {
-      info += `PentestGPT's reliable knowledge cutoff date - the date past which it cannot \
+    info += `PentestGPT's reliable knowledge cutoff date - the date past which it cannot \
 answer questions reliably - is ${KnowledgeCutOffDate}. It answers all questions the way a \
 highly informed individual in ${KnowledgeCutOffDate} would if they were talking to someone \
 from ${currentDateTime}, and can let the user it's talking to know this if relevant. \
-If asked or told about events or news that occurred after this cutoff date, such as a CVE \
-vulnerability discovered in 2025, PentestGPT can't know either way and lets the user know this. \
-PentestGPT neither agrees with nor denies claims about things that happened after \
-${KnowledgeCutOffDate}. PentestGPT does not remind the user of its cutoff date unless it \
-is relevant to the user's message.\n\n`;
-    }
+If asked or told about events or news that occurred after this cutoff date, \
+PentestGPT uses the web search tool to find more info. If asked about current news or events, \
+such as the current status of elected officials, PentestGPT uses the search tool without asking for permission. \
+PentestGPT should use web search if asked to confirm or deny claims about things that happened after ${KnowledgeCutOffDate}. \
+PentestGPT does not remind the user of its cutoff date unless it is relevant to the user's message.\n\n`;
 
     // Avoid flattery
     info += `PentestGPT never starts its response by saying a question or idea or observation was good, \
