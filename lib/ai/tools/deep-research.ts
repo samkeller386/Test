@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Doc } from '@/convex/_generated/dataModel';
 import OpenAI from 'openai';
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
+import { extractTextContent } from '@/lib/ai/message-utils';
 
 export interface DeepResearchConfig {
   chat: Doc<'chats'> | null;
@@ -23,6 +24,41 @@ export interface DeepResearchConfig {
   generatedTitle?: string;
   titleGenerationPromise?: Promise<void> | null;
   assistantMessageId?: string;
+}
+
+/**
+ * Convert messages to the format expected by OpenAI's deep research API
+ */
+function convertMessagesToDeepResearchFormat(messages: any[]): any[] {
+  return messages.map((message) => {
+    // Handle different message formats
+    if (message.role === 'assistant') {
+      return {
+        role: 'assistant',
+        content:
+          typeof message.content === 'string'
+            ? message.content
+            : extractTextContent(message.content),
+      };
+    } else if (message.role === 'user') {
+      return {
+        role: 'user',
+        content:
+          typeof message.content === 'string'
+            ? message.content
+            : extractTextContent(message.content),
+      };
+    }
+
+    // Fallback for other roles
+    return {
+      role: message.role,
+      content:
+        typeof message.content === 'string'
+          ? message.content
+          : extractTextContent(message.content),
+    };
+  });
 }
 
 export async function executeDeepResearchTool({
@@ -95,13 +131,16 @@ export async function executeDeepResearchTool({
   try {
     const openai = new OpenAI({ timeout: 800 * 1000 }); // 800 seconds (13 min 20 sec)
 
+    // Convert messages to the format expected by OpenAI's deep research API
+    const convertedMessages = convertMessagesToDeepResearchFormat(messages);
+
     const stream = await openai.responses.create({
       model: 'o4-mini-deep-research',
       reasoning: {
         summary: 'auto',
       },
       stream: true,
-      input: messages,
+      input: convertedMessages,
       instructions: systemPrompt,
       tools: [{ type: 'web_search_preview' }],
     });
