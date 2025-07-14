@@ -127,6 +127,53 @@ export async function executeDeepResearchTool({
   let isThinking = false;
   let thinkingStartTime: number | null = null;
   const assistantMessageId = passedAssistantMessageId || uuidv4();
+  let assistantMessage = '';
+  let reasoning = '';
+
+  abortSignal.addEventListener('abort', async () => {
+    console.log('deep research request aborted');
+
+    // Save the assistant message if we have content and chat context
+    if (
+      (assistantMessage.trim() || reasoning.trim()) &&
+      (chat || chatMetadata.id)
+    ) {
+      try {
+        // Wait for initial chat handling to complete if it's in progress
+        await initialChatPromise;
+
+        // Calculate thinking elapsed time if we were thinking
+        let thinkingElapsedSecs = null;
+        if (isThinking && thinkingStartTime) {
+          thinkingElapsedSecs = Math.round(
+            (Date.now() - thinkingStartTime) / 1000,
+          );
+        }
+
+        await handleFinalChatAndAssistantMessage({
+          modelParams,
+          chatMetadata,
+          profile,
+          model,
+          chat,
+          finishReason: 'stop',
+          title: generatedTitle,
+          assistantMessage,
+          citations,
+          thinkingText: reasoning || undefined,
+          thinkingElapsedSecs,
+          assistantMessageId,
+        });
+
+        console.log('Deep research assistant message saved on abort');
+      } catch (error) {
+        console.error(
+          'Failed to save deep research assistant message on abort:',
+          error,
+        );
+      }
+    }
+  });
 
   try {
     const openai = new OpenAI({ timeout: 800 * 1000 }); // 800 seconds (13 min 20 sec)
@@ -144,9 +191,6 @@ export async function executeDeepResearchTool({
       instructions: systemPrompt,
       tools: [{ type: 'web_search_preview' }],
     });
-
-    let assistantMessage = '';
-    let reasoning = '';
 
     for await (const event of stream) {
       if (event.type === 'response.reasoning_summary_text.delta') {

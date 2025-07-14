@@ -69,6 +69,43 @@ export async function POST(request: Request) {
     const fileAttachments: FileAttachment[] = [];
     const assistantMessageId = uuidv4();
 
+    request.signal.addEventListener('abort', async () => {
+      console.log('request aborted');
+
+      // Save the assistant message if we have content and chat context
+      if (assistantMessage.trim() && (chat || chatMetadata.id)) {
+        try {
+          // Wait for initial chat handling to complete if it's in progress
+          await initialChatPromise;
+
+          await handleFinalChatAndAssistantMessage({
+            modelParams: {
+              ...modelParams,
+              selectedPlugin: terminalUsed
+                ? PluginID.TERMINAL
+                : modelParams.selectedPlugin,
+            },
+            chatMetadata,
+            profile,
+            model,
+            chat,
+            finishReason: 'stop',
+            title: generatedTitle,
+            assistantMessage,
+            citations:
+              citations.length > 0 ? [...new Set(citations)] : undefined,
+            imagePaths: imagePaths.length > 0 ? imagePaths : undefined,
+            fileAttachments,
+            assistantMessageId,
+          });
+
+          console.log('Assistant message saved on abort');
+        } catch (error) {
+          console.error('Failed to save assistant message on abort:', error);
+        }
+      }
+    });
+
     const { processedMessages, systemPrompt, pentestFiles } =
       await processChatMessages(
         messages,
