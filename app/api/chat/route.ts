@@ -26,7 +26,6 @@ import { getToolsForPlugin } from '@/lib/ai/tool-selection';
 export const maxDuration = 240;
 
 export async function POST(request: Request) {
-  const abortController = new AbortController();
   let requestBody: PostRequestBody;
 
   try {
@@ -97,7 +96,7 @@ export async function POST(request: Request) {
       modelParams,
       profile,
       isLargeModel: config.isLargeModel,
-      abortSignal: abortController.signal,
+      abortSignal: request.signal,
       chatMetadata,
       model,
       rateLimitInfo: config.rateLimitInfo,
@@ -139,7 +138,7 @@ export async function POST(request: Request) {
           const toolSchemas = createToolSchemas({
             profile,
             dataStream,
-            abortSignal: abortController.signal,
+            abortSignal: request.signal,
             agentMode: modelParams.agentMode,
             pentestFiles,
             selectedPlugin: modelParams.selectedPlugin,
@@ -172,7 +171,7 @@ export async function POST(request: Request) {
                 modelParams,
               ),
             ),
-            abortSignal: abortController.signal,
+            abortSignal: request.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),
             experimental_generateMessageId: () => assistantMessageId,
             onChunk: async (event: any) => {
@@ -216,7 +215,7 @@ export async function POST(request: Request) {
                 titleGenerationPromise = (async () => {
                   generatedTitle = await generateTitleFromUserMessage({
                     messages,
-                    abortSignal: abortController.signal,
+                    abortSignal: request.signal,
                   });
                   dataStream.writeData({ chatTitle: generatedTitle });
                 })();
