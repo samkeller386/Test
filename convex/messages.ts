@@ -2,8 +2,51 @@ import { mutation, query, internalQuery } from './_generated/server';
 import { v } from 'convex/values';
 import { paginationOptsValidator } from 'convex/server';
 import type { Id } from './_generated/dataModel';
-import { api, internal } from './_generated/api';
+import { api } from './_generated/api';
 import { v4 as uuidv4 } from 'uuid';
+
+/**
+ * Helper function to delete a file and its associated data
+ * Handles deletion from storage, file_items cleanup, and file record removal
+ */
+const deleteFileAndAssociatedData = async (
+  ctx: {
+    db: any;
+    storage: any;
+  },
+  fileId?: Id<'files'>,
+  storageId?: Id<'_storage'>,
+  identifier?: string,
+): Promise<void> => {
+  try {
+    // Delete file from storage if storage ID is provided
+    if (storageId) {
+      await ctx.storage.delete(storageId);
+    }
+
+    // Delete file record and associated file_items if file ID is provided
+    if (fileId) {
+      // Find and delete all file_items that reference this file
+      const fileItems = await ctx.db
+        .query('file_items')
+        .withIndex('by_file_id', (q: any) => q.eq('file_id', fileId))
+        .collect();
+
+      for (const fileItem of fileItems) {
+        await ctx.db.delete(fileItem._id);
+      }
+
+      // Delete the file record itself
+      await ctx.db.delete(fileId);
+    }
+  } catch (fileError) {
+    console.warn(
+      `Failed to delete file ${identifier || fileId || storageId}:`,
+      fileError,
+    );
+    // Continue with other deletions even if one file fails
+  }
+};
 
 /**
  * Get the next sequence number for a chat
@@ -199,11 +242,10 @@ export const deleteLastMessage = mutation({
       // Delete images from storage using image_paths
       if (lastMessage.image_paths && lastMessage.image_paths.length > 0) {
         for (const imagePath of lastMessage.image_paths) {
-          await ctx.runMutation(
-            internal.fileStorage.deleteFileAndAssociatedData,
-            {
-              storageId: imagePath as Id<'_storage'>,
-            },
+          await deleteFileAndAssociatedData(
+            ctx,
+            undefined,
+            imagePath as Id<'_storage'>,
           );
         }
       }
@@ -211,12 +253,10 @@ export const deleteLastMessage = mutation({
       // Delete files from storage using attachments
       if (lastMessage.attachments && lastMessage.attachments.length > 0) {
         for (const attachment of lastMessage.attachments) {
-          await ctx.runMutation(
-            internal.fileStorage.deleteFileAndAssociatedData,
-            {
-              fileId: attachment.id,
-              storageId: attachment.url as Id<'_storage'>,
-            },
+          await deleteFileAndAssociatedData(
+            ctx,
+            attachment.id,
+            attachment.url as Id<'_storage'>,
           );
         }
       }
@@ -268,11 +308,10 @@ export const deleteMessagesIncludingAndAfter = mutation({
         // Delete images from storage using image_paths
         if (message.image_paths && message.image_paths.length > 0) {
           for (const imagePath of message.image_paths) {
-            await ctx.runMutation(
-              internal.fileStorage.deleteFileAndAssociatedData,
-              {
-                storageId: imagePath as Id<'_storage'>,
-              },
+            await deleteFileAndAssociatedData(
+              ctx,
+              undefined,
+              imagePath as Id<'_storage'>,
             );
           }
         }
@@ -284,26 +323,22 @@ export const deleteMessagesIncludingAndAfter = mutation({
           .collect();
 
         for (const file of filesWithMessageId) {
-          await ctx.runMutation(
-            internal.fileStorage.deleteFileAndAssociatedData,
-            {
-              fileId: file._id,
-              storageId: file.file_path as Id<'_storage'>,
-              identifier: file.file_path,
-            },
+          await deleteFileAndAssociatedData(
+            ctx,
+            file._id,
+            file.file_path as Id<'_storage'>,
+            file.file_path,
           );
         }
 
         // Delete files from storage using attachments
         if (message.attachments && message.attachments.length > 0) {
           for (const attachment of message.attachments) {
-            await ctx.runMutation(
-              internal.fileStorage.deleteFileAndAssociatedData,
-              {
-                fileId: attachment.id,
-                storageId: attachment.url as Id<'_storage'>,
-                identifier: attachment.url,
-              },
+            await deleteFileAndAssociatedData(
+              ctx,
+              attachment.id,
+              attachment.url as Id<'_storage'>,
+              attachment.url,
             );
           }
         }
