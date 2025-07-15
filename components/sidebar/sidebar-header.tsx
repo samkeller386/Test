@@ -1,10 +1,14 @@
-import { IconLayoutSidebar } from '@tabler/icons-react';
+import { IconLayoutSidebar, IconSearch } from '@tabler/icons-react';
 import type { FC } from 'react';
+import { useContext } from 'react';
 import type { ContentType } from '@/types';
 import { SidebarCreateButtons } from './sidebar-create-buttons';
 import { SIDEBAR_ICON_SIZE } from './sidebar-content';
 import { Button } from '../ui/button';
 import { WithTooltip } from '../ui/with-tooltip';
+import { ChatSearchPopup } from '../chat/chat-search-popup';
+import { PentestGPTContext } from '@/context/context';
+import { useUIContext } from '@/context/ui-context';
 
 interface SidebarHeaderProps {
   handleToggleSidebar: () => void;
@@ -17,28 +21,52 @@ export const SidebarHeader: FC<SidebarHeaderProps> = ({
   contentType,
   handleSidebarVisibility,
 }) => {
-  return (
-    <div className="flex w-full items-center justify-between">
-      <WithTooltip
-        display={'Close sidebar'}
-        trigger={
-          <Button
-            variant="ghost"
-            className="size-10 p-0"
-            onClick={handleToggleSidebar}
-          >
-            <IconLayoutSidebar size={SIDEBAR_ICON_SIZE} />
-          </Button>
-        }
-        side="right"
-      />
+  const { user } = useContext(PentestGPTContext);
+  const { isSearchOpen, setIsSearchOpen } = useUIContext();
 
-      <div className="flex items-center gap-2">
-        <SidebarCreateButtons
-          contentType={contentType}
-          handleSidebarVisibility={handleSidebarVisibility}
+  return (
+    <div className="flex w-full flex-col gap-2">
+      <div className="flex w-full items-center justify-between">
+        <WithTooltip
+          display={'Close sidebar'}
+          trigger={
+            <Button
+              variant="ghost"
+              className="size-10 p-0"
+              onClick={handleToggleSidebar}
+            >
+              <IconLayoutSidebar size={SIDEBAR_ICON_SIZE} />
+            </Button>
+          }
+          side="right"
         />
+
+        <div className="flex items-center gap-2">
+          <SidebarCreateButtons
+            contentType={contentType}
+            handleSidebarVisibility={handleSidebarVisibility}
+          />
+        </div>
       </div>
+
+      <div className="w-full">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2 text-primary px-2"
+          onClick={() => setIsSearchOpen(true)}
+        >
+          <IconSearch size={20} />
+          Search chats
+        </Button>
+      </div>
+
+      {user && (
+        <ChatSearchPopup
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 };
