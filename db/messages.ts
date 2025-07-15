@@ -53,7 +53,7 @@ export const getMessagesByChatId = async (
   }
 };
 
-type SearchMessageResult = {
+export type SearchMessageResult = {
   id: string;
   chat_id: string;
   content: string;

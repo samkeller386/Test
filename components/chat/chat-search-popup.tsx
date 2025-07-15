@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useContext } from 'react';
-import { searchMessages } from '@/db/messages';
+import { searchMessages, type SearchMessageResult } from '@/db/messages';
 import {
   Dialog,
   DialogContent,
@@ -28,17 +28,12 @@ import { useChatHandler } from './chat-hooks/use-chat-handler';
 interface ChatSearchPopupProps {
   isOpen: boolean;
   onClose: () => void;
-  userId: string;
 }
 
-export const ChatSearchPopup = ({
-  isOpen,
-  onClose,
-  userId,
-}: ChatSearchPopupProps) => {
+export const ChatSearchPopup = ({ isOpen, onClose }: ChatSearchPopupProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [allResults, setAllResults] = useState<any[]>([]);
+  const [allResults, setAllResults] = useState<SearchMessageResult[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isSearching, setIsSearching] = useState(false);

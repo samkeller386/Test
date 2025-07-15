@@ -1,13 +1,11 @@
 import { IconLayoutSidebar, IconSearch } from '@tabler/icons-react';
 import type { FC } from 'react';
-import { useContext } from 'react';
 import type { ContentType } from '@/types';
 import { SidebarCreateButtons } from './sidebar-create-buttons';
 import { SIDEBAR_ICON_SIZE } from './sidebar-content';
 import { Button } from '../ui/button';
 import { WithTooltip } from '../ui/with-tooltip';
 import { ChatSearchPopup } from '../chat/chat-search-popup';
-import { PentestGPTContext } from '@/context/context';
 import { useUIContext } from '@/context/ui-context';
 
 interface SidebarHeaderProps {
@@ -21,7 +19,6 @@ export const SidebarHeader: FC<SidebarHeaderProps> = ({
   contentType,
   handleSidebarVisibility,
 }) => {
-  const { user } = useContext(PentestGPTContext);
   const { isSearchOpen, setIsSearchOpen } = useUIContext();
 
   return (
@@ -60,13 +57,10 @@ export const SidebarHeader: FC<SidebarHeaderProps> = ({
         </Button>
       </div>
 
-      {user && (
-        <ChatSearchPopup
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-          userId={user.id}
-        />
-      )}
+      <ChatSearchPopup
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </div>
   );
 };
