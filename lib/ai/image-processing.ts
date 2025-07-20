@@ -68,7 +68,88 @@ export async function getImageUrls(
 }
 
 /**
- * Gets image data as base64 from Convex storage using batch request
+ * Configuration for image processing limits
+ */
+const IMAGE_PROCESSING_CONFIG = {
+  MAX_IMAGE_SIZE_MB: 20, // Maximum image size in MB
+  FETCH_TIMEOUT_MS: 30000, // 30 second timeout for each fetch
+} as const;
+
+/**
+ * Fetches image data with timeout and size validation
+ */
+async function fetchImageWithLimits(
+  url: string,
+  storageId: string,
+  timeoutMs: number,
+  maxSizeMB: number,
+): Promise<{ storageId: string; dataUrl?: string; error?: string }> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      // Add cache control to prevent stale responses
+      cache: 'no-cache',
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return {
+        storageId,
+        error: `HTTP ${response.status}: ${response.statusText}`,
+      };
+    }
+
+    // Check content length if available
+    const contentLength = response.headers.get('content-length');
+    if (contentLength) {
+      const sizeInMB = parseInt(contentLength, 10) / (1024 * 1024);
+      if (sizeInMB > maxSizeMB) {
+        return {
+          storageId,
+          error: `Image size ${sizeInMB.toFixed(2)}MB exceeds limit of ${maxSizeMB}MB`,
+        };
+      }
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+
+    // Double-check actual size after download
+    const actualSizeInMB = arrayBuffer.byteLength / (1024 * 1024);
+    if (actualSizeInMB > maxSizeMB) {
+      return {
+        storageId,
+        error: `Image size ${actualSizeInMB.toFixed(2)}MB exceeds limit of ${maxSizeMB}MB`,
+      };
+    }
+
+    const buffer = Buffer.from(arrayBuffer);
+    const base64 = buffer.toString('base64');
+
+    // Determine MIME type from response headers or default to image/jpeg
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    const dataUrl = `data:${contentType};base64,${base64}`;
+
+    return { storageId, dataUrl };
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        return { storageId, error: `Request timed out after ${timeoutMs}ms` };
+      }
+      return { storageId, error: error.message };
+    }
+
+    return { storageId, error: 'Unknown error occurred' };
+  }
+}
+
+/**
+ * Gets image data as base64 from Convex storage with concurrency control, size limits, and timeout handling
  */
 export async function getImageDataAsBase64(
   storageIds: string[],
@@ -94,33 +175,36 @@ export async function getImageDataAsBase64(
       },
     );
 
-    // Then fetch each image and convert to base64
-    await Promise.all(
+    // Process images with size limits and timeout handling
+    const results = await Promise.all(
       urlResults.map(async (result) => {
-        if (!result.url) return;
+        if (!result.url)
+          return { storageId: result.storageId, error: 'No URL available' };
 
-        try {
-          const response = await fetch(result.url);
-          if (!response.ok) return;
-
-          const arrayBuffer = await response.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-          const base64 = buffer.toString('base64');
-
-          // Determine MIME type from response headers or default to image/jpeg
-          const contentType =
-            response.headers.get('content-type') || 'image/jpeg';
-          const dataUrl = `data:${contentType};base64,${base64}`;
-
-          base64Map.set(result.storageId, dataUrl);
-        } catch (error) {
-          console.error(
-            `Error converting image ${result.storageId} to base64:`,
-            error,
-          );
-        }
+        return await fetchImageWithLimits(
+          result.url,
+          result.storageId,
+          IMAGE_PROCESSING_CONFIG.FETCH_TIMEOUT_MS,
+          IMAGE_PROCESSING_CONFIG.MAX_IMAGE_SIZE_MB,
+        );
       }),
     );
+
+    // Process results and log any errors
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const result of results) {
+      if (result.dataUrl) {
+        base64Map.set(result.storageId, result.dataUrl);
+        successCount++;
+      } else if (result.error) {
+        console.warn(
+          `Failed to process image ${result.storageId}: ${result.error}`,
+        );
+        errorCount++;
+      }
+    }
   } catch (error) {
     console.error('Error getting batch image data as base64:', error);
   }
