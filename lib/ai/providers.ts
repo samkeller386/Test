@@ -5,14 +5,11 @@ import {
 } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { deepseek } from '@ai-sdk/deepseek';
-import { openrouter } from '@openrouter/ai-sdk-provider';
 
 export const myProvider = customProvider({
   languageModels: {
     'chat-model-small': openai.responses('gpt-4.1-mini-2025-04-14'),
-    // 'chat-model-small-text': deepseek('deepseek-chat'),
     'chat-model-large': openai.responses('gpt-4.1-2025-04-14'),
-    'chat-model-large-text': openrouter('anthropic/claude-sonnet-4'),
     'browser-model': openai.responses('gpt-4.1-mini-2025-04-14'),
     'chat-model-reasoning': wrapLanguageModel({
       model: deepseek('deepseek-reasoner'),

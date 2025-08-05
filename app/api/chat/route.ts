@@ -107,21 +107,16 @@ export async function POST(request: Request) {
       }
     });
 
-    const {
-      processedMessages,
-      systemPrompt,
-      pentestFiles,
-      hasImageAttachments,
-      hasPdfAttachments,
-    } = await processChatMessages(
-      messages,
-      config.selectedModel,
-      modelParams,
-      profile,
-      config.isPremiumUser,
-      modelParams.selectedPlugin === PluginID.TERMINAL, // Generate pentestFiles when terminal plugin is selected
-      userLocation,
-    );
+    const { processedMessages, systemPrompt, pentestFiles } =
+      await processChatMessages(
+        messages,
+        config.selectedModel,
+        modelParams,
+        profile,
+        config.isPremiumUser,
+        modelParams.selectedPlugin === PluginID.TERMINAL, // Generate pentestFiles when terminal plugin is selected
+        userLocation,
+      );
 
     // Handle initial chat creation and user message in parallel with other operations
     const initialChatPromise = handleInitialChatAndUserMessage({
@@ -155,12 +150,6 @@ export async function POST(request: Request) {
         distinctId: profile.user_id,
         event: config.selectedModel,
       });
-    }
-
-    if (!hasImageAttachments && !hasPdfAttachments) {
-      if (config.isLargeModel) {
-        config.selectedModel = 'chat-model-large-text';
-      }
     }
 
     try {
