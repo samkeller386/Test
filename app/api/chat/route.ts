@@ -163,6 +163,22 @@ export async function POST(request: Request) {
     try {
       return createDataStreamResponse({
         execute: async (dataStream) => {
+          // Helper function to stop thinking and emit elapsed time
+          const stopThinkingAndEmitTime = (): number | null => {
+            let thinkingElapsedSecs = null;
+            if (isThinking && thinkingStartTime) {
+              isThinking = false;
+              thinkingElapsedSecs = Math.round(
+                (Date.now() - thinkingStartTime) / 1000,
+              );
+              dataStream.writeData({
+                type: 'thinking-time',
+                elapsed_secs: thinkingElapsedSecs,
+              });
+            }
+            return thinkingElapsedSecs;
+          };
+
           dataStream.writeData({
             type: 'ratelimit',
             content: config.rateLimitInfo,
@@ -210,7 +226,7 @@ export async function POST(request: Request) {
               openai: {
                 parallelToolCalls: false,
                 store: false,
-                reasoningEffort: 'minimal',
+                reasoningEffort: 'low',
                 reasoningSummary: 'detailed',
                 verbosity: 'low',
               },
@@ -270,6 +286,9 @@ export async function POST(request: Request) {
                   dataStream.writeData({ chatTitle: generatedTitle });
                 })();
               } else if (event.chunk.type === 'text-delta') {
+                // Stop reasoning when we get first text delta
+                stopThinkingAndEmitTime();
+
                 // Note: writeData wrapper only captures dataStream, not AI text chunks from onChunk
                 assistantMessage += event.chunk.textDelta;
               } else if (event.chunk.type === 'reasoning') {
@@ -296,17 +315,8 @@ export async function POST(request: Request) {
               }
             },
             onFinish: async ({ finishReason, text, reasoning }) => {
-              let thinkingElapsedSecs = null;
-              if (isThinking && thinkingStartTime) {
-                isThinking = false;
-                thinkingElapsedSecs = Math.round(
-                  (Date.now() - thinkingStartTime) / 1000,
-                );
-                dataStream.writeData({
-                  type: 'thinking-time',
-                  elapsed_secs: thinkingElapsedSecs,
-                });
-              }
+              // Handle case where reasoning finished without any text deltas
+              const thinkingElapsedSecs = stopThinkingAndEmitTime();
 
               // Deduplicate citations
               const uniqueCitations =
