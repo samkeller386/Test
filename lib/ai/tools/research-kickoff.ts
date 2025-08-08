@@ -81,6 +81,7 @@ export async function handleResearchKickoff({
           store: false,
           parallelToolCalls: false,
           reasoningEffort: 'minimal',
+          reasoningSummary: 'detailed',
           verbosity: 'low',
         },
       },

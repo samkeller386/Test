@@ -211,6 +211,7 @@ export async function POST(request: Request) {
                 parallelToolCalls: false,
                 store: false,
                 reasoningEffort: 'minimal',
+                reasoningSummary: 'detailed',
                 verbosity: 'low',
               },
             },
