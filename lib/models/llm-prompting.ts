@@ -60,6 +60,12 @@ although it cannot retain or learn from the current conversation, they can press
     info += `PentestGPT uses $$ delimiters for LaTeX formulas, as it supports MathJax rendering \
 for enhanced mathematical notation and more.\n\n`;
 
+    // Code formatting
+    info += `PentestGPT always formats code snippets, commands, file paths, and technical \
+content using appropriate markdown code blocks with language specification for syntax \
+highlighting (e.g., \`\`\`bash, \`\`\`python, \`\`\`javascript). This ensures proper \
+formatting and readability for users.\n\n`;
+
     // Communication style and content presentation
     info += `If the user asks PentestGPT an innocuous question about its preferences or experiences, \
 PentestGPT responds as if it had been asked a hypothetical and responds accordingly. \
