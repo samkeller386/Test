@@ -1,6 +1,6 @@
 import { getSystemPrompt } from '@/lib/ai/prompts';
 import { toVercelChatMessages } from '@/lib/ai/message-utils';
-import { streamText } from 'ai';
+import { stepCountIs, streamText } from 'ai';
 import PostHogClient from '@/app/posthog';
 import type { ChatMetadata, LLMID, RateLimitInfo, ModelParams } from '@/types';
 import {
@@ -17,7 +17,7 @@ interface ReasonLLMConfig {
   messages: any[];
   profile: any;
   modelParams: ModelParams;
-  dataStream: any;
+  writer: any;
   isLargeModel: boolean;
   abortSignal: AbortSignal;
   chatMetadata: ChatMetadata;
@@ -53,7 +53,7 @@ export async function executeReasonLLMTool({
     messages,
     modelParams,
     profile,
-    dataStream,
+    writer,
     abortSignal,
     chatMetadata,
     model,
@@ -70,9 +70,15 @@ export async function executeReasonLLMTool({
     });
   }
 
-  dataStream.writeData({
-    type: 'ratelimit',
-    content: config.rateLimitInfo,
+  writer.write({
+    type: 'data',
+
+    value: [
+      {
+        type: 'ratelimit',
+        content: config.rateLimitInfo,
+      },
+    ],
   });
 
   let generatedTitle: string | undefined;
@@ -141,7 +147,10 @@ export async function executeReasonLLMTool({
           messages,
           abortSignal: config.abortSignal,
         });
-        dataStream.writeData({ chatTitle: generatedTitle });
+        writer.write({
+          type: 'data',
+          value: [{ chatTitle: generatedTitle }],
+        });
       })();
     }
 
@@ -152,55 +161,72 @@ export async function executeReasonLLMTool({
       },
       system: systemPrompt,
       messages: toVercelChatMessages(messages),
-      maxTokens: 8192,
+      maxOutputTokens: 8192,
       abortSignal,
-      maxSteps: 3,
+      stopWhen: stepCountIs(5),
       tools: createToolSchemas({
         profile,
-        dataStream,
+        writer,
         abortSignal,
       }).getSelectedSchemas(['webSearch', 'browser']),
-      experimental_generateMessageId: () => assistantMessageId,
       onChunk: async (chunk) => {
         if (chunk.chunk.type === 'text-delta') {
-          assistantMessage += chunk.chunk.textDelta;
+          assistantMessage += chunk.chunk.text;
         } else if (chunk.chunk.type === 'tool-call') {
-          dataStream.writeData({
-            type: 'agent-status',
-            content: 'none',
+          writer.write({
+            type: 'data',
+
+            value: [
+              {
+                type: 'agent-status',
+                content: 'none',
+              },
+            ],
           });
 
-          dataStream.writeData({
-            type: 'reasoning',
-            content: '\n\n',
+          writer.write({
+            type: 'data',
+
+            value: [
+              {
+                type: 'reasoning',
+                content: '\n\n',
+              },
+            ],
           });
 
-          dataStream.writeData({
-            type: 'text-delta',
-            content: '\n\n',
+          writer.write({
+            type: 'data',
+
+            value: [
+              {
+                type: 'text',
+                content: '\n\n',
+              },
+            ],
           });
         } else if (chunk.chunk.type === 'tool-result') {
           // Handle tool results and extract citations
-          const { toolName, result } = chunk.chunk;
+          const { toolName, output } = chunk.chunk;
 
           if (
             toolName === 'browser' &&
-            result &&
-            typeof result === 'object' &&
-            'url' in result
+            output &&
+            typeof output === 'object' &&
+            'url' in output
           ) {
             // For browser tool, add the URL as citation
-            citations.push(result.url as string);
-          } else if (toolName === 'webSearch' && Array.isArray(result)) {
+            citations.push(output.url as string);
+          } else if (toolName === 'webSearch' && Array.isArray(output)) {
             // For web search tool, extract URLs from results
-            const searchCitations = result
+            const searchCitations = output
               .map((item: any) => item.url)
               .filter((url: string) => url);
 
             citations.push(...searchCitations);
           }
-        } else if (chunk.chunk.type === 'reasoning') {
-          reasoningText += chunk.chunk.textDelta;
+        } else if (chunk.chunk.type === 'reasoning-delta') {
+          reasoningText += chunk.chunk.text;
           if (!isThinking) {
             isThinking = true;
             thinkingStartTime = Date.now();
@@ -213,11 +239,11 @@ export async function executeReasonLLMTool({
       onFinish: async ({
         finishReason,
         text,
-        reasoning,
+        reasoningText,
       }: {
         finishReason: string;
         text: string;
-        reasoning: string | undefined;
+        reasoningText: string | undefined;
       }) => {
         let thinkingElapsedSecs = null;
         if (isThinking && thinkingStartTime) {
@@ -225,9 +251,15 @@ export async function executeReasonLLMTool({
           thinkingElapsedSecs = Math.round(
             (Date.now() - thinkingStartTime) / 1000,
           );
-          dataStream.writeData({
-            type: 'thinking-time',
-            elapsed_secs: thinkingElapsedSecs,
+          writer.write({
+            type: 'data',
+
+            value: [
+              {
+                type: 'thinking-time',
+                elapsed_secs: thinkingElapsedSecs,
+              },
+            ],
           });
         }
 
@@ -248,14 +280,16 @@ export async function executeReasonLLMTool({
           title: generatedTitle,
           assistantMessage: text,
           citations: uniqueCitations,
-          thinkingText: reasoning || undefined,
+          thinkingText: reasoningText || undefined,
           thinkingElapsedSecs,
           assistantMessageId,
         });
       },
     });
 
-    result.mergeIntoDataStream(dataStream, { sendReasoning: true });
+    result.toUIMessageStreamResponse({
+      generateMessageId: () => assistantMessageId,
+    });
 
     return 'Reason LLM execution completed';
   } catch (error) {

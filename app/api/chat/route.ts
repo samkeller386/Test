@@ -1,6 +1,12 @@
 import { getAIProfile } from '@/lib/server/server-chat-helpers';
 import { handleErrorResponse } from '@/lib/models/api-error';
-import { createDataStreamResponse, smoothStream, streamText } from 'ai';
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  smoothStream,
+  stepCountIs,
+  streamText,
+} from 'ai';
 import { myProvider } from '@/lib/ai/providers';
 import PostHogClient from '@/app/posthog';
 import { handleToolExecution } from '@/lib/ai/tool-handler';
@@ -153,16 +159,18 @@ export async function POST(request: Request) {
     }
 
     try {
-      return createDataStreamResponse({
-        execute: async (dataStream) => {
-          dataStream.writeData({
-            type: 'ratelimit',
-            content: config.rateLimitInfo,
+      const stream = createUIMessageStream({
+        execute: async ({ writer }) => {
+          writer.write({
+            type: 'data-ratelimit',
+            data: {
+              content: config.rateLimitInfo,
+            },
           });
 
-          const originalWriteData = dataStream.writeData;
-          dataStream.writeData = (data: any) => {
-            if (data.type === 'text-delta' && data.content) {
+          const originalWriteData = writer.write;
+          writer.write = (data: any) => {
+            if (data.type === 'text' && data.content) {
               assistantMessage += data.content;
             } else if (
               data.type === 'file-attachment' &&
@@ -180,7 +188,7 @@ export async function POST(request: Request) {
 
           const toolSchemas = createToolSchemas({
             profile,
-            dataStream,
+            writer,
             abortSignal: request.signal,
             agentMode: modelParams.agentMode,
             pentestFiles,
@@ -205,8 +213,8 @@ export async function POST(request: Request) {
               },
             },
             messages: toVercelChatMessages(processedMessages, true),
-            maxTokens: 4096,
-            maxSteps: 5,
+            maxOutputTokens: 4096,
+            stopWhen: stepCountIs(5),
             tools: toolSchemas.getSelectedSchemas(
               getToolsForPlugin(
                 modelParams.selectedPlugin,
@@ -216,15 +224,15 @@ export async function POST(request: Request) {
             ),
             abortSignal: request.signal,
             experimental_transform: smoothStream({ chunking: 'word' }),
-            experimental_generateMessageId: () => assistantMessageId,
             onChunk: async (event: any) => {
               if (event.chunk.type === 'tool-call') {
                 toolUsed = event.chunk.toolName;
                 if (toolUsed === 'run_terminal_cmd') {
-                  const { exec_dir, command } = event.chunk.args;
-                  dataStream.writeData({
+                  const { exec_dir, command } = event.chunk.input;
+                  writer.write({
                     type: 'text-delta',
-                    content: `<pgptml:terminal_command exec-dir="${exec_dir}">${command}</pgptml:terminal_command>`,
+                    delta: `<pgptml:terminal_command exec-dir="${exec_dir}">${command}</pgptml:terminal_command>`,
+                    id: 'terminal-command',
                   });
 
                   terminalUsed = true;
@@ -248,7 +256,7 @@ export async function POST(request: Request) {
                 !hasGeneratedTitle &&
                 chatMetadata.id &&
                 !chat &&
-                event.chunk.type === 'text-delta'
+                event.chunk.type === 'text'
               ) {
                 hasGeneratedTitle = true;
                 titleGenerationPromise = (async () => {
@@ -256,10 +264,13 @@ export async function POST(request: Request) {
                     messages,
                     abortSignal: request.signal,
                   });
-                  dataStream.writeData({ chatTitle: generatedTitle });
+                  writer.write({
+                    type: 'data-chat-title',
+                    data: { chatTitle: generatedTitle },
+                  });
                 })();
-              } else if (event.chunk.type === 'text-delta') {
-                // Note: writeData wrapper only captures dataStream, not AI text chunks from onChunk
+              } else if (event.chunk.type === 'text') {
+                // Note: writeData wrapper only captures writer, not AI text chunks from onChunk
                 assistantMessage += event.chunk.textDelta;
               }
             },
@@ -320,8 +331,11 @@ export async function POST(request: Request) {
               }
             },
           });
-
-          result.mergeIntoDataStream(dataStream);
+          writer.merge(
+            result.toUIMessageStream({
+              generateMessageId: () => assistantMessageId,
+            }),
+          );
 
           // Then ensure title generation completes if it was started
           if (titleGenerationPromise) {
@@ -329,6 +343,8 @@ export async function POST(request: Request) {
           }
         },
       });
+
+      return createUIMessageStreamResponse({ stream });
     } catch (error) {
       return handleErrorResponse(error);
     }

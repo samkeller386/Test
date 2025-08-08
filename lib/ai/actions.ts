@@ -141,11 +141,16 @@ export async function generateTitleFromUserMessage({
       messages: [
         {
           role: 'user',
-          content: DEFAULT_TITLE_GENERATION_PROMPT_TEMPLATE(textContent),
+          content: [
+            {
+              type: 'text',
+              text: DEFAULT_TITLE_GENERATION_PROMPT_TEMPLATE(textContent),
+            },
+          ],
         },
       ],
       abortSignal,
-      maxTokens: 50,
+      maxOutputTokens: 50,
     });
 
     return title;

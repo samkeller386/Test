@@ -19,7 +19,7 @@ export async function handleResearchKickoff({
 }) {
   const {
     messages,
-    dataStream,
+    writer,
     abortSignal,
     chatMetadata,
     chat,
@@ -36,7 +36,10 @@ export async function handleResearchKickoff({
         messages: originalMessages,
         abortSignal,
       });
-      dataStream.writeData({ chatTitle: generatedTitle });
+      writer.write({
+        type: 'data',
+        value: [{ chatTitle: generatedTitle }],
+      });
     })();
   }
 
@@ -84,13 +87,13 @@ export async function handleResearchKickoff({
       },
       system: DEEPRESEARCH_SYSTEM_PROMPT,
       messages: toVercelChatMessages(messages),
-      maxTokens: 512,
+      maxOutputTokens: 512,
       abortSignal,
       tools: {
         research_kickoff_tool: tool({
           description:
             'Tool for managing research tasks - either clarifying requirements or starting research',
-          parameters: z.object({
+          inputSchema: z.object({
             clarify_with_text: z
               .string()
               .nullable()
@@ -104,9 +107,15 @@ export async function handleResearchKickoff({
           }),
           execute: async ({ clarify_with_text }) => {
             if (clarify_with_text && clarify_with_text !== null) {
-              dataStream.writeData({
-                type: 'text-delta',
-                content: clarify_with_text,
+              writer.write({
+                type: 'data',
+
+                value: [
+                  {
+                    type: 'text',
+                    content: clarify_with_text,
+                  },
+                ],
               });
               return {
                 type: 'clarification',
@@ -123,9 +132,8 @@ export async function handleResearchKickoff({
       },
       // Force tool choice to research_kickoff_tool
       toolChoice: { type: 'tool', toolName: 'research_kickoff_tool' },
-      experimental_generateMessageId: () => assistantMessageId,
       onChunk: async (event: any) => {
-        if (event.chunk.type === 'text-delta') {
+        if (event.chunk.type === 'text') {
           assistantMessage += event.chunk.textDelta;
         }
       },
@@ -135,8 +143,10 @@ export async function handleResearchKickoff({
       onFinish: async ({ toolCalls, text }) => {
         const kickoffTool = toolCalls?.find(
           (call) => call.toolName === 'research_kickoff_tool',
-        );
-        const shouldStartResearch = kickoffTool?.args.start_research_task;
+        ) as {
+          input: { start_research_task: boolean; clarify_with_text: string };
+        };
+        const shouldStartResearch = kickoffTool?.input.start_research_task;
 
         if (shouldStartResearch) {
           await executeDeepResearchTool({
@@ -155,7 +165,7 @@ export async function handleResearchKickoff({
           ]);
 
           const assistantMessage =
-            kickoffTool?.args.clarify_with_text || text || '';
+            kickoffTool?.input.clarify_with_text || text || '';
 
           await handleFinalChatAndAssistantMessage({
             ...config,
@@ -171,7 +181,9 @@ export async function handleResearchKickoff({
       },
     });
 
-    result.mergeIntoDataStream(dataStream);
+    result.toUIMessageStreamResponse({
+      generateMessageId: () => assistantMessageId,
+    });
 
     return 'Research kickoff handled';
   } catch (error) {

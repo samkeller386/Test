@@ -17,7 +17,7 @@ interface ExaSearchOptions {
  * Web search tool using Exa API
  * Searches the web and returns results with content
  */
-export const createWebSearchTool = (profile: any, dataStream: any) => {
+export const createWebSearchTool = (profile: any, writer: any) => {
   return tool({
     description: `Use the webSearch tool to access up-to-date information from the web \
 or when responding to the user requires information about their location. \
@@ -35,7 +35,7 @@ from pretraining.
 - Accuracy: If the cost of a small mistake or outdated information is high (e.g., using an outdated \
 version of a software library or not knowing the date of the next game for a sports team), then use the \
 \`webSearch\` tool.`,
-    parameters: z.object({
+    inputSchema: z.object({
       query: z.string().describe('Search query to find relevant web content'),
       numResults: z
         .number()
@@ -115,7 +115,10 @@ version of a software library or not knowing the date of the next game for a spo
           .filter((url: string) => url);
 
         if (searchCitations.length > 0) {
-          dataStream.writeData({ citations: searchCitations });
+          writer.write({
+            type: 'data',
+            value: [{ citations: searchCitations }],
+          });
         }
 
         return truncatedResults;

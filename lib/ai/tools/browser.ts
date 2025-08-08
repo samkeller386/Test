@@ -16,7 +16,7 @@ export function getLastUserMessage(messages: any[]): string {
 export const createBrowserTool = (
   profile: any,
   abortSignal: AbortSignal,
-  dataStream: any,
+  writer: any,
 ) => {
   return tool({
     description: `Use the browser tool to open a specific URL and extract its content. \
@@ -28,7 +28,7 @@ Some examples of when to use the browser tool include:
 Do not use browser tool for general information queries that can be answered without visiting a URL.
 Do not use browser tool if the user merely mentions a URL without explicitly asking you to open it.
 The browser tool cannot access IP addresses (like http://192.168.1.1), or non-standard URLs.`,
-    parameters: z.object({
+    inputSchema: z.object({
       open_url: z.string().describe('The URL of the webpage to open'),
     }),
     execute: async ({ open_url }) => {
@@ -71,7 +71,10 @@ The browser tool cannot access IP addresses (like http://192.168.1.1), or non-st
         // Truncate content to max 4096 tokens
         const truncatedContent = truncateContentByTokens(content, 8096);
 
-        dataStream.writeData({ citations: [open_url] });
+        writer.write({
+          type: 'data',
+          value: [{ citations: [open_url] }],
+        });
 
         return {
           url: open_url,

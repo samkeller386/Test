@@ -12,14 +12,14 @@ import type { PluginID } from '@/types';
 
 export const createToolSchemas = ({
   profile,
-  dataStream,
+  writer,
   abortSignal,
   agentMode,
   pentestFiles,
   selectedPlugin,
 }: {
   profile: any;
-  dataStream: any;
+  writer: any;
   abortSignal: AbortSignal;
   agentMode?: AgentMode;
   pentestFiles?: Array<{ path: string; data: Buffer }>;
@@ -30,7 +30,7 @@ export const createToolSchemas = ({
 
   const sandboxManager = new DefaultSandboxManager(
     profile.user_id,
-    dataStream,
+    writer,
     (newSandbox) => {
       sandbox = newSandbox;
     },
@@ -38,7 +38,7 @@ export const createToolSchemas = ({
   );
 
   const context = {
-    dataStream,
+    writer,
     sandbox,
     userID: profile.user_id,
     setSandbox: sandboxManager.setSandbox.bind(sandboxManager),
@@ -48,9 +48,9 @@ export const createToolSchemas = ({
   } as ToolContext;
 
   const allSchemas = {
-    image_gen: createImageGenTool(profile, abortSignal, dataStream),
-    webSearch: createWebSearchTool(profile, dataStream),
-    browser: createBrowserTool(profile, abortSignal, dataStream),
+    image_gen: createImageGenTool(profile, abortSignal, writer),
+    webSearch: createWebSearchTool(profile, writer),
+    browser: createBrowserTool(profile, abortSignal, writer),
     run_terminal_cmd: createShellExecTool(context),
     get_terminal_files: createGetTerminalFilesTool(context),
   };
@@ -66,7 +66,7 @@ export const createToolSchemas = ({
       const success = await writePentestFilesToSandbox(
         sandboxManager,
         pentestFiles,
-        dataStream,
+        writer,
       );
       if (success) {
         pentestFilesUploaded = true;

@@ -7,7 +7,7 @@ export class DefaultSandboxManager implements SandboxManager {
 
   constructor(
     private userID: string,
-    private dataStream: any,
+    private writer: any,
     private setSandboxCallback: (sandbox: Sandbox) => void,
     initialSandbox?: Sandbox | null,
   ) {
@@ -21,7 +21,7 @@ export class DefaultSandboxManager implements SandboxManager {
       const result = await ensureSandboxConnection(
         {
           userID: this.userID,
-          dataStream: this.dataStream,
+          writer: this.writer,
           setSandbox: this.setSandboxCallback,
         },
         {

@@ -10,12 +10,12 @@ import { streamTerminalOutput } from '@/lib/ai/terminal-utils';
  * @returns The terminal tool
  */
 export const createShellExecTool = (context: ToolContext) => {
-  const { dataStream, userID, sandboxManager } = context;
+  const { writer, userID, sandboxManager } = context;
 
   return tool({
     description:
       'Execute commands in the sandbox environment. Use for running code, installing packages, or managing files.',
-    parameters: z.object({
+    inputSchema: z.object({
       exec_dir: z
         .string()
         .describe(
@@ -36,14 +36,26 @@ export const createShellExecTool = (context: ToolContext) => {
       // Get sandbox from manager
       const { sandbox } = await sandboxManager.getSandbox();
 
-      dataStream.writeData({
-        type: 'agent-status',
-        content: 'terminal',
+      writer.write({
+        type: 'data',
+
+        value: [
+          {
+            type: 'agent-status',
+            content: 'terminal',
+          },
+        ],
       });
 
-      dataStream.writeData({
-        type: 'text-delta',
-        content: `<pgptml:terminal_command exec-dir="${exec_dir}">${command}</pgptml:terminal_command>`,
+      writer.write({
+        type: 'data',
+
+        value: [
+          {
+            type: 'text',
+            content: `<pgptml:terminal_command exec-dir="${exec_dir}">${command}</pgptml:terminal_command>`,
+          },
+        ],
       });
 
       // Execute command
@@ -54,10 +66,7 @@ export const createShellExecTool = (context: ToolContext) => {
         sandbox,
       });
 
-      const terminalOutput = await streamTerminalOutput(
-        terminalStream,
-        dataStream,
-      );
+      const terminalOutput = await streamTerminalOutput(terminalStream, writer);
       return terminalOutput;
     },
   });

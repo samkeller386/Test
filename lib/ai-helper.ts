@@ -1,4 +1,3 @@
-import { createDataStreamResponse } from 'ai';
 import endent from 'endent';
 
 export function updateOrAddSystemMessage(
@@ -84,10 +83,3 @@ export function handleStreamError(error: unknown): string {
   // Return a generic error message to the client
   return 'An error occurred while processing your request.';
 }
-
-export const createStreamResponse = (executor: (dataStream: any) => void) => {
-  return createDataStreamResponse({
-    execute: executor,
-    onError: handleStreamError,
-  });
-};

@@ -4,14 +4,14 @@ import type { SandboxManager } from './types';
 
 interface TerminalCommandExecutorConfig {
   userID: string;
-  dataStream: any;
+  writer: any;
   sandboxManager: SandboxManager;
   messages: any[];
 }
 
 export async function executeTerminalCommandWithConfig({
   userID,
-  dataStream,
+  writer,
   sandboxManager,
   messages,
 }: TerminalCommandExecutorConfig) {
@@ -39,9 +39,15 @@ export async function executeTerminalCommandWithConfig({
 
   const { sandbox } = await sandboxManager.getSandbox();
 
-  dataStream.writeData({
-    type: 'agent-status',
-    content: 'terminal',
+  writer.write({
+    type: 'data',
+
+    value: [
+      {
+        type: 'agent-status',
+        content: 'terminal',
+      },
+    ],
   });
 
   const terminalStream = await executeTerminalCommand({
@@ -51,7 +57,7 @@ export async function executeTerminalCommandWithConfig({
     sandbox,
   });
 
-  const terminalOutput = await streamTerminalOutput(terminalStream, dataStream);
+  const terminalOutput = await streamTerminalOutput(terminalStream, writer);
 
   const updatedMessages = [...messages];
   const lastMessage = updatedMessages[updatedMessages.length - 1];

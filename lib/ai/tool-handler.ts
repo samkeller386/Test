@@ -7,7 +7,7 @@ import type {
   RateLimitInfo,
   ModelParams,
 } from '@/types';
-import { createDataStreamResponse } from 'ai';
+import { createUIMessageStream } from 'ai';
 
 interface ToolHandlerConfig {
   chat: Doc<'chats'> | null;
@@ -37,15 +37,15 @@ export async function handleToolExecution(config: ToolHandlerConfig) {
   } = config;
 
   if (model === 'reasoning-model') {
-    return createDataStreamResponse({
-      execute: async (dataStream) => {
+    return createUIMessageStream({
+      execute: async (writer) => {
         await executeReasonLLMTool({
           config: {
             chat,
             messages,
             modelParams,
             profile,
-            dataStream,
+            writer,
             isLargeModel,
             abortSignal,
             chatMetadata,

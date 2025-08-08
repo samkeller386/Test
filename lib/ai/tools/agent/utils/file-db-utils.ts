@@ -20,7 +20,7 @@ export const saveFileToDatabase = async (
   filePath: string,
   content: string,
   userId: string,
-  dataStream: any,
+  writer: any,
   append?: boolean,
 ): Promise<FileAttachment | string> => {
   // Extract filename from path
@@ -44,9 +44,15 @@ export const saveFileToDatabase = async (
     const createdFile = await createAdminFile(file, fileRecord, append);
 
     if (!createdFile) {
-      dataStream.writeData({
-        type: 'text-delta',
-        content: `⚠️ Failed to attach file: ${fileName}\n`,
+      writer.write({
+        type: 'data',
+
+        value: [
+          {
+            type: 'text',
+            content: `⚠️ Failed to attach file: ${fileName}\n`,
+          },
+        ],
       });
       return `Failed to attach file: ${fileName}`;
     }
@@ -61,9 +67,15 @@ export const saveFileToDatabase = async (
 
     // Send file metadata as a separate attachment
     if (!append) {
-      dataStream.writeData({
-        type: 'file-attachment',
-        content: [fileData],
+      writer.write({
+        type: 'data',
+
+        value: [
+          {
+            type: 'file-attachment',
+            content: [fileData],
+          },
+        ],
       });
     }
 
@@ -73,15 +85,27 @@ export const saveFileToDatabase = async (
       error instanceof Error &&
       error.message.includes('File must be less than')
     ) {
-      dataStream.writeData({
-        type: 'text-delta',
-        content: `⚠️ File "${fileName}" is too large to be attached (must be less than 30MB)\n`,
+      writer.write({
+        type: 'data',
+
+        value: [
+          {
+            type: 'text',
+            content: `⚠️ File "${fileName}" is too large to be attached (must be less than 30MB)\n`,
+          },
+        ],
       });
     } else {
       console.error('Error creating file:', error);
-      dataStream.writeData({
-        type: 'text-delta',
-        content: `⚠️ Failed to attach file: ${fileName}\n`,
+      writer.write({
+        type: 'data',
+
+        value: [
+          {
+            type: 'text',
+            content: `⚠️ Failed to attach file: ${fileName}\n`,
+          },
+        ],
       });
     }
     return `Failed to attach file: ${fileName}`;
@@ -94,12 +118,12 @@ export const saveFileToDatabase = async (
 export const handleMessageAttachments = async ({
   attachments,
   userID,
-  dataStream,
+  writer,
   sandboxManager,
 }: {
   attachments: string | string[];
   userID: string;
-  dataStream: any;
+  writer: any;
   sandboxManager: SandboxManager;
 }): Promise<{ errors: string[] | null; files: string[] }> => {
   if (!attachments) return { errors: null, files: [] };
@@ -119,7 +143,7 @@ export const handleMessageAttachments = async ({
           filePath,
           content,
           userID,
-          dataStream,
+          writer,
         );
 
         if (typeof result === 'string') {

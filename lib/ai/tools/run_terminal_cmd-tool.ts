@@ -12,7 +12,7 @@ import { PluginID } from '@/types';
  * @returns The terminal tool
  */
 export const createShellExecTool = (context: ToolContext) => {
-  const { dataStream, userID, sandboxManager, selectedPlugin } = context;
+  const { writer, userID, sandboxManager, selectedPlugin } = context;
 
   // Conditionally build the file upload note
   const fileUploadNote =
@@ -65,7 +65,7 @@ Pre-installed Tools:
 - If unresolved, try alternative methods or tools, but NEVER repeat the same action
 - If all attempts fail, explain the failure to the user and request further guidance
 </error_handling>`,
-    parameters: z.object({
+    inputSchema: z.object({
       exec_dir: z
         .string()
         .describe(
@@ -100,10 +100,7 @@ Pre-installed Tools:
         sandbox,
       });
 
-      const terminalOutput = await streamTerminalOutput(
-        terminalStream,
-        dataStream,
-      );
+      const terminalOutput = await streamTerminalOutput(terminalStream, writer);
       return terminalOutput;
     },
   });

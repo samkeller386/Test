@@ -1,6 +1,6 @@
 import type {
   CoreAssistantMessage,
-  CoreMessage,
+  ModelMessage,
   CoreUserMessage,
   TextPart,
   ImagePart,
@@ -50,11 +50,11 @@ export function filterEmptyAssistantMessages(messages: BuiltChatMessage[]) {
 export const toVercelChatMessages = (
   messages: BuiltChatMessage[],
   supportsImages = false,
-): CoreMessage[] => {
-  const result: CoreMessage[] = [];
+): ModelMessage[] => {
+  const result: ModelMessage[] = [];
 
   messages.forEach((message) => {
-    let formattedMessage: CoreMessage | null = null;
+    let formattedMessage: ModelMessage | null = null;
 
     switch (message.role) {
       case 'assistant':
@@ -231,7 +231,7 @@ function validateMessageTokens(
   if (totalTokens > MAX_CONTEXT_WINDOW) {
     console.error('Token limit exceeded:', {
       totalTokens,
-      maxTokens: MAX_CONTEXT_WINDOW,
+      maxOutputTokens: MAX_CONTEXT_WINDOW,
       userId,
     });
     throw new Error(
@@ -276,38 +276,39 @@ export async function processChatMessages(
     isTerminal ? '/home/user' : undefined,
   );
 
-  let processedMessages = imageResult.processedMessages;
+  let processedMessagesBuilt: BuiltChatMessage[] =
+    imageResult.processedMessages;
   const hasImageAttachments = imageResult.hasImageAttachments;
   const pentestImageFiles = imageResult.pentestImageFiles;
 
   // Handle moderation and uncensoring
   if (isNewConversation) {
     const { shouldUncensorResponse } = await getModerationResult(
-      processedMessages,
+      processedMessagesBuilt,
       isPremiumSubscription,
     );
     if (shouldUncensorResponse) {
-      addAuthMessage(processedMessages);
+      addAuthMessage(processedMessagesBuilt);
     }
   }
 
   // Validate messages
   validateMessageTokens(
-    processedMessages,
+    processedMessagesBuilt,
     profile?.user_id,
     isPremiumSubscription,
   );
-  processedMessages = validateMessages(processedMessages);
+  processedMessagesBuilt = validateMessages(processedMessagesBuilt);
 
   // Process attachments and file content
   const attachmentResult = await processMessageContentWithAttachments(
-    processedMessages,
+    processedMessagesBuilt,
     profile.user_id,
     selectedModel === 'reasoning-model',
     isTerminal,
   );
 
-  processedMessages = attachmentResult.processedMessages;
+  processedMessagesBuilt = attachmentResult.processedMessages;
   const textPentestFiles = attachmentResult.pentestFiles;
   const hasPdfAttachments = attachmentResult.hasPdfAttachments;
 
@@ -324,7 +325,7 @@ export async function processChatMessages(
   });
 
   return {
-    processedMessages,
+    processedMessages: processedMessagesBuilt,
     systemPrompt,
     pentestFiles: combinedPentestFiles,
     hasPdfAttachments,

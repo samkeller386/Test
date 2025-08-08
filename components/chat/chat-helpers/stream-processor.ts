@@ -6,7 +6,7 @@ import type {
   RateLimitInfo,
 } from '@/types';
 import type { AlertAction } from '@/context/alert-context';
-import { processDataStream } from 'ai';
+import { processDataStream } from 'ai-v4';
 import { toast } from 'sonner';
 import { PluginID } from '@/types/plugins';
 import type { AgentStatusState } from '@/components/messages/agent-status';

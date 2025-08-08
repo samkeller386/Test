@@ -11,7 +11,7 @@ export interface SandboxManager {
  * Interface for tools that need access to the data stream
  */
 export interface ToolContext {
-  dataStream: any;
+  writer: any;
   sandbox?: Sandbox | null;
   userID: string;
   setSandbox: (sandbox: Sandbox) => void;

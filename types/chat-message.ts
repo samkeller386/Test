@@ -24,11 +24,6 @@ export interface BuiltChatMessage {
   attachments?: Doc<'file_items'>[];
 }
 
-export interface ProviderMetadata {
-  thinking_elapsed_secs?: number | null;
-  citations?: string[];
-}
-
 export interface MessageModelParams {
   plugin: PluginID;
 }

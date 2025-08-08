@@ -1,7 +1,7 @@
 import { getAIProfile } from '@/lib/server/server-chat-helpers';
 import { handleErrorResponse } from '@/lib/models/api-error';
 import { checkRatelimitOnApi } from '@/lib/server/ratelimiter';
-import { createDataStreamResponse } from 'ai';
+import { createUIMessageStream } from 'ai';
 import { processChatMessages } from '@/lib/ai/message-utils';
 import { postRequestBodySchema, type PostRequestBody } from '../chat/schema';
 import { ChatSDKError } from '@/lib/errors';
@@ -66,11 +66,13 @@ export async function POST(request: Request) {
 
     // const { city, country } = geolocation(request);
 
-    return createDataStreamResponse({
-      execute: async (dataStream) => {
-        dataStream.writeData({
-          type: 'ratelimit',
-          content: config.rateLimitInfo as any,
+    return createUIMessageStream({
+      execute: async ({ writer }) => {
+        writer.write({
+          type: 'data-ratelimit',
+          data: {
+            content: config.rateLimitInfo,
+          },
         });
 
         await handleResearchKickoff({
@@ -79,7 +81,7 @@ export async function POST(request: Request) {
             messages: processedMessages,
             modelParams,
             profile,
-            dataStream,
+            writer,
             abortSignal: request.signal,
             chatMetadata,
             model,

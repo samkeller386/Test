@@ -10,7 +10,7 @@ export interface DeepResearchConfig {
   chat: Doc<'chats'> | null;
   messages: any[];
   profile: any;
-  dataStream: any;
+  writer: any;
   modelParams: ModelParams;
   abortSignal: AbortSignal;
   chatMetadata: ChatMetadata;
@@ -75,7 +75,7 @@ export async function executeDeepResearchTool({
     chat,
     messages,
     profile,
-    dataStream,
+    writer,
     modelParams,
     chatMetadata,
     abortSignal,
@@ -95,13 +95,19 @@ export async function executeDeepResearchTool({
 
   if (!deepResearchRateLimit.allowed) {
     // Send rate limit error to the data stream
-    dataStream.writeData({
-      type: 'error',
-      content: {
-        type: 'ratelimit_hit',
-        message: deepResearchRateLimit.info.message,
-        isPremiumUser: deepResearchRateLimit.info.isPremiumUser,
-      },
+    writer.write({
+      type: 'data',
+
+      value: [
+        {
+          type: 'error',
+          content: {
+            type: 'ratelimit_hit',
+            message: deepResearchRateLimit.info.message,
+            isPremiumUser: deepResearchRateLimit.info.isPremiumUser,
+          },
+        },
+      ],
     });
     throw new Error(
       `Deep research rate limit exceeded: ${deepResearchRateLimit.info.message}`,
@@ -116,9 +122,15 @@ export async function executeDeepResearchTool({
     });
   }
 
-  dataStream.writeData({
-    type: 'tool-call',
-    content: 'deep-research',
+  writer.write({
+    type: 'data',
+
+    value: [
+      {
+        type: 'tool-call',
+        content: 'deep-research',
+      },
+    ],
   });
 
   const citations: string[] = [];
@@ -197,21 +209,39 @@ export async function executeDeepResearchTool({
           thinkingStartTime = Date.now();
         }
         reasoning += event.delta;
-        dataStream.writeData({
-          type: 'reasoning',
-          content: event.delta,
+        writer.write({
+          type: 'data',
+
+          value: [
+            {
+              type: 'reasoning',
+              content: event.delta,
+            },
+          ],
         });
       } else if (event.type === 'response.output_text.delta') {
         assistantMessage += event.delta;
-        dataStream.writeData({
-          type: 'text-delta',
-          content: event.delta,
+        writer.write({
+          type: 'data',
+
+          value: [
+            {
+              type: 'text',
+              content: event.delta,
+            },
+          ],
         });
       } else if (event.type === 'response.reasoning_summary_part.added') {
         assistantMessage += '\n\n';
-        dataStream.writeData({
-          type: 'reasoning',
-          content: '\n\n',
+        writer.write({
+          type: 'data',
+
+          value: [
+            {
+              type: 'reasoning',
+              content: '\n\n',
+            },
+          ],
         });
       }
     }
@@ -221,9 +251,15 @@ export async function executeDeepResearchTool({
     if (isThinking && thinkingStartTime) {
       isThinking = false;
       thinkingElapsedSecs = Math.round((Date.now() - thinkingStartTime) / 1000);
-      dataStream.writeData({
-        type: 'thinking-time',
-        elapsed_secs: thinkingElapsedSecs,
+      writer.write({
+        type: 'data',
+
+        value: [
+          {
+            type: 'thinking-time',
+            elapsed_secs: thinkingElapsedSecs,
+          },
+        ],
       });
     }
 

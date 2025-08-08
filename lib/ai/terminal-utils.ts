@@ -9,7 +9,7 @@ const FILE_READ_TRUNCATION_MESSAGE =
 
 export async function streamTerminalOutput(
   terminalStream: ReadableStream<Uint8Array>,
-  dataStream: any,
+  writer: any,
 ): Promise<string> {
   const reader = terminalStream.getReader();
   let terminalOutput = '';
@@ -29,9 +29,10 @@ export async function streamTerminalOutput(
     // Only truncate UI display
     if (currentTokens >= STREAM_MAX_TOKENS) {
       if (!truncationMessageSent) {
-        dataStream.writeData({
+        writer.write({
           type: 'text-delta',
-          content: TRUNCATION_MESSAGE,
+          delta: TRUNCATION_MESSAGE,
+          id: 'terminal-output',
         });
         truncationMessageSent = true;
       }
@@ -45,23 +46,26 @@ export async function streamTerminalOutput(
       const truncatedTokens = tokens.slice(0, remainingTokens);
       const truncatedChunk = decode(truncatedTokens);
 
-      dataStream.writeData({
+      writer.write({
         type: 'text-delta',
-        content: truncatedChunk,
+        delta: truncatedChunk,
+        id: 'terminal-output',
       });
       currentTokens += truncatedTokens.length;
 
       if (!truncationMessageSent) {
-        dataStream.writeData({
+        writer.write({
           type: 'text-delta',
-          content: TRUNCATION_MESSAGE,
+          delta: TRUNCATION_MESSAGE,
+          id: 'terminal-output',
         });
         truncationMessageSent = true;
       }
     } else {
-      dataStream.writeData({
+      writer.write({
         type: 'text-delta',
-        content: chunk,
+        delta: chunk,
+        id: 'terminal-output',
       });
       currentTokens += newTokens;
     }

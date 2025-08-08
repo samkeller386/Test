@@ -25,7 +25,7 @@ interface ImageGenerationParameters {
 export const createImageGenTool = (
   profile: any,
   abortSignal: AbortSignal,
-  dataStream: any,
+  writer: any,
 ) => {
   return tool({
     description: `The image_gen tool enables image generation from descriptions. Use it when:
@@ -37,7 +37,7 @@ Limitations:
 
 Guidelines:
 - After each image generation, do not mention anything related to download. Do not summarize the image. Do not ask followup question. Do not say ANYTHING after you generate an image.`,
-    parameters: z.object({
+    inputSchema: z.object({
       prompt: z
         .string()
         .describe('A detailed text description of the image to generate'),
@@ -73,13 +73,19 @@ Guidelines:
         );
 
         if (!rateLimitStatus.allowed) {
-          dataStream.writeData({
-            type: 'error',
-            content: {
-              type: 'ratelimit_hit',
-              message: `Rate limit exceeded for image generation. ${rateLimitStatus.info.message}`,
-              rateLimitInfo: rateLimitStatus.info,
-            },
+          writer.write({
+            type: 'data',
+
+            value: [
+              {
+                type: 'error',
+                content: {
+                  type: 'ratelimit_hit',
+                  message: `Rate limit exceeded for image generation. ${rateLimitStatus.info.message}`,
+                  rateLimitInfo: rateLimitStatus.info,
+                },
+              },
+            ],
           });
 
           return {
@@ -191,10 +197,16 @@ Guidelines:
           }),
         );
 
-        dataStream.writeData({
-          type: 'assistant-images',
-          content: savedImages.map((img) => img.storageUrl),
-          imagePaths: savedImages.map((img) => img.storageId.toString()),
+        writer.write({
+          type: 'data',
+
+          value: [
+            {
+              type: 'assistant-images',
+              content: savedImages.map((img) => img.storageUrl),
+              imagePaths: savedImages.map((img) => img.storageId.toString()),
+            },
+          ],
         });
 
         return {

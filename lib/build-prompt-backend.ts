@@ -147,7 +147,7 @@ export async function processPdfFileItem(
     return {
       type: 'file' as const,
       data: buffer,
-      mimeType: 'application/pdf',
+      mediaType: 'application/pdf',
       filename: fileMetadata.name,
     };
   } catch (error) {
@@ -285,9 +285,9 @@ export async function processMessageContentWithAttachments(
     }
 
     // Remove attachments from all messages after processing
-    const finalMessages = processedMessages.map(
+    const finalMessages: BuiltChatMessage[] = processedMessages.map(
       ({ attachments, ...messageWithoutAttachments }) =>
-        messageWithoutAttachments,
+        messageWithoutAttachments as BuiltChatMessage,
     );
 
     return {

@@ -9,11 +9,11 @@ import { handleMessageAttachments } from './agent/utils/file-db-utils';
  * @returns The terminal files attachment tool
  */
 export const createGetTerminalFilesTool = (context: ToolContext) => {
-  const { dataStream, userID, sandboxManager } = context;
+  const { writer, userID, sandboxManager } = context;
 
   return tool({
     description: `Provide terminal files as attachments to the user. Use this when you need to share files created, modified, or accessed during terminal operations.`,
-    parameters: z.object({
+    inputSchema: z.object({
       files: z
         .array(z.string())
         .describe('Array of file paths to provide as attachments to the user'),
@@ -28,7 +28,7 @@ export const createGetTerminalFilesTool = (context: ToolContext) => {
         const result = await handleMessageAttachments({
           attachments: files,
           userID,
-          dataStream,
+          writer,
           sandboxManager,
         });
 

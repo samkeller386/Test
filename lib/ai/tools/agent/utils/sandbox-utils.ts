@@ -3,7 +3,7 @@ import { createOrConnectPersistentTerminal } from '@/lib/ai/tools/agent/utils/sa
 
 export interface SandboxContext {
   userID: string;
-  dataStream: any;
+  writer: any;
   setSandbox?: (sandbox: any) => void;
 }
 
@@ -60,15 +60,21 @@ export const ensureSandboxConnection = async (
 export const writePentestFilesToSandbox = async (
   sandboxManager: any,
   pentestFiles: Array<{ path: string; data: Buffer }>,
-  dataStream: any,
+  writer: any,
 ): Promise<boolean> => {
   if (!pentestFiles || pentestFiles.length === 0) {
     return true;
   }
 
-  dataStream.writeData({
-    type: 'agent-status',
-    content: 'uploading_files',
+  writer.write({
+    type: 'data',
+
+    value: [
+      {
+        type: 'agent-status',
+        content: 'uploading_files',
+      },
+    ],
   });
 
   try {
@@ -76,9 +82,15 @@ export const writePentestFilesToSandbox = async (
 
     await sandbox.files.write(pentestFiles);
 
-    dataStream.writeData({
-      type: 'agent-status',
-      content: 'none',
+    writer.write({
+      type: 'data',
+
+      value: [
+        {
+          type: 'agent-status',
+          content: 'none',
+        },
+      ],
     });
     return true;
   } catch (error) {
