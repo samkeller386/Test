@@ -80,6 +80,8 @@ export async function handleResearchKickoff({
         openai: {
           store: false,
           parallelToolCalls: false,
+          reasoningEffort: 'minimal',
+          verbosity: 'low',
         },
       },
       system: DEEPRESEARCH_SYSTEM_PROMPT,
