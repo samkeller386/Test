@@ -82,7 +82,7 @@ export async function handleResearchKickoff({
           parallelToolCalls: false,
           reasoningEffort: 'minimal',
           reasoningSummary: 'detailed',
-          verbosity: 'low',
+          textVerbosity: 'low',
         },
       },
       system: DEEPRESEARCH_SYSTEM_PROMPT,

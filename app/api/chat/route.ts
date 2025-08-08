@@ -226,9 +226,8 @@ export async function POST(request: Request) {
               openai: {
                 parallelToolCalls: false,
                 store: false,
-                reasoningEffort: 'low',
+                reasoningEffort: config.isLargeModel ? 'low' : 'minimal',
                 reasoningSummary: 'detailed',
-                verbosity: 'low',
               },
             },
             messages: toVercelChatMessages(processedMessages, true),
