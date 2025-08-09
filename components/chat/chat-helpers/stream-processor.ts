@@ -6,7 +6,7 @@ import type {
   RateLimitInfo,
 } from '@/types';
 import type { AlertAction } from '@/context/alert-context';
-import { processDataStream } from 'ai';
+import { readUIMessageStream } from 'ai';
 import { toast } from 'sonner';
 import { PluginID } from '@/types/plugins';
 import type { AgentStatusState } from '@/components/messages/agent-status';
@@ -78,7 +78,7 @@ export const processResponse = async (
     let assistantImageUrls: string[] = [];
 
     try {
-      await processDataStream({
+      await readUIMessageStream({
         stream: response.body,
         onTextPart: (value) => {
           if (value && !controller.signal.aborted) {
